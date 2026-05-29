@@ -10,17 +10,30 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 )
 
-from services.shared.config import settings
-from services.api.routes.agents import router as agents_router
-from services.api.routes.founders import router as founders_router
-from services.api.routes.campaigns import router as campaigns_router
-from services.api.middleware.rate_limit import RateLimitMiddleware
+import traceback
 
-app = FastAPI(
-    title="Karnex Agent Service API",
-    description="Internal FastAPI microservice managing AI agent runs and persistency.",
-    version="1.0.0"
-)
+try:
+    from services.shared.config import settings
+    from services.api.routes.agents import router as agents_router
+    from services.api.routes.founders import router as founders_router
+    from services.api.routes.campaigns import router as campaigns_router
+    from services.api.middleware.rate_limit import RateLimitMiddleware
+except Exception as e:
+    print(f"FATAL: Import failed during startup: {e}", flush=True)
+    traceback.print_exc()
+    raise
+
+print("INFO: Karnex API starting up...", flush=True)
+
+try:
+    app = FastAPI(
+        title="Karnex Agent Service API",
+        description="Internal FastAPI microservice managing AI agent runs and persistency.",
+        version="1.0.0"
+    )
+except Exception as e:
+    print(f"FATAL: Failed to create app: {e}", flush=True)
+    raise
 
 # Parse CORS origins from shared settings config
 allowed_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
