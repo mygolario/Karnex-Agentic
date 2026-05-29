@@ -1,0 +1,1 @@
+"""Karnex API routes package."""

@@ -1,0 +1,33 @@
+# Supabase configuration for local development
+
+project_id = "karnex-local"
+
+[api]
+port = 54080
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54081
+shadow_port = 54082
+
+[db.pooler]
+enabled = false
+port = 54085
+
+[studio]
+port = 54083
+
+[inbucket]
+enabled = true
+port = 54084
+
+[analytics]
+enabled = true
+port = 54086
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+jwt_expiry = 3600
