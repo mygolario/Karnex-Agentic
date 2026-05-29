@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone, date
 from typing import Dict, Any, Optional
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from services.shared.config import settings
 from services.shared.logger import logger
@@ -93,10 +93,15 @@ def run_war_room(input_data: WarRoomInput) -> WarRoomOutput:
     run_id = _log_agent_run_start(founder_id, input_data)
     
     try:
-        # Step 1: Initialize Gemini LLM with structured output mapping to our schema
-        llm = ChatGoogleGenerativeAI(
+        # Step 1: Initialize OpenRouter LLM with structured output mapping to our schema
+        llm = ChatOpenAI(
             model=settings.GEMINI_MODEL,
-            google_api_key=settings.GOOGLE_GEMINI_API_KEY,
+            openai_api_key=settings.OPENROUTER_API_KEY,
+            openai_api_base=settings.OPENROUTER_BASE_URL,
+            default_headers={
+                "HTTP-Referer": "https://karnex.ai",
+                "X-Title": "Karnex"
+            },
             temperature=0.5
         )
         structured_llm = llm.with_structured_output(WarRoomOutput)

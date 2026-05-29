@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from services.shared.config import settings
 from services.shared.logger import logger
@@ -120,10 +120,15 @@ async def run_daily_standup(input_data: DailyStandupInput) -> DailyStandupOutput
             if not today_sprint_tasks:
                 today_sprint_tasks = ["No tasks currently scheduled"]
 
-        # Step 2: Initialize Gemini Flash LLM with structured output
-        llm = ChatGoogleGenerativeAI(
+        # Step 2: Initialize OpenRouter LLM with structured output
+        llm = ChatOpenAI(
             model=settings.GEMINI_MODEL_FLASH,
-            google_api_key=settings.GOOGLE_GEMINI_API_KEY,
+            openai_api_key=settings.OPENROUTER_API_KEY,
+            openai_api_base=settings.OPENROUTER_BASE_URL,
+            default_headers={
+                "HTTP-Referer": "https://karnex.ai",
+                "X-Title": "Karnex"
+            },
             temperature=0.5
         )
         structured_llm = llm.with_structured_output(DailyStandupOutput)

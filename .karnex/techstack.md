@@ -32,6 +32,10 @@
 | **Data Integration** | Airtable API | Latest | (v2) Structured data import/export | Deferred to v2. Import customer lists, sync CRM data |
 | **Scheduling** | Cal.com API | Latest | (v2) Meeting scheduling for sales | Deferred to v2. Integrate with Sales Agent for demo booking |
 
+> [!NOTE]
+> OpenRouter used as LLM proxy for MVP development.
+> Migrate to direct Google Gemini API for production to eliminate proxy latency and vendor dependency.
+
 ---
 
 ## 2. System Architecture Overview

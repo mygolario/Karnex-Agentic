@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from services.shared.config import settings
 from services.shared.logger import logger
@@ -173,10 +173,15 @@ async def run_outreach(input_data: OutreachInput) -> OutreachOutput:
             if query:
                 grounding_context = web_search(query)
 
-        # Step 2: Initialize Gemini LLM with structured output mapping to our schema
-        llm = ChatGoogleGenerativeAI(
+        # Step 2: Initialize OpenRouter LLM with structured output mapping to our schema
+        llm = ChatOpenAI(
             model=settings.GEMINI_MODEL,
-            google_api_key=settings.GOOGLE_GEMINI_API_KEY,
+            openai_api_key=settings.OPENROUTER_API_KEY,
+            openai_api_base=settings.OPENROUTER_BASE_URL,
+            default_headers={
+                "HTTP-Referer": "https://karnex.ai",
+                "X-Title": "Karnex"
+            },
             temperature=0.7
         )
         structured_llm = llm.with_structured_output(OutreachOutput)

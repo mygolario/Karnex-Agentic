@@ -3,6 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
 import os
+import sys
+
+# Ensure the workspace root is in sys.path
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+)
 
 from services.shared.config import settings
 from services.api.routes.agents import router as agents_router
@@ -52,4 +58,4 @@ async def health_check():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("services.api.main:app", host="0.0.0.0", port=port, reload=True)
