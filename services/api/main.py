@@ -69,6 +69,13 @@ async def health_check():
     return HealthStatus(status="healthy", version="1.0.0")
 
 
+@app.get("/health", tags=["Health"])
+async def root_health():
+    """Health check endpoint required by Railway."""
+    return {"status": "healthy", "service": "karnex-api"}
+
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("api.main:app", host="0.0.0.0", port=port, reload=True)
