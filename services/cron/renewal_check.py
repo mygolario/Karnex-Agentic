@@ -12,8 +12,8 @@ from typing import List, Dict, Any
 # Ensure project root is in path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from services.shared.logger import logger
-from services.shared.supabase_client import get_supabase_admin
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
 
 
 def simulate_email_delivery(

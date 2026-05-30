@@ -4,14 +4,14 @@ from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from services.api.dependencies import get_current_user
-from services.agents.pain_transformer import run_pain_transformer, PainTransformerInput, PainTransformerOutput
-from services.agents.war_room import run_war_room, WarRoomInput, WarRoomOutput
-from services.agents.war_room.schemas import FounderCapacity
-from services.agents.daily_standup.schemas import DailyStandupInput, DailyStandupOutput
-from services.agents.daily_standup.agent import run_daily_standup
-from services.agents.outreach.schemas import OutreachInput, OutreachOutput, OutreachContact
-from services.agents.outreach.agent import run_outreach
+from api.dependencies import get_current_user
+from agents.pain_transformer import run_pain_transformer, PainTransformerInput, PainTransformerOutput
+from agents.war_room import run_war_room, WarRoomInput, WarRoomOutput
+from agents.war_room.schemas import FounderCapacity
+from agents.daily_standup.schemas import DailyStandupInput, DailyStandupOutput
+from agents.daily_standup.agent import run_daily_standup
+from agents.outreach.schemas import OutreachInput, OutreachOutput, OutreachContact
+from agents.outreach.agent import run_outreach
 
 router = APIRouter(prefix="/v1/agents", tags=["Agents"])
 

@@ -13,11 +13,11 @@ sys.path.insert(
 import traceback
 
 try:
-    from services.shared.config import settings
-    from services.api.routes.agents import router as agents_router
-    from services.api.routes.founders import router as founders_router
-    from services.api.routes.campaigns import router as campaigns_router
-    from services.api.middleware.rate_limit import RateLimitMiddleware
+    from shared.config import settings
+    from api.routes.agents import router as agents_router
+    from api.routes.founders import router as founders_router
+    from api.routes.campaigns import router as campaigns_router
+    from api.middleware.rate_limit import RateLimitMiddleware
 except Exception as e:
     print(f"FATAL: Import failed during startup: {e}", flush=True)
     traceback.print_exc()
@@ -71,4 +71,4 @@ async def health_check():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("services.api.main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("api.main:app", host="0.0.0.0", port=port, reload=True)

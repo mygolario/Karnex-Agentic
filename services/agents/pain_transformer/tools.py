@@ -3,8 +3,8 @@
 import re
 from typing import Dict, Any, List, Optional
 import httpx
-from services.shared.logger import logger
-from services.shared.supabase_client import get_supabase_admin
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
 
 # A simple in-memory fallback cache for local development when Supabase is not running
 _local_memory_db: Dict[str, Dict[str, Any]] = {}

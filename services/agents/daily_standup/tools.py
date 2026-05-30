@@ -2,9 +2,9 @@
 
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
-from services.shared.logger import logger
-from services.shared.supabase_client import get_supabase_admin
-from services.agents.pain_transformer.tools import karnex_memory_read, karnex_memory_write
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
+from agents.pain_transformer.tools import karnex_memory_read, karnex_memory_write
 
 
 def get_active_sprint_tasks(founder_id: str) -> List[Dict[str, Any]]:

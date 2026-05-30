@@ -2,8 +2,8 @@
 
 from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
-from services.api.dependencies import get_current_user
-from services.shared.supabase_client import get_supabase_admin
+from api.dependencies import get_current_user
+from shared.supabase_client import get_supabase_admin
 
 router = APIRouter(prefix="/v1/founders", tags=["Founders"])
 

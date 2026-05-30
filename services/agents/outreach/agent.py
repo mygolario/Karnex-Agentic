@@ -7,12 +7,12 @@ from typing import Dict, Any, Optional
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from services.shared.config import settings
-from services.shared.logger import logger
-from services.shared.supabase_client import get_supabase_admin
-from services.agents.outreach.schemas import OutreachInput, OutreachOutput
-from services.agents.outreach.prompts import OUTREACH_SYSTEM_PROMPT
-from services.agents.pain_transformer.tools import karnex_memory_write, web_search
+from shared.config import settings
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
+from agents.outreach.schemas import OutreachInput, OutreachOutput
+from agents.outreach.prompts import OUTREACH_SYSTEM_PROMPT
+from agents.pain_transformer.tools import karnex_memory_write, web_search
 
 
 def _log_agent_run_start(founder_id: str, input_data: OutreachInput) -> str:

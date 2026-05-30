@@ -1,8 +1,8 @@
 """Deterministic momentum score calculator."""
 
 from datetime import datetime, timezone, timedelta
-from services.shared.logger import logger
-from services.shared.supabase_client import get_supabase_admin
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
 
 
 async def calculate_momentum_score(founder_id: str) -> int:

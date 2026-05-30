@@ -7,12 +7,12 @@ from typing import Dict, Any, Optional
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from services.shared.config import settings
-from services.shared.logger import logger
-from services.shared.supabase_client import get_supabase_admin
-from services.agents.pain_transformer.schemas import PainTransformerInput, PainTransformerOutput
-from services.agents.pain_transformer.prompts import PAIN_TRANSFORMER_SYSTEM_PROMPT
-from services.agents.pain_transformer.tools import web_search, karnex_memory_write
+from shared.config import settings
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
+from agents.pain_transformer.schemas import PainTransformerInput, PainTransformerOutput
+from agents.pain_transformer.prompts import PAIN_TRANSFORMER_SYSTEM_PROMPT
+from agents.pain_transformer.tools import web_search, karnex_memory_write
 
 
 def _log_agent_run_start(founder_id: str, input_data: PainTransformerInput) -> str:

@@ -3,8 +3,8 @@
 from typing import Dict, Any, Optional
 from fastapi import Depends, HTTPException, Header, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from services.api.middleware.auth import verify_supabase_jwt
-from services.shared.config import settings
+from api.middleware.auth import verify_supabase_jwt
+from shared.config import settings
 
 # HTTP Bearer scheme for Supabase JWTs
 security = HTTPBearer(auto_error=False)

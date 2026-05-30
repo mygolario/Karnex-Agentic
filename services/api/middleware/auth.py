@@ -3,8 +3,8 @@
 import jwt
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
-from services.shared.config import settings
-from services.shared.logger import logger
+from shared.config import settings
+from shared.logger import logger
 
 
 def verify_supabase_jwt(token: str) -> Dict[str, Any]:

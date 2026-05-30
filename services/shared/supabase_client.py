@@ -1,7 +1,7 @@
 """Service-role Supabase client for server-side operations (bypasses RLS)."""
 
 from supabase import create_client, Client
-from services.shared.config import settings
+from shared.config import settings
 
 
 def get_supabase_admin() -> Client:

@@ -7,7 +7,7 @@ from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
-from services.shared.logger import logger
+from shared.logger import logger
 
 
 class MemorySlidingWindowRateLimiter:

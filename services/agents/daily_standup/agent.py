@@ -7,12 +7,12 @@ from typing import Optional
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from services.shared.config import settings
-from services.shared.logger import logger
-from services.shared.supabase_client import get_supabase_admin
-from services.agents.daily_standup.schemas import DailyStandupInput, DailyStandupOutput
-from services.agents.daily_standup.prompts import DAILY_STANDUP_SYSTEM_PROMPT
-from services.agents.daily_standup.tools import (
+from shared.config import settings
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
+from agents.daily_standup.schemas import DailyStandupInput, DailyStandupOutput
+from agents.daily_standup.prompts import DAILY_STANDUP_SYSTEM_PROMPT
+from agents.daily_standup.tools import (
     get_active_sprint_tasks,
     update_task_status_by_name,
     karnex_memory_write
@@ -170,7 +170,7 @@ async def run_daily_standup(input_data: DailyStandupInput) -> DailyStandupOutput
 
         # Step 6: Recalculate Momentum Score
         try:
-            from services.shared.momentum import update_founder_momentum_score
+            from shared.momentum import update_founder_momentum_score
             await update_founder_momentum_score(founder_id)
         except Exception as me:
             logger.warning(f"Could not update momentum score: {str(me)}")
