@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   // Ensure founder record exists
   const { data: founder, error: founderSelectError } = await supabaseAdmin
     .from('founders')
-    .select('id')
+    .select('id, onboarding_completed')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -45,13 +45,20 @@ export default async function DashboardLayout({
         technical_level: 'intermediate',
         weekly_hours_available: 20,
         momentum_score: 0,
-        streak_days: 0
+        streak_days: 0,
+        onboarding_completed: false
       })
     if (founderInsertError) {
       throw new Error(
         `Failed to provision founders row (possible missing GRANTs/RLS). ${founderInsertError.message}`
       )
     }
+    // Redirection for new users
+    redirect('/onboarding')
+  }
+
+  if (founder && !founder.onboarding_completed) {
+    redirect('/onboarding')
   }
 
   // Ensure startup record exists
