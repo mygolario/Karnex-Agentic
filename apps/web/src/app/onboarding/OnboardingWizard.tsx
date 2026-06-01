@@ -64,14 +64,16 @@ export default function OnboardingWizard({ initialName }: OnboardingWizardProps)
   useEffect(() => {
     let index = 0
     const interval = setInterval(() => {
-      setWelcomeText((prev) => prev + fullWelcome.charAt(index))
-      index++
-      if (index >= fullWelcome.length) {
+      if (index < fullWelcome.length) {
+        const char = fullWelcome.charAt(index)
+        setWelcomeText((prev) => prev + char)
+        index++
+      } else {
         clearInterval(interval)
       }
     }, 25)
     return () => clearInterval(interval)
-  }, [])
+  }, [fullWelcome])
 
   // Handle AI analysis step
   const handleAnalyzeIdea = async () => {
