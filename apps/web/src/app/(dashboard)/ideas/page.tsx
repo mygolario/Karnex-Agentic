@@ -77,7 +77,29 @@ function IdeasContent() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      // 1. Resolve active startup profile
+      // 1. Ensure founder profile exists
+      const { data: founder } = await supabase
+        .from('founders')
+        .select('id')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      if (!founder) {
+        const fullName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Founder'
+        await supabase
+          .from('founders')
+          .insert({
+            id: session.user.id,
+            full_name: fullName,
+            display_name: fullName,
+            technical_level: 'intermediate',
+            weekly_hours_available: 20,
+            momentum_score: 50,
+            streak_days: 0
+          })
+      }
+
+      // 2. Resolve active startup profile
       let activeStartupId = ''
       const { data: startup } = await supabase
         .from('startups')
@@ -96,14 +118,21 @@ function IdeasContent() {
           .from('startups')
           .insert({
             founder_id: session.user.id,
-            name: 'Default Startup',
-            description: 'Created by Karnex co-founder'
+            name: `${session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Founder'}'s Startup`,
+            description: 'Created by Karnex co-founder',
+            is_active: true
           })
           .select()
           .single()
         if (newStartup) {
           activeStartupId = newStartup.id
           setStartupId(newStartup.id)
+
+          // Update founder current_startup_id
+          await supabase
+            .from('founders')
+            .update({ current_startup_id: newStartup.id })
+            .eq('id', session.user.id)
         }
       }
 

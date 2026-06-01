@@ -14,6 +14,84 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
+  // Ensure founder record exists
+  const { data: founder } = await supabase
+    .from('founders')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!founder) {
+    const fullName = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder'
+    await supabase
+      .from('founders')
+      .insert({
+        id: user.id,
+        full_name: fullName,
+        display_name: fullName,
+        technical_level: 'intermediate',
+        weekly_hours_available: 20,
+        momentum_score: 50,
+        streak_days: 0
+      })
+  }
+
+  // Ensure startup record exists
+  const { data: startup } = await supabase
+    .from('startups')
+    .select('id')
+    .eq('founder_id', user.id)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle()
+
+  let activeStartupId = startup?.id
+
+  if (!startup) {
+    const { data: newStartup } = await supabase
+      .from('startups')
+      .insert({
+        founder_id: user.id,
+        name: `${user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder'}'s Startup`,
+        description: 'Created by Karnex co-founder',
+        is_active: true
+      })
+      .select()
+      .single()
+
+    if (newStartup) {
+      activeStartupId = newStartup.id
+      // Update founder current_startup_id
+      await supabase
+        .from('founders')
+        .update({ current_startup_id: newStartup.id })
+        .eq('id', user.id)
+    }
+  }
+
+  // Ensure subscription record exists
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('founder_id', user.id)
+    .maybeSingle()
+
+  if (!subscription) {
+    const thirtyDaysFromNow = new Date()
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+    await supabase
+      .from('subscriptions')
+      .insert({
+        founder_id: user.id,
+        plan: 'starter',
+        status: 'trialing',
+        started_at: new Date().toISOString(),
+        expires_at: thirtyDaysFromNow.toISOString(),
+        tasks_used_this_cycle: 0,
+        tasks_limit: 100
+      })
+  }
+
   const userProps = {
     email: user.email ?? '',
     fullName: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder',
