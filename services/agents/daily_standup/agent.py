@@ -125,6 +125,7 @@ async def run_daily_standup(input_data: DailyStandupInput) -> DailyStandupOutput
             model=settings.GEMINI_MODEL_FLASH,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
+            max_tokens=settings.OPENROUTER_MAX_TOKENS,
             default_headers={
                 "HTTP-Referer": "https://karnex.ai",
                 "X-Title": "Karnex"

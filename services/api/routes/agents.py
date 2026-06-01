@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from api.dependencies import get_current_user
+from shared.debug_trace import debug_log
 from agents.pain_transformer import run_pain_transformer, PainTransformerInput, PainTransformerOutput
 from agents.war_room import run_war_room, WarRoomInput, WarRoomOutput
 from agents.war_room.schemas import FounderCapacity
@@ -85,11 +86,41 @@ async def trigger_pain_transformer(
 
     try:
         result = run_pain_transformer(agent_input)
+        # region agent log
+        debug_log(
+            "agents.py:pain_transformer",
+            "pain-transformer success",
+            {"founder_id_prefix": founder_id[:8] if founder_id else ""},
+            hypothesis_id="D",
+        )
+        # endregion
         return result
     except Exception as e:
+        detail = str(e)
+        # region agent log
+        debug_log(
+            "agents.py:pain_transformer",
+            "pain-transformer route error",
+            {
+                "error_type": type(e).__name__,
+                "is_402": "402" in detail,
+                "detail_len": len(detail),
+            },
+            hypothesis_id="B",
+        )
+        # endregion
+        if "402" in detail and "credits" in detail.lower():
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=(
+                    "OpenRouter credits are insufficient for this request. "
+                    "Add credits at https://openrouter.ai/settings/credits "
+                    "or lower OPENROUTER_MAX_TOKENS on the agent service."
+                ),
+            )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Agent execution failed: {str(e)}"
+            detail=f"Agent execution failed: {detail}",
         )
 
 

@@ -8,6 +8,7 @@ from typing import Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from shared.config import settings
+from shared.debug_trace import debug_log
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
 from agents.pain_transformer.schemas import PainTransformerInput, PainTransformerOutput
@@ -32,7 +33,7 @@ def _log_agent_run_start(founder_id: str, input_data: PainTransformerInput) -> s
             "input": input_data.model_dump(),
             "triggered_by": "user",
             "started_at": datetime.now(timezone.utc).isoformat(),
-            "llm_model": settings.GEMINI_MODEL
+            "llm_model": settings.GEMINI_MODEL_FLASH
         }).execute()
     except Exception as e:
         logger.warning(f"Could not log agent run start to database: {str(e)}")
@@ -98,15 +99,26 @@ def run_pain_transformer(input_data: PainTransformerInput) -> PainTransformerOut
         search_results = web_search(search_query)
 
         # Step 2: Initialize OpenRouter LLM with structured output mapping to our schema
+        model_name = settings.GEMINI_MODEL_FLASH
+        max_tokens = settings.OPENROUTER_MAX_TOKENS
+        # region agent log
+        debug_log(
+            "pain_transformer/agent.py:llm_init",
+            "LLM config before invoke",
+            {"model": model_name, "max_tokens": max_tokens},
+            hypothesis_id="A",
+        )
+        # endregion
         llm = ChatOpenAI(
-            model=settings.GEMINI_MODEL,
+            model=model_name,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
+            max_tokens=max_tokens,
             default_headers={
                 "HTTP-Referer": "https://karnex.ai",
                 "X-Title": "Karnex"
             },
-            temperature=0.8
+            temperature=0.8,
         )
         structured_llm = llm.with_structured_output(PainTransformerOutput)
 
@@ -148,6 +160,22 @@ def run_pain_transformer(input_data: PainTransformerInput) -> PainTransformerOut
         return output
 
     except Exception as e:
+        # region agent log
+        err_type = type(e).__name__
+        err_code = getattr(e, "status_code", None) or getattr(
+            getattr(e, "response", None), "status_code", None
+        )
+        debug_log(
+            "pain_transformer/agent.py:except",
+            "Agent execution failed",
+            {
+                "error_type": err_type,
+                "status_code": err_code,
+                "has_402": "402" in str(e),
+            },
+            hypothesis_id="B",
+        )
+        # endregion
         logger.exception("Error executing Pain-to-Product Transformer agent")
         duration_ms = int((time.time() - start_time) * 1000)
         _log_agent_run_failure(run_id, str(e), duration_ms)
