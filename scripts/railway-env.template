@@ -1,8 +1,9 @@
 # Railway agent service — paste into Railway → Variables (same values as root .env)
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
-# JWT secret string from Supabase Dashboard → Settings → API → JWT Secret (NOT the jwks URL)
+# Legacy JWT secret (HS256). ES256 user tokens verify via JWKS from SUPABASE_URL automatically.
 SUPABASE_JWT_SECRET=
+# Optional: SUPABASE_JWKS_URL=https://your-project.supabase.co/auth/v1/.well-known/jwks.json
 OPENROUTER_API_KEY=
 GOOGLE_GEMINI_API_KEY=
 ENVIRONMENT=production

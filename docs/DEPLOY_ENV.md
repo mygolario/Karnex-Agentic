@@ -27,6 +27,8 @@ Run once after clone:
 | `CORS_ORIGINS` | — | `https://karnex-agentic-web.vercel.app` |
 | `KARNEX_WEB_ORIGIN` | — | Same as Vercel URL |
 | `AGENT_SERVICE_INTERNAL_KEY` | — | Random secret (match if BFF sends header) |
+| `SUPABASE_JWT_SECRET` | — | Legacy JWT secret (HS256 tokens only) |
+| `SUPABASE_JWKS_URL` | — | Optional override; default `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` for ES256 user tokens |
 
 ## Live URLs (reference)
 

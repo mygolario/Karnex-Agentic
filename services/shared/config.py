@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: str = (
         "super-secret-jwt-token-with-at-least-32-characters-long"
     )
+    SUPABASE_JWKS_URL: str = ""
     AGENT_SERVICE_INTERNAL_KEY: str = "dev-internal-key"
     OXAPAY_MERCHANT_API_KEY: str = ""
     ENVIRONMENT: str = "development"
@@ -56,6 +57,14 @@ class Settings(BaseSettings):
             if service_key:
                 self.SUPABASE_SERVICE_ROLE_KEY = service_key
         return self
+
+    @property
+    def supabase_jwks_url(self) -> str:
+        """JWKS endpoint for ES256/RS256 Supabase Auth tokens."""
+        if self.SUPABASE_JWKS_URL.strip():
+            return self.SUPABASE_JWKS_URL.strip()
+        base = self.SUPABASE_URL.rstrip("/")
+        return f"{base}/auth/v1/.well-known/jwks.json"
 
 
 settings = Settings()
