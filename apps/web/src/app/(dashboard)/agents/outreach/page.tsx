@@ -14,6 +14,10 @@ interface Contact {
   linkedin_url?: string
 }
 
+interface CampaignContact extends Contact {
+  status: string
+}
+
 interface CampaignMessage {
   step: number
   delay_days: number
@@ -60,7 +64,7 @@ function OutreachContent() {
   )
   
   const [activeCampaign, setActiveCampaign] = useState<CampaignDetails | null>(null)
-  const [campaignContacts, setCampaignContacts] = useState<any[]>([])
+  const [campaignContacts, setCampaignContacts] = useState<CampaignContact[]>([])
   const [submittingApprove, setSubmittingApprove] = useState(false)
   const [isApproved, setIsApproved] = useState(false)
   const [showGmailModal, setShowGmailModal] = useState(false)
@@ -101,7 +105,7 @@ function OutreachContent() {
       }
     }
     loadStartup()
-  }, [])
+  }, [supabase])
 
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -307,7 +311,7 @@ function OutreachContent() {
                   <label className="font-semibold text-zinc-400">Tone</label>
                   <select
                     value={tone}
-                    onChange={(e: any) => setTone(e.target.value)}
+                    onChange={(e) => setTone(e.target.value as 'formal' | 'casual' | 'direct')}
                     className="w-full rounded-lg border border-white/[0.08] bg-black/40 p-2.5 text-zinc-200 focus:border-violet-500 focus:outline-none"
                   >
                     <option value="direct">Direct</option>
@@ -501,7 +505,7 @@ function OutreachContent() {
             </>
           ) : (
             <div className="rounded-xl border border-white/[0.06] bg-[#0a0a14]/60 p-12 text-center text-zinc-500">
-              <p className="text-sm">Configure parameters and click "Compose Campaign Drafts" on the left to start.</p>
+              <p className="text-sm">Configure parameters and click &ldquo;Compose Campaign Drafts&rdquo; on the left to start.</p>
             </div>
           )}
         </div>

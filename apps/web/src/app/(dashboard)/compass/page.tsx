@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Skeleton } from '@/components/Skeleton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -52,7 +52,7 @@ function CompassContent() {
   const supabase = createSupabaseBrowserClient()
 
   // Fetch initial data: active tasks, momentum score, momentum history
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -106,11 +106,12 @@ function CompassContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData()
-  }, [])
+  }, [fetchData])
 
   const handleSubmitCheckin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -272,7 +273,7 @@ function CompassContent() {
                     </div>
 
                     <p className="text-sm italic text-zinc-400">
-                      "{latestSummary.encouragement}"
+                      &ldquo;{latestSummary.encouragement}&rdquo;
                     </p>
 
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -293,7 +294,7 @@ function CompassContent() {
                       </div>
 
                       <div className="rounded-lg bg-white/[0.02] p-4">
-                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Today's Priorities</span>
+                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Today&apos;s Priorities</span>
                         {latestSummary.today_priorities.length > 0 ? (
                           <ul className="mt-2 space-y-1">
                             {latestSummary.today_priorities.map((task, i) => (
@@ -392,7 +393,7 @@ function CompassContent() {
                         {item.momentum_delta >= 0 ? '+' : ''}{item.momentum_delta} Momentum
                       </span>
                     </div>
-                    <p className="text-sm italic text-zinc-400">"{item.encouragement}"</p>
+                    <p className="text-sm italic text-zinc-400">&ldquo;{item.encouragement}&rdquo;</p>
                     <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-white/[0.04]">
                       <div>
                         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Completed</span>

@@ -1,12 +1,14 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 
 const features = [
   {
     title: 'Dream Engine',
-    description: 'Transform your pain into validated product hypotheses',
+    description: 'Transform user feedback and pain points into validated product hypotheses.',
     href: '/ideas',
-    gradient: 'from-violet-500/20 to-purple-500/20',
-    ring: 'ring-violet-500/30',
+    badge: '3 Ideas',
+    gradient: 'from-violet-500/15 to-purple-500/15',
+    ring: 'ring-violet-500/20 border-violet-500/30',
     iconColor: 'text-violet-400',
     icon: (
       <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -16,10 +18,11 @@ const features = [
   },
   {
     title: 'War Room',
-    description: 'Generate your 90-day roadmap with milestones and sprints',
+    description: 'Structure your 90-day epic plan with sprints, tasks, and automated roadmap builds.',
     href: '/warroom',
-    gradient: 'from-blue-500/20 to-cyan-500/20',
-    ring: 'ring-blue-500/30',
+    badge: 'Sprint 2 Active',
+    gradient: 'from-blue-500/15 to-cyan-500/15',
+    ring: 'ring-blue-500/20 border-blue-500/30',
     iconColor: 'text-blue-400',
     icon: (
       <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -29,10 +32,11 @@ const features = [
   },
   {
     title: 'Agent Hub',
-    description: 'Trigger AI agents to build, research, and execute for you',
+    description: 'Orchestrate specialized AI agents to write code, do research, and run outreach.',
     href: '/agents',
-    gradient: 'from-emerald-500/20 to-teal-500/20',
-    ring: 'ring-emerald-500/30',
+    badge: '5 Agents Live',
+    gradient: 'from-emerald-500/15 to-teal-500/15',
+    ring: 'ring-emerald-500/20 border-emerald-500/30',
     iconColor: 'text-emerald-400',
     icon: (
       <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -42,10 +46,11 @@ const features = [
   },
   {
     title: 'Compass',
-    description: 'Daily standups, momentum tracking, and coaching',
+    description: 'Check daily standups, review velocity metrics, and keep your building momentum high.',
     href: '/compass',
-    gradient: 'from-amber-500/20 to-orange-500/20',
-    ring: 'ring-amber-500/30',
+    badge: 'Daily Standup Ready',
+    gradient: 'from-amber-500/15 to-orange-500/15',
+    ring: 'ring-amber-500/20 border-amber-500/30',
     iconColor: 'text-amber-400',
     icon: (
       <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -55,61 +60,275 @@ const features = [
   },
 ]
 
+const recentActivities = [
+  {
+    action: 'Generate 90-day war roadmap',
+    module: 'War Room',
+    time: '2 hours ago',
+    status: 'completed',
+  },
+  {
+    action: 'Synthesize feedback on user interview logs',
+    module: 'Dream Engine',
+    time: '5 hours ago',
+    status: 'completed',
+  },
+  {
+    action: 'LinkedIn lead campaign outreach-agent initialization',
+    module: 'Agent Hub',
+    time: 'Yesterday',
+    status: 'completed',
+  },
+  {
+    action: 'Co-founder alignment analysis & velocity index calculation',
+    module: 'Compass',
+    time: '2 days ago',
+    status: 'completed',
+  },
+]
+
+const mockLogs = [
+  { time: '06:01:14 AM', type: 'SYSTEM', message: 'Booting Karnex AI Co-Founder network...', color: 'text-zinc-500' },
+  { time: '06:01:18 AM', type: 'SYSTEM', message: 'Connected to Supabase auth & DB cluster successfully.', color: 'text-zinc-500' },
+  { time: '06:01:22 AM', type: 'DREAM ENGINE', message: 'outreach-agent campaign initialized: "Founder Alpha Access".', color: 'text-violet-400' },
+  { time: '06:01:30 AM', type: 'WAR ROOM', message: 'Sprint 2 timeline built: "Database migration & Auth sync".', color: 'text-blue-400' },
+  { time: '06:02:05 AM', type: 'COMPASS', message: 'Standing daily summary reports generated.', color: 'text-amber-400' },
+  { time: '06:05:40 AM', type: 'AGENT HUB', message: 'outreach-agent sent 12 follow-ups (success rate: 92%).', color: 'text-emerald-400' },
+  { time: '06:17:10 AM', type: 'COMPASS', message: 'Calculated project momentum index: 50/100 (+12% delta).', color: 'text-amber-400' },
+]
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Founder'
 
+  // Get current date string representation
+  const formattedDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+
   return (
-    <div className="mx-auto max-w-5xl">
-      {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-3xl font-bold text-white">
-          Welcome back, <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">{displayName}</span>
-        </h1>
-        <p className="mt-2 text-zinc-500">
-          Your AI co-founder is ready. What are we building today?
-        </p>
-      </div>
-
-      {/* Momentum placeholder */}
-      <div className="mb-8 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-zinc-400">Momentum Score</p>
-            <p className="mt-1 text-4xl font-bold text-white">50<span className="text-lg text-zinc-600">/100</span></p>
-          </div>
-          <div className="flex items-center gap-2 rounded-full bg-zinc-800/50 px-4 py-2 text-sm text-zinc-400">
-            <span className="h-2 w-2 rounded-full bg-amber-400" />
-            Getting started
-          </div>
+    <div className="mx-auto max-w-6xl space-y-8 pb-12">
+      {/* Header Greeting Banner */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-[#1a1a1a] pb-8">
+        <div>
+          <h1 className="font-display text-4xl font-bold tracking-tight text-white">
+            Welcome back, <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">{displayName}</span>
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            {formattedDate} — All systems operational. Your AI co-founder is ready to build.
+          </p>
         </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-800">
-          <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all" />
+
+        <div className="mt-4 md:mt-0 flex items-center gap-3">
+          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-semibold text-zinc-400 font-mono tracking-wider uppercase">
+            Project: Karnex-Agentic
+          </span>
         </div>
       </div>
 
-      {/* Feature cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {features.map((feature) => (
-          <a
-            key={feature.title}
-            href={feature.href}
-            className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 transition-all hover:border-white/[0.12] hover:bg-white/[0.04]"
-          >
-            <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.gradient} ring-1 ${feature.ring} ${feature.iconColor}`}>
-              {feature.icon}
+      {/* Startup Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Momentum Score Widget */}
+        <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+              Momentum Score
+            </span>
+            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+              +12% vs last week
+            </span>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-5xl font-bold text-white tracking-tight">50</span>
+            <span className="text-lg text-zinc-600 font-medium">/ 100</span>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[#1a1a1a]">
+              <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500" />
             </div>
-            <h3 className="text-lg font-semibold text-white group-hover:text-zinc-100">
-              {feature.title}
-            </h3>
-            <p className="mt-1 text-sm text-zinc-500 group-hover:text-zinc-400">
-              {feature.description}
+            <div className="flex items-center justify-between text-[11px] text-zinc-500">
+              <span>Velocity: Optimal</span>
+              <span>Next goal: 60</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Milestone Tracker */}
+        <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+              Launch Timeline
+            </span>
+            <span className="text-xs font-medium text-zinc-400 font-mono">
+              Day 18 / 90
+            </span>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-semibold text-zinc-100 truncate">
+              Phase 2: Product Architecture
             </p>
-          </a>
-        ))}
+            <p className="mt-1 text-xs text-zinc-500">
+              Building DB models, layout schema, & APIs
+            </p>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[#1a1a1a]">
+              <div className="h-full w-[60%] rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 transition-all duration-500" />
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-zinc-500">
+              <span>Milestone: 60% Done</span>
+              <span>72 Days remaining</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Active Agents Summary */}
+        <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+              AI Workforce
+            </span>
+            <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20">
+              Active Now
+            </span>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-5xl font-bold text-white tracking-tight">3</span>
+            <span className="text-lg text-zinc-600 font-medium">/ 5 Agents running</span>
+          </div>
+          <div className="mt-4 flex gap-1.5">
+            <span className="flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-1 text-[10px] font-medium text-zinc-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              outreach
+            </span>
+            <span className="flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-1 text-[10px] font-medium text-zinc-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              warroom
+            </span>
+            <span className="flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-1 text-[10px] font-medium text-zinc-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-600" />
+              compass
+            </span>
+          </div>
+        </div>
       </div>
+
+      {/* Interactive Core Layouts Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Module Navigation Grid */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+            Startup Builder Modules
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {features.map((feature) => (
+              <Link
+                key={feature.title}
+                href={feature.href}
+                className="group relative flex flex-col justify-between rounded-xl border border-[#1a1a1a] bg-[#07070a] p-5 hover:border-zinc-700 hover:bg-white/[0.01] transition-all duration-300"
+              >
+                <div>
+                  <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${feature.gradient} border ${feature.ring} ${feature.iconColor}`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="font-semibold text-zinc-200 group-hover:text-white transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-1 text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-[11px]">
+                  <span className="rounded bg-indigo-500/5 px-2 py-0.5 font-medium text-indigo-400/80 ring-1 ring-inset ring-indigo-500/10">
+                    {feature.badge}
+                  </span>
+                  <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors font-semibold">
+                    Open &rarr;
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Live AI Console Logs Terminal */}
+        <div className="space-y-4 flex flex-col h-full">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+              </span>
+              Live Co-Founder Activity Logs
+            </h2>
+            <span className="text-[10px] font-mono text-zinc-600">
+              BUFFER_OK — READY
+            </span>
+          </div>
+
+          <div className="flex-1 rounded-xl border border-[#1a1a1a] bg-[#020202] p-5 font-mono text-[11px] leading-relaxed shadow-inner overflow-y-auto max-h-[365px] min-h-[300px]">
+            <div className="space-y-2">
+              {mockLogs.map((log, idx) => (
+                <div key={idx} className="flex items-start gap-2 hover:bg-white/[0.02] p-0.5 rounded transition-all">
+                  <span className="text-zinc-600 select-none">{log.time}</span>
+                  <span className="text-zinc-500 select-none">|</span>
+                  <span className={`font-semibold shrink-0 uppercase tracking-tight text-[10px] ${log.color} w-24 truncate`}>
+                    [{log.type}]
+                  </span>
+                  <span className="text-zinc-300 break-all">{log.message}</span>
+                </div>
+              ))}
+              <div className="flex items-center gap-1.5 text-indigo-400 animate-pulse pt-2 select-none">
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                <span>Listening for new co-founder signals...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Recent Activities Log */}
+      <div className="space-y-4">
+        <h2 className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+          Recent Pipeline Activities
+        </h2>
+        <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[#1a1a1a] bg-[#020203]">
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-400 uppercase font-mono">Action</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-400 uppercase font-mono">Module</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-400 uppercase font-mono">Timestamp</th>
+                <th className="px-6 py-4 text-xs font-semibold text-zinc-400 uppercase font-mono text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentActivities.map((act, idx) => (
+                <tr key={idx} className="border-b border-[#1a1a1a] last:border-b-0 hover:bg-white/[0.01] transition-all">
+                  <td className="px-6 py-4 text-xs font-medium text-zinc-200">{act.action}</td>
+                  <td className="px-6 py-4 text-xs font-medium text-zinc-500">{act.module}</td>
+                  <td className="px-6 py-4 text-xs text-zinc-500 font-mono">{act.time}</td>
+                  <td className="px-6 py-4 text-xs text-right">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                      <span className="h-1 w-1 rounded-full bg-emerald-400" />
+                      {act.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,11 +7,16 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Karnex — Your AI Co-Founder",
+  title: "Karnex — The AI Co-Founder for Solo Founders",
   description:
-    "Karnex is an agentic AI platform that builds your startup alongside you. From idea validation to execution, your AI co-founder handles it.",
-  keywords: ["AI", "startup", "co-founder", "agents", "SaaS", "solo founder"],
+    "Karnex is a multi-agent AI platform that turns raw ideas into launched products with real revenue. Build and launch startups alone, without being alone.",
+  keywords: ["AI", "startup", "co-founder", "agents", "SaaS", "solo founder", "indie hacker", "automation"],
 };
 
 export default function RootLayout({
@@ -22,7 +27,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} h-full antialiased dark`}
+      className={`${inter.variable} ${outfit.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-[#07070f] font-sans text-white">
         {children}
