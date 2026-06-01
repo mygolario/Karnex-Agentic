@@ -35,9 +35,9 @@ async def get_momentum_history(
             .execute()
         )
         current_score = (
-            founder_res.data.get("momentum_score", 50)
+            founder_res.data.get("momentum_score", 0)
             if founder_res and founder_res.data
-            else 50
+            else 0
         )
 
         # 2. Fetch recent daily standup logs to show history

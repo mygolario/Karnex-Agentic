@@ -83,7 +83,7 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .maybeSingle()
 
-  const momentumScore = founder?.momentum_score ?? 50
+  const momentumScore = founder?.momentum_score ?? 0
 
   // 2. Fetch active roadmap details
   const { data: activeRoadmap } = await supabase

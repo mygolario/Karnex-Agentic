@@ -44,7 +44,7 @@ export default async function DashboardLayout({
         display_name: fullName,
         technical_level: 'intermediate',
         weekly_hours_available: 20,
-        momentum_score: 50,
+        momentum_score: 0,
         streak_days: 0
       })
     if (founderInsertError) {
