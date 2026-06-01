@@ -6,7 +6,7 @@ const features = [
     title: 'Dream Engine',
     description: 'Transform user feedback and pain points into validated product hypotheses.',
     href: '/ideas',
-    badge: '3 Ideas',
+    badge: 'Ideation',
     gradient: 'from-violet-500/15 to-purple-500/15',
     ring: 'ring-violet-500/20 border-violet-500/30',
     iconColor: 'text-violet-400',
@@ -20,7 +20,7 @@ const features = [
     title: 'War Room',
     description: 'Structure your 90-day epic plan with sprints, tasks, and automated roadmap builds.',
     href: '/warroom',
-    badge: 'Sprint 2 Active',
+    badge: 'Roadmap & Build',
     gradient: 'from-blue-500/15 to-cyan-500/15',
     ring: 'ring-blue-500/20 border-blue-500/30',
     iconColor: 'text-blue-400',
@@ -34,7 +34,7 @@ const features = [
     title: 'Agent Hub',
     description: 'Orchestrate specialized AI agents to write code, do research, and run outreach.',
     href: '/agents',
-    badge: '5 Agents Live',
+    badge: 'Specialized Agents',
     gradient: 'from-emerald-500/15 to-teal-500/15',
     ring: 'ring-emerald-500/20 border-emerald-500/30',
     iconColor: 'text-emerald-400',
@@ -48,7 +48,7 @@ const features = [
     title: 'Compass',
     description: 'Check daily standups, review velocity metrics, and keep your building momentum high.',
     href: '/compass',
-    badge: 'Daily Standup Ready',
+    badge: 'Accountability Coaching',
     gradient: 'from-amber-500/15 to-orange-500/15',
     ring: 'ring-amber-500/20 border-amber-500/30',
     iconColor: 'text-amber-400',
@@ -60,56 +60,159 @@ const features = [
   },
 ]
 
-const recentActivities = [
-  {
-    action: 'Generate 90-day war roadmap',
-    module: 'War Room',
-    time: '2 hours ago',
-    status: 'completed',
-  },
-  {
-    action: 'Synthesize feedback on user interview logs',
-    module: 'Dream Engine',
-    time: '5 hours ago',
-    status: 'completed',
-  },
-  {
-    action: 'LinkedIn lead campaign outreach-agent initialization',
-    module: 'Agent Hub',
-    time: 'Yesterday',
-    status: 'completed',
-  },
-  {
-    action: 'Co-founder alignment analysis & velocity index calculation',
-    module: 'Compass',
-    time: '2 days ago',
-    status: 'completed',
-  },
-]
-
-const mockLogs = [
-  { time: '06:01:14 AM', type: 'SYSTEM', message: 'Booting Karnex AI Co-Founder network...', color: 'text-zinc-500' },
-  { time: '06:01:18 AM', type: 'SYSTEM', message: 'Connected to Supabase auth & DB cluster successfully.', color: 'text-zinc-500' },
-  { time: '06:01:22 AM', type: 'DREAM ENGINE', message: 'outreach-agent campaign initialized: "Founder Alpha Access".', color: 'text-violet-400' },
-  { time: '06:01:30 AM', type: 'WAR ROOM', message: 'Sprint 2 timeline built: "Database migration & Auth sync".', color: 'text-blue-400' },
-  { time: '06:02:05 AM', type: 'COMPASS', message: 'Standing daily summary reports generated.', color: 'text-amber-400' },
-  { time: '06:05:40 AM', type: 'AGENT HUB', message: 'outreach-agent sent 12 follow-ups (success rate: 92%).', color: 'text-emerald-400' },
-  { time: '06:17:10 AM', type: 'COMPASS', message: 'Calculated project momentum index: 50/100 (+12% delta).', color: 'text-amber-400' },
-]
-
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Founder'
+  if (!user) {
+    return null
+  }
 
-  // Get current date string representation
+  const displayName = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder'
   const formattedDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   })
+
+  // 1. Fetch founder momentum score
+  const { data: founder } = await supabase
+    .from('founders')
+    .select('momentum_score')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const momentumScore = founder?.momentum_score ?? 50
+
+  // 2. Fetch active roadmap details
+  const { data: activeRoadmap } = await supabase
+    .from('roadmaps')
+    .select('phases, start_date, title')
+    .eq('founder_id', user.id)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  let daysRemaining = 90
+  let timelinePct = 0
+  let currentPhaseTitle = 'Phase 1: Idea Crystallization'
+  let currentPhaseTheme = 'Validating pain bottlenecks & Moat Wedges'
+
+  if (activeRoadmap) {
+    const startDate = new Date(activeRoadmap.start_date)
+    const today = new Date()
+    const diffTime = today.getTime() - startDate.getTime()
+    const elapsedDays = Math.max(0, Math.min(90, Math.floor(diffTime / (1000 * 60 * 60 * 24))))
+    
+    daysRemaining = Math.max(0, 90 - elapsedDays)
+    timelinePct = Math.round((elapsedDays / 90) * 100)
+
+    if (Array.isArray(activeRoadmap.phases) && activeRoadmap.phases.length > 0) {
+      let phaseIdx = 0
+      if (elapsedDays > 60) phaseIdx = 2
+      else if (elapsedDays > 30) phaseIdx = 1
+      
+      const phase = activeRoadmap.phases[phaseIdx]
+      if (phase) {
+        currentPhaseTitle = `Phase ${phase.phase_number ?? (phaseIdx + 1)}: ${phase.title || ''}`
+        currentPhaseTheme = phase.theme || ''
+      }
+    }
+  }
+
+  // 3. Fetch running agent status counts
+  const { count: activeRunsCount } = await supabase
+    .from('agent_runs')
+    .select('*', { count: 'exact', head: true })
+    .eq('founder_id', user.id)
+    .eq('status', 'running')
+
+  const { data: runningRuns } = await supabase
+    .from('agent_runs')
+    .select('agent_id')
+    .eq('founder_id', user.id)
+    .eq('status', 'running')
+    .limit(4)
+
+  const activeAgentNames = runningRuns ? runningRuns.map(r => r.agent_id.replace('-v1', '')) : []
+
+  // 4. Fetch live activity logs
+  const { data: recentRuns } = await supabase
+    .from('agent_runs')
+    .select('created_at, agent_id, status, error_message')
+    .eq('founder_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  const liveLogs = []
+  if (recentRuns && recentRuns.length > 0) {
+    for (const run of recentRuns) {
+      const timeStr = new Date(run.created_at).toLocaleTimeString()
+      const agentLabel = run.agent_id.replace('-v1', '').toUpperCase().replace('_', ' ')
+      
+      let message = 'Execution logs registered.'
+      let color = 'text-zinc-500'
+      if (run.status === 'success') {
+        message = 'Agent completed computation sequence successfully.'
+        color = 'text-emerald-400'
+      } else if (run.status === 'error') {
+        message = `Failure context: ${run.error_message || 'Unhandled runtime error'}`
+        color = 'text-red-400'
+      } else if (run.status === 'running') {
+        message = 'Processing workflow variables...'
+        color = 'text-indigo-400'
+      }
+      
+      liveLogs.push({
+        time: timeStr,
+        type: agentLabel,
+        message,
+        color
+      })
+    }
+  } else {
+    // Standard system fallback logs
+    liveLogs.push({ time: '06:01:14 AM', type: 'SYSTEM', message: 'Booting Karnex AI Co-Founder network...', color: 'text-zinc-500' })
+    liveLogs.push({ time: '06:01:18 AM', type: 'SYSTEM', message: 'Connected to Supabase auth & DB cluster successfully.', color: 'text-zinc-500' })
+    liveLogs.push({ time: '06:05:40 AM', type: 'AGENT CONSOLE', message: 'Listening for new co-founder pipeline directives...', color: 'text-indigo-400' })
+  }
+
+  // 5. Fetch recent pipeline activities
+  const { data: activityLogs } = await supabase
+    .from('agent_runs')
+    .select('agent_id, status, created_at')
+    .eq('founder_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(4)
+
+  const recentActivities = activityLogs ? activityLogs.map(r => {
+    let action = 'Agent task triggered'
+    const agentClean = r.agent_id.replace('-v1', '')
+    if (agentClean === 'pain-transformer') action = 'Extract pain-to-product wedges'
+    else if (agentClean === 'war-room') action = 'Structure 90-day milestones & roadmap'
+    else if (agentClean === 'daily-standup') action = 'Daily standup coaching sync feedback'
+    else if (agentClean === 'outreach') action = 'Compose personalized outbound lead campaigns'
+
+    const diffMs = new Date().getTime() - new Date(r.created_at).getTime()
+    const diffMin = Math.floor(diffMs / 60000)
+    let timeStr = 'Just now'
+    if (diffMin >= 1440) {
+      timeStr = `${Math.floor(diffMin / 1440)}d ago`
+    } else if (diffMin >= 60) {
+      timeStr = `${Math.floor(diffMin / 60)}h ago`
+    } else if (diffMin > 0) {
+      timeStr = `${diffMin}m ago`
+    }
+
+    return {
+      action,
+      module: agentClean.replace('_', ' ').toUpperCase(),
+      time: timeStr,
+      status: r.status || 'success'
+    }
+  }) : []
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-12">
@@ -140,21 +243,24 @@ export default async function DashboardPage() {
             <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
               Momentum Score
             </span>
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-              +12% vs last week
+            <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20">
+              Founder Sync score
             </span>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-5xl font-bold text-white tracking-tight">50</span>
+            <span className="text-5xl font-bold text-white tracking-tight">{momentumScore}</span>
             <span className="text-lg text-zinc-600 font-medium">/ 100</span>
           </div>
           <div className="mt-4 space-y-2">
             <div className="h-1.5 overflow-hidden rounded-full bg-[#1a1a1a]">
-              <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500" />
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500" 
+                style={{ width: `${momentumScore}%` }}
+              />
             </div>
             <div className="flex items-center justify-between text-[11px] text-zinc-500">
-              <span>Velocity: Optimal</span>
-              <span>Next goal: 60</span>
+              <span>Velocity: Active</span>
+              <span>Next Sync: Daily Standup</span>
             </div>
           </div>
         </div>
@@ -166,24 +272,27 @@ export default async function DashboardPage() {
               Launch Timeline
             </span>
             <span className="text-xs font-medium text-zinc-400 font-mono">
-              Day 18 / 90
+              {daysRemaining} Days remaining
             </span>
           </div>
           <div className="mt-4">
             <p className="text-sm font-semibold text-zinc-100 truncate">
-              Phase 2: Product Architecture
+              {currentPhaseTitle}
             </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Building DB models, layout schema, & APIs
+            <p className="mt-1 text-xs text-zinc-500 truncate leading-relaxed">
+              {currentPhaseTheme}
             </p>
           </div>
           <div className="mt-4 space-y-2">
             <div className="h-1.5 overflow-hidden rounded-full bg-[#1a1a1a]">
-              <div className="h-full w-[60%] rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 transition-all duration-500" />
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 transition-all duration-500" 
+                style={{ width: `${timelinePct}%` }}
+              />
             </div>
             <div className="flex items-center justify-between text-[11px] text-zinc-500">
-              <span>Milestone: 60% Done</span>
-              <span>72 Days remaining</span>
+              <span>Milestone: {timelinePct}% Elapsed</span>
+              <span>Total duration: 90 Days</span>
             </div>
           </div>
         </div>
@@ -194,27 +303,27 @@ export default async function DashboardPage() {
             <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
               AI Workforce
             </span>
-            <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20">
-              Active Now
+            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+              Live Runs
             </span>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-5xl font-bold text-white tracking-tight">3</span>
-            <span className="text-lg text-zinc-600 font-medium">/ 5 Agents running</span>
+            <span className="text-5xl font-bold text-white tracking-tight">{activeRunsCount ?? 0}</span>
+            <span className="text-lg text-zinc-600 font-medium">Agents Active</span>
           </div>
-          <div className="mt-4 flex gap-1.5">
-            <span className="flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-1 text-[10px] font-medium text-zinc-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              outreach
-            </span>
-            <span className="flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-1 text-[10px] font-medium text-zinc-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              warroom
-            </span>
-            <span className="flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-1 text-[10px] font-medium text-zinc-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-zinc-600" />
-              compass
-            </span>
+          <div className="mt-4 flex gap-1.5 flex-wrap">
+            {activeAgentNames.length > 0 ? (
+              activeAgentNames.map((name, i) => (
+                <span key={i} className="flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-1 text-[10px] font-medium text-zinc-300 capitalize">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  {name}
+                </span>
+              ))
+            ) : (
+              <span className="flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-1 text-[10px] font-medium text-zinc-500">
+                All agents in Standby mode
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -275,10 +384,10 @@ export default async function DashboardPage() {
 
           <div className="flex-1 rounded-xl border border-[#1a1a1a] bg-[#020202] p-5 font-mono text-[11px] leading-relaxed shadow-inner overflow-y-auto max-h-[365px] min-h-[300px]">
             <div className="space-y-2">
-              {mockLogs.map((log, idx) => (
+              {liveLogs.map((log, idx) => (
                 <div key={idx} className="flex items-start gap-2 hover:bg-white/[0.02] p-0.5 rounded transition-all">
-                  <span className="text-zinc-600 select-none">{log.time}</span>
-                  <span className="text-zinc-500 select-none">|</span>
+                  <span className="text-zinc-600 select-none shrink-0">{log.time}</span>
+                  <span className="text-zinc-500 select-none shrink-0">|</span>
                   <span className={`font-semibold shrink-0 uppercase tracking-tight text-[10px] ${log.color} w-24 truncate`}>
                     [{log.type}]
                   </span>
@@ -301,31 +410,45 @@ export default async function DashboardPage() {
           Recent Pipeline Activities
         </h2>
         <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-[#1a1a1a] bg-[#020203]">
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-400 uppercase font-mono">Action</th>
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-400 uppercase font-mono">Module</th>
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-400 uppercase font-mono">Timestamp</th>
-                <th className="px-6 py-4 text-xs font-semibold text-zinc-400 uppercase font-mono text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentActivities.map((act, idx) => (
-                <tr key={idx} className="border-b border-[#1a1a1a] last:border-b-0 hover:bg-white/[0.01] transition-all">
-                  <td className="px-6 py-4 text-xs font-medium text-zinc-200">{act.action}</td>
-                  <td className="px-6 py-4 text-xs font-medium text-zinc-500">{act.module}</td>
-                  <td className="px-6 py-4 text-xs text-zinc-500 font-mono">{act.time}</td>
-                  <td className="px-6 py-4 text-xs text-right">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                      <span className="h-1 w-1 rounded-full bg-emerald-400" />
-                      {act.status}
-                    </span>
-                  </td>
+          {recentActivities.length > 0 ? (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#1a1a1a] bg-[#020203] text-xs font-semibold text-zinc-400 uppercase font-mono">
+                  <th className="px-6 py-4">Action</th>
+                  <th className="px-6 py-4">Module</th>
+                  <th className="px-6 py-4">Timestamp</th>
+                  <th className="px-6 py-4 text-right">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentActivities.map((act, idx) => (
+                  <tr key={idx} className="border-b border-[#1a1a1a] last:border-b-0 hover:bg-white/[0.01] transition-all text-xs text-zinc-300">
+                    <td className="px-6 py-4 font-medium text-zinc-200">{act.action}</td>
+                    <td className="px-6 py-4 text-zinc-500">{act.module}</td>
+                    <td className="px-6 py-4 text-zinc-500 font-mono">{act.time}</td>
+                    <td className="px-6 py-4 text-right">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-medium border capitalize ${
+                        act.status === 'success'
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                          : act.status === 'running'
+                          ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                          : 'bg-red-500/10 border-red-500/20 text-red-400'
+                      }`}>
+                        <span className={`h-1 w-1 rounded-full ${
+                          act.status === 'success' ? 'bg-emerald-400' : act.status === 'running' ? 'bg-indigo-400' : 'bg-red-400'
+                        }`} />
+                        {act.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-12 text-center text-zinc-600 text-sm">
+              No recent pipeline agent executions. Run validation loops to see logs.
+            </div>
+          )}
         </div>
       </div>
 
