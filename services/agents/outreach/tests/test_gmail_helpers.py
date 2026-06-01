@@ -210,3 +210,17 @@ async def test_sync_campaign_drafts_mock_mode():
     assert summary["drafted"] == 1
     assert summary["mock"] is True
     assert len(summary["errors"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_personalize_template_nested_and_prefixes():
+    template = "Hi {{contact.first_name}} {{contact.last_name}}, how is {{company.name}}? Regards [Your Name]."
+    contact = {
+        "first_name": "Sarah",
+        "last_name": "Connor",
+        "company": "Cyberdyne",
+        "gmail_name": "John"
+    }
+    result = await personalize_template(template, contact)
+    assert result == "Hi Sarah Connor, how is Cyberdyne? Regards John."
+

@@ -250,10 +250,10 @@ async def personalize_template(
     result = template
     
     replacements = {
-        r"(?i)\{\{\s*first_name\s*\}\}": first_name if first_name else "there",
-        r"(?i)\{\{\s*last_name\s*\}\}": last_name,
-        r"(?i)\{\{\s*company\s*\}\}": company if company else "your company",
-        r"(?i)\{\{\s*title\s*\}\}": title,
+        r"(?i)\{\{\s*(?:contact\.)?first_name\s*\}\}": first_name if first_name else "there",
+        r"(?i)\{\{\s*(?:contact\.)?last_name\s*\}\}": last_name,
+        r"(?i)\{\{\s*company(?:\.name)?\s*\}\}": company if company else "your company",
+        r"(?i)\{\{\s*(?:contact\.)?title\s*\}\}": title,
         r"(?i)\[\s*Your Name\s*\]": founder_name
     }
     
