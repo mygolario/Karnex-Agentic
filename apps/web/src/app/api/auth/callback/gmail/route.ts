@@ -97,8 +97,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     const { access_token, refresh_token, expires_in, scope } = parsedToken.data
 
-    // 5. Fetch user's Gmail address for display
-    const userinfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    // 5. Fetch user's Gmail address for display using Gmail Profile endpoint (doesn't require extra email scope)
+    const profileResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
       headers: {
         Authorization: `Bearer ${access_token}`,
       },
@@ -107,15 +107,18 @@ export async function GET(request: Request): Promise<NextResponse> {
     let email = 'unknown@gmail.com'
     let name = 'Gmail User'
 
-    if (userinfoResponse.ok) {
-      const rawUserinfo = await userinfoResponse.json()
-      const parsedUserinfo = userInfoSchema.safeParse(rawUserinfo)
-      if (parsedUserinfo.success) {
-        email = parsedUserinfo.data.email
-        name = parsedUserinfo.data.name || email.split('@')[0]
+    if (profileResponse.ok) {
+      const rawProfile = await profileResponse.json()
+      const parsedProfile = z.object({
+        emailAddress: z.string().email(),
+      }).safeParse(rawProfile)
+      
+      if (parsedProfile.success) {
+        email = parsedProfile.data.emailAddress
+        name = email.split('@')[0]
       }
     } else {
-      console.warn('Failed to fetch userinfo from Google')
+      console.warn('Failed to fetch Gmail profile from Google')
     }
 
     // 6. Encrypt tokens using Node.js crypto (AES-256-CBC)

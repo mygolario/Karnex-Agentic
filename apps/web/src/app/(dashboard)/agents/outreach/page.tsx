@@ -122,12 +122,13 @@ function OutreachContent() {
     }
   }, [searchParams, refetchGmail])
 
-  // Load startup ID
+  // Load startup ID and latest campaign (preserves UI on page reload)
   useEffect(() => {
-    const loadStartup = async () => {
+    const loadStartupAndCampaign = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
       
+      // 1. Fetch Startup
       const { data: startup } = await supabase
         .from('startups')
         .select('id')
@@ -140,8 +141,65 @@ function OutreachContent() {
       } else {
         console.warn('Startup context not resolved yet. Relying on layout auto-provisioning.')
       }
+
+      // 2. Fetch Latest Campaign
+      const { data: campaignData } = await supabase
+        .from('outreach_campaigns')
+        .select('*')
+        .eq('founder_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (campaignData) {
+        // Fetch contacts for this campaign
+        const { data: contactData } = await supabase
+          .from('outreach_contacts')
+          .select('*')
+          .eq('campaign_id', campaignData.id)
+
+        const contactsList = contactData || []
+        setCampaignContacts(contactsList)
+
+        // Extract messages and ab_variants from message_templates
+        const templates = campaignData.message_templates || []
+        const messages = templates.filter((t: any) => t.variant === 'A')
+        const ab_variants = templates.filter((t: any) => t.variant === 'B')
+
+        // Extract personalization notes and schedule from the first contact's personalization_data
+        let personalization_notes = ''
+        let send_schedule = {
+          best_days: ['Tuesday', 'Wednesday', 'Thursday'],
+          time_of_day: '09:00 - 11:00',
+          timezone: "Recipient's local time"
+        }
+
+        if (contactsList.length > 0) {
+          const pData = contactsList[0].personalization_data || {}
+          personalization_notes = pData.personalization_notes || ''
+          if (pData.schedule_recommendation) {
+            send_schedule = pData.schedule_recommendation
+          }
+        }
+
+        setActiveCampaign({
+          id: campaignData.id,
+          name: campaignData.name,
+          messages,
+          send_schedule,
+          personalization_notes,
+          ab_variants
+        })
+
+        // If status is not draft/pending_approval, mark as approved
+        if (campaignData.status !== 'draft' && campaignData.status !== 'pending_approval') {
+          setIsApproved(true)
+        } else {
+          setIsApproved(false)
+        }
+      }
     }
-    loadStartup()
+    loadStartupAndCampaign()
   }, [supabase])
 
   const handleCreateCampaign = async (e: React.FormEvent) => {
