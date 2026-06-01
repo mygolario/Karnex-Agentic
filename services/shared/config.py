@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     # Cap OpenRouter max_tokens (default 65536 can exceed credit balance)
     OPENROUTER_MAX_TOKENS: int = 8192
 
+    GMAIL_CLIENT_ID: str = ""
+    GMAIL_CLIENT_SECRET: str = ""
+    ENCRYPTION_KEY: str = ""
+    GMAIL_MOCK_MODE: bool = False
+
     class Config:
         env_file = str(_ENV_FILE) if _ENV_FILE.is_file() else ".env"
         env_file_encoding = "utf-8"

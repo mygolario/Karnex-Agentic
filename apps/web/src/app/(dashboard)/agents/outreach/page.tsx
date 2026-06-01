@@ -1,10 +1,13 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Skeleton } from '@/components/Skeleton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { getAgentApiUrl, readAgentError } from '@/lib/agent-service'
+import { useGmailIntegration } from '@/hooks/use-gmail-integration'
+import GmailConnectionBanner from '@/components/agents/GmailConnectionBanner'
 
 interface Contact {
   first_name: string
@@ -45,7 +48,15 @@ interface CampaignDetails {
 export default function OutreachPage() {
   return (
     <ErrorBoundary>
-      <OutreachContent />
+      <Suspense fallback={
+        <div className="mx-auto max-w-6xl space-y-8 animate-pulse p-6">
+          <div className="h-8 rounded bg-zinc-800 w-1/4 mb-4" />
+          <div className="h-4 rounded bg-zinc-800 w-1/2 mb-8" />
+          <div className="h-32 rounded bg-zinc-800 w-full" />
+        </div>
+      }>
+        <OutreachContent />
+      </Suspense>
     </ErrorBoundary>
   )
 }
@@ -66,9 +77,50 @@ function OutreachContent() {
   const [campaignContacts, setCampaignContacts] = useState<CampaignContact[]>([])
   const [submittingApprove, setSubmittingApprove] = useState(false)
   const [isApproved, setIsApproved] = useState(false)
-  const [showGmailModal, setShowGmailModal] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const supabase = createSupabaseBrowserClient()
+  const { isConnected, gmailEmail, status: gmailStatus, isLoading: gmailLoading, disconnect, refetch: refetchGmail } = useGmailIntegration()
+  const searchParams = useSearchParams()
+
+  // Handle URL callback params for Gmail Connection feedback
+  useEffect(() => {
+    const connected = searchParams.get('gmail_connected')
+    const error = searchParams.get('gmail_error')
+
+    if (connected === 'true') {
+      setToast({
+        message: '✓ Gmail connected — campaigns will now sync to your Drafts',
+        type: 'success',
+      })
+      refetchGmail()
+      
+      // Clean query params
+      const cleanUrl = window.location.pathname
+      window.history.replaceState({}, '', cleanUrl)
+      
+      const timer = setTimeout(() => setToast(null), 4000)
+      return () => clearTimeout(timer)
+    } else if (error) {
+      let msg = 'Gmail connection failed. Please try again.'
+      if (error === 'access_denied') msg = 'Gmail connection was cancelled.'
+      else if (error === 'invalid_state') msg = 'Security check failed. Please try again.'
+      else if (error === 'token_exchange_failed') msg = 'Could not connect Gmail. Please try again.'
+      else if (error === 'unauthorized') msg = 'Please log in to connect Gmail.'
+
+      setToast({
+        message: msg,
+        type: 'error',
+      })
+      
+      // Clean query params
+      const cleanUrl = window.location.pathname
+      window.history.replaceState({}, '', cleanUrl)
+      
+      const timer = setTimeout(() => setToast(null), 6000)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, refetchGmail])
 
   // Load startup ID
   useEffect(() => {
@@ -156,7 +208,6 @@ function OutreachContent() {
       const result = await response.json()
       
       // Fetch the newly created campaign details from DB to get database IDs
-      // We can also parse from the latest run outputs
       const { data: campaignData } = await supabase
         .from('outreach_campaigns')
         .select('*')
@@ -212,6 +263,15 @@ function OutreachContent() {
 
       if (response.ok) {
         setIsApproved(true)
+        setToast({
+          message: isConnected
+            ? '✓ Campaign approved! Gmail drafts are syncing in the background.'
+            : '✓ Campaign approved in simulated Draft Mode.',
+          type: 'success',
+        })
+        
+        setTimeout(() => setToast(null), 5000)
+
         // Refresh contact list status
         const { data: contactData } = await supabase
           .from('outreach_contacts')
@@ -231,7 +291,18 @@ function OutreachContent() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8 relative">
+      {/* Toast Notifications */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-50 rounded-xl px-5 py-3.5 text-xs font-bold text-white shadow-2xl flex items-center gap-2 border animate-bounce ${
+          toast.type === 'success'
+            ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-400'
+            : 'bg-red-950/90 border-red-500/30 text-red-400'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Page Header */}
       <div>
         <h1 className="bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
@@ -242,28 +313,14 @@ function OutreachContent() {
         </p>
       </div>
 
-      {/* Gmail OAuth callout CTA banner */}
-      <div className="rounded-xl border border-violet-500/20 bg-violet-500/[0.03] p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 19v-8.93a2 2 0 01.89-1.664l8-5.333a2 2 0 012.22 0l8 5.333A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-2.25-1.5a2 2 0 00-2.22 0l-2.25 1.5" />
-            </svg>
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-zinc-200">Connect Gmail to Send Drafts</h4>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Authorized campaign emails will sync directly into your Gmail drafts folder. Currently running in simulation mode.
-            </p>
-          </div>
-        </div>
-        <button 
-          onClick={() => setShowGmailModal(true)}
-          className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-violet-500 shrink-0"
-        >
-          Connect Gmail Account
-        </button>
-      </div>
+      {/* Live Google Integration Banner */}
+      <GmailConnectionBanner
+        isConnected={isConnected}
+        gmailEmail={gmailEmail}
+        status={gmailStatus}
+        isLoading={gmailLoading}
+        disconnect={disconnect}
+      />
 
       <div className="grid gap-8 lg:grid-cols-5">
         {/* Form Controls */}
@@ -374,14 +431,19 @@ function OutreachContent() {
                     <button
                       onClick={handleApproveCampaign}
                       disabled={submittingApprove}
-                      className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-40"
+                      className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-40 cursor-pointer"
                     >
-                      {submittingApprove ? 'Approving...' : 'Approve & Push to Queue'}
+                      {submittingApprove 
+                        ? 'Approving...' 
+                        : isConnected 
+                          ? 'Approve & Create Drafts \u2192' 
+                          : 'Approve (Draft Mode)'
+                      }
                     </button>
                   ) : (
                     <span className="rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 text-xs font-bold flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                      Approved (Pushed to Mock Queue)
+                      Approved {isConnected ? '(Synced to Gmail)' : '(Simulation Mode)'}
                     </span>
                   )}
                 </div>
@@ -477,6 +539,8 @@ function OutreachContent() {
                             <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold border ${
                               contact.status === 'pending'
                                 ? 'bg-zinc-900 border-zinc-700 text-zinc-400'
+                                : contact.status === 'draft_created'
+                                ? 'bg-violet-950/30 border-violet-500/20 text-violet-400'
                                 : 'bg-emerald-950/30 border-emerald-500/20 text-emerald-400'
                             }`}>
                               {isApproved && contact.status === 'pending' ? 'queued' : contact.status}
@@ -496,49 +560,6 @@ function OutreachContent() {
           )}
         </div>
       </div>
-
-      {/* Gmail OAuth connection modal (simulation) */}
-      {showGmailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-xl border border-white/[0.08] bg-[#0d0d18] p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-              <h3 className="text-sm font-bold text-zinc-200">Connect Gmail (Simulation)</h3>
-              <button 
-                onClick={() => setShowGmailModal(false)}
-                className="text-zinc-500 hover:text-zinc-300 text-xs font-semibold"
-              >
-                Close
-              </button>
-            </div>
-            
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              In production, this would trigger the Google OAuth 2.0 consent flow to request the <code>https://www.googleapis.com/auth/gmail.compose</code> scope.
-            </p>
-            
-            <div className="rounded-lg bg-white/[0.02] p-3 text-[10px] font-mono text-zinc-500 border border-white/[0.04]">
-              Redirect URL: http://localhost:3000/api/auth/callback/gmail
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button 
-                onClick={() => setShowGmailModal(false)}
-                className="rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 transition-all hover:bg-zinc-700"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => {
-                  alert('Gmail connection simulated successfully!')
-                  setShowGmailModal(false)
-                }}
-                className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-violet-500"
-              >
-                Simulate Consent
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
