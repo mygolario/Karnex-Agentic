@@ -2,6 +2,7 @@
 
 import re
 from typing import Dict, Any, List, Optional
+from urllib.parse import quote
 import httpx
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
@@ -22,7 +23,7 @@ def web_search(query: str) -> str:
     logger.info(f"Executing web_search for query: {query}")
     try:
         # First, try to fetch from DuckDuckGo Instant Answer JSON API
-        url = f"https://api.duckduckgo.com/?q={httpx.encode_uri(query)}&format=json&no_html=1"
+        url = f"https://api.duckduckgo.com/?q={quote(query)}&format=json&no_html=1"
         with httpx.Client(timeout=10.0, follow_redirects=True) as client:
             response = client.get(url)
             if response.status_code == 200:
@@ -42,7 +43,7 @@ def web_search(query: str) -> str:
                     return "\n".join(results)
 
         # Fallback to direct HTML search and parse using simple regex to avoid beautifulsoup dependency
-        html_url = f"https://html.duckduckgo.com/html/?q={httpx.encode_uri(query)}"
+        html_url = f"https://html.duckduckgo.com/html/?q={quote(query)}"
         with httpx.Client(timeout=10.0, follow_redirects=True) as client:
             response = client.get(
                 html_url,

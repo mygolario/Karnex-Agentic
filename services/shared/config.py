@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3080"
     KARNEX_WEB_ORIGIN: str = "https://karnex-agentic-web.vercel.app"
-    GEMINI_MODEL: str = "google/gemini-2.5-pro-preview-06-05"
+    GEMINI_MODEL: str = "google/gemini-2.5-pro"
     GEMINI_MODEL_FLASH: str = "google/gemini-2.5-flash"
     # Cap OpenRouter max_tokens (default 65536 can exceed credit balance)
     OPENROUTER_MAX_TOKENS: int = 8192
