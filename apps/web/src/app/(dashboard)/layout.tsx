@@ -22,15 +22,21 @@ export default async function DashboardLayout({
   )
 
   // Ensure founder record exists
-  const { data: founder } = await supabaseAdmin
+  const { data: founder, error: founderSelectError } = await supabaseAdmin
     .from('founders')
     .select('id')
     .eq('id', user.id)
     .maybeSingle()
 
+  if (founderSelectError) {
+    throw new Error(
+      `Failed to read founders row (possible missing GRANTs/RLS). ${founderSelectError.message}`
+    )
+  }
+
   if (!founder) {
     const fullName = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder'
-    await supabaseAdmin
+    const { error: founderInsertError } = await supabaseAdmin
       .from('founders')
       .insert({
         id: user.id,
@@ -41,16 +47,27 @@ export default async function DashboardLayout({
         momentum_score: 50,
         streak_days: 0
       })
+    if (founderInsertError) {
+      throw new Error(
+        `Failed to provision founders row (possible missing GRANTs/RLS). ${founderInsertError.message}`
+      )
+    }
   }
 
   // Ensure startup record exists
-  const { data: startup } = await supabaseAdmin
+  const { data: startup, error: startupSelectError } = await supabaseAdmin
     .from('startups')
     .select('id')
     .eq('founder_id', user.id)
     .eq('is_active', true)
     .limit(1)
     .maybeSingle()
+
+  if (startupSelectError) {
+    throw new Error(
+      `Failed to read startups row (possible missing GRANTs/RLS). ${startupSelectError.message}`
+    )
+  }
 
   let activeStartupId = startup?.id
 
@@ -69,24 +86,35 @@ export default async function DashboardLayout({
     if (newStartup) {
       activeStartupId = newStartup.id
       // Update founder current_startup_id
-      await supabaseAdmin
+      const { error: founderUpdateError } = await supabaseAdmin
         .from('founders')
         .update({ current_startup_id: newStartup.id })
         .eq('id', user.id)
+      if (founderUpdateError) {
+        throw new Error(
+          `Failed to set founders.current_startup_id (possible missing GRANTs/RLS). ${founderUpdateError.message}`
+        )
+      }
     }
   }
 
   // Ensure subscription record exists
-  const { data: subscription } = await supabaseAdmin
+  const { data: subscription, error: subscriptionSelectError } = await supabaseAdmin
     .from('subscriptions')
     .select('id')
     .eq('founder_id', user.id)
     .maybeSingle()
 
+  if (subscriptionSelectError) {
+    throw new Error(
+      `Failed to read subscriptions row (possible missing GRANTs/RLS). ${subscriptionSelectError.message}`
+    )
+  }
+
   if (!subscription) {
     const thirtyDaysFromNow = new Date()
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-    await supabaseAdmin
+    const { error: subscriptionInsertError } = await supabaseAdmin
       .from('subscriptions')
       .insert({
         founder_id: user.id,
@@ -97,6 +125,11 @@ export default async function DashboardLayout({
         tasks_used_this_cycle: 0,
         tasks_limit: 100
       })
+    if (subscriptionInsertError) {
+      throw new Error(
+        `Failed to provision subscriptions row (possible missing GRANTs/RLS). ${subscriptionInsertError.message}`
+      )
+    }
   }
 
   const userProps = {
