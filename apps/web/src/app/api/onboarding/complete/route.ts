@@ -92,6 +92,70 @@ export async function POST(request: NextRequest) {
       startupId = newStartup.id
     }
 
+    // Ensure an active selected idea exists in the database for the War Room
+    const { data: existingIdea } = await supabase
+      .from('ideas')
+      .select('id')
+      .eq('founder_id', user.id)
+      .eq('status', 'selected')
+      .limit(1)
+      .maybeSingle()
+
+    if (existingIdea) {
+      const { error: ideaUpdateErr } = await supabase
+        .from('ideas')
+        .update({
+          title: startupName,
+          pain_description: description,
+          proposed_solution: tagline || '',
+          product_brief: {
+            title: startupName,
+            problem_statement: description,
+            proposed_solution: tagline || '',
+            target_audience: targetAudience || ''
+          },
+          icp_document: {
+            target_audience: targetAudience || '',
+            key_risks: [],
+            next_steps: []
+          },
+          selected_at: new Date().toISOString()
+        })
+        .eq('id', existingIdea.id)
+
+      if (ideaUpdateErr) {
+        return NextResponse.json({ error: `Failed to update selected idea: ${ideaUpdateErr.message}` }, { status: 500 })
+      }
+    } else {
+      const { error: ideaInsertErr } = await supabase
+        .from('ideas')
+        .insert({
+          startup_id: startupId,
+          founder_id: user.id,
+          title: startupName,
+          pain_description: description,
+          proposed_solution: tagline || '',
+          status: 'selected',
+          product_brief: {
+            title: startupName,
+            problem_statement: description,
+            proposed_solution: tagline || '',
+            target_audience: targetAudience || ''
+          },
+          icp_document: {
+            target_audience: targetAudience || '',
+            key_risks: [],
+            next_steps: []
+          },
+          selected_at: new Date().toISOString(),
+          generated_by: 'onboarding-v1'
+        })
+
+      if (ideaInsertErr) {
+        return NextResponse.json({ error: `Failed to create selected idea: ${ideaInsertErr.message}` }, { status: 500 })
+      }
+    }
+
     // 2. Update the founder record
     const { error: founderUpdateErr } = await supabase
       .from('founders')
