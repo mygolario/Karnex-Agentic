@@ -24,46 +24,118 @@ body {
   color: #fff;
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #262626; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #404040; }
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #18181b;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #27272a;
+}
 
-/* ──────────── Reveal system ──────────── */
+/* ──────────── Reveal System ──────────── */
 .reveal {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(12px);
   transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .reveal-visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* ──────────── Horizontal rule ──────────── */
-.divider {
-  height: 1px;
-  background: #1a1a1a;
-  border: none;
+/* ──────────── Premium UI Utilities ──────────── */
+.glass-panel {
+  background: rgba(12, 12, 16, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-/* ──────────── Video container ──────────── */
-.video-frame {
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-panel-hover:hover {
+  border-color: rgba(99, 102, 241, 0.25);
+  background: rgba(12, 12, 20, 0.8);
+  box-shadow: 0 12px 40px -12px rgba(99, 102, 241, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Border Gradient Effect */
+.border-gradient-glow {
   position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid #1a1a1a;
+  background: #07070a;
+  border-radius: 12px;
+  z-index: 1;
 }
-.video-frame video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.border-gradient-glow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.1), rgba(6, 182, 212, 0.4));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.3s ease;
 }
 
-/* ──────────── Accent underline on hover ──────────── */
+/* Keyframes animations */
+@keyframes neon-glow-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+  }
+}
+
+.pulse-glowing-emerald {
+  animation: emerald-glow 2s infinite ease-in-out;
+}
+@keyframes emerald-glow {
+  0%, 100% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 2px rgba(52, 211, 153, 0.4));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.8));
+  }
+}
+
+.prompt-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 14px;
+  background-color: #6366f1;
+  animation: cursor-blink 1s infinite steps(2, start);
+}
+@keyframes cursor-blink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* Accent Underline on Hover */
 .link-hover {
   position: relative;
 }

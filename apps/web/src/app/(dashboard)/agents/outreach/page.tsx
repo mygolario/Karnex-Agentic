@@ -349,7 +349,9 @@ function OutreachContent() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 relative">
+    <div className="mx-auto max-w-5xl space-y-8 pb-12 relative">
+      <div className="absolute -top-10 left-12 w-64 h-64 bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none" />
+
       {/* Toast Notifications */}
       {toast && (
         <div className={`fixed top-6 right-6 z-50 rounded-xl px-5 py-3.5 text-xs font-bold text-white shadow-2xl flex items-center gap-2 border animate-bounce ${
@@ -362,13 +364,22 @@ function OutreachContent() {
       )}
 
       {/* Page Header */}
-      <div>
-        <h1 className="bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
-          AI Outreach Builder
-        </h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          Create highly-personalized, human-like outreach email campaigns for early sales and customer discovery.
-        </p>
+      <div className="border-b border-[#1a1a1a]/40 pb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-extrabold text-white">
+            AI Outreach Builder
+          </h1>
+          <p className="mt-1.5 text-sm text-zinc-500">
+            Create highly-personalized, human-like outreach email campaigns for early sales and customer discovery.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg border border-[#1a1a1a]/40 bg-[#060608]/80 px-3 py-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-bold text-zinc-400 font-mono tracking-wider uppercase">
+            Channel: Email Drafts
+          </span>
+        </div>
       </div>
 
       {/* Live Google Integration Banner */}
@@ -383,49 +394,49 @@ function OutreachContent() {
       <div className="grid gap-8 lg:grid-cols-5">
         {/* Form Controls */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-xl border border-white/[0.06] bg-[#0a0a14]/60 p-6 backdrop-blur-xl">
-            <h2 className="text-base font-bold text-zinc-100 mb-4">Configure Sequence</h2>
+          <div className="rounded-2xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-6 space-y-4">
+            <h2 className="text-sm font-bold text-zinc-200">Configure Sequence</h2>
             <form onSubmit={handleCreateCampaign} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-400">Campaign Goal</label>
+              <div className="space-y-1.5">
+                <label className="font-bold text-zinc-500 uppercase tracking-wider font-mono text-[9px]">Campaign Goal</label>
                 <input
                   type="text"
                   value={goal}
                   onChange={(e) => setGoal(e.target.value)}
-                  className="w-full rounded-lg border border-white/[0.08] bg-black/40 p-2.5 text-zinc-200 placeholder-zinc-600 focus:border-violet-500 focus:outline-none"
+                  className="w-full rounded-xl border border-[#1a1a1a] bg-[#030303] px-4 py-2.5 text-white placeholder-zinc-700 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
                   required
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-400">Target Audience Description</label>
+              <div className="space-y-1.5">
+                <label className="font-bold text-zinc-500 uppercase tracking-wider font-mono text-[9px]">Target Audience Description</label>
                 <textarea
                   value={audience}
                   onChange={(e) => setAudience(e.target.value)}
-                  className="w-full min-h-[60px] rounded-lg border border-white/[0.08] bg-black/40 p-2.5 text-zinc-200 placeholder-zinc-600 focus:border-violet-500 focus:outline-none"
+                  className="w-full min-h-[60px] rounded-xl border border-[#1a1a1a] bg-[#030303] px-4 py-2.5 text-white placeholder-zinc-700 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all resize-none"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-400">Tone</label>
+                <div className="space-y-1.5">
+                  <label className="font-bold text-zinc-500 uppercase tracking-wider font-mono text-[9px]">Tone</label>
                   <select
                     value={tone}
                     onChange={(e) => setTone(e.target.value as 'formal' | 'casual' | 'direct')}
-                    className="w-full rounded-lg border border-white/[0.08] bg-black/40 p-2.5 text-zinc-200 focus:border-violet-500 focus:outline-none"
+                    className="w-full rounded-xl border border-[#1a1a1a] bg-[#030303] px-3 py-2.5 text-zinc-300 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all cursor-pointer"
                   >
                     <option value="direct">Direct</option>
                     <option value="casual">Casual</option>
                     <option value="formal">Formal</option>
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-400">Sequence Steps</label>
+                <div className="space-y-1.5">
+                  <label className="font-bold text-zinc-500 uppercase tracking-wider font-mono text-[9px]">Sequence Steps</label>
                   <select
                     value={sequenceLength}
                     onChange={(e) => setSequenceLength(Number(e.target.value))}
-                    className="w-full rounded-lg border border-white/[0.08] bg-black/40 p-2.5 text-zinc-200 focus:border-violet-500 focus:outline-none"
+                    className="w-full rounded-xl border border-[#1a1a1a] bg-[#030303] px-3 py-2.5 text-zinc-300 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all cursor-pointer"
                   >
                     <option value={1}>1 Email</option>
                     <option value={2}>2 Emails</option>
@@ -436,31 +447,31 @@ function OutreachContent() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-400">Upload Contacts (Comma-Separated CSV)</label>
-                <div className="text-[10px] text-zinc-500 mb-1">Format: First, Last, Email, Company, Title</div>
+              <div className="space-y-1.5">
+                <label className="font-bold text-zinc-500 uppercase tracking-wider font-mono text-[9px]">Upload Contacts (CSV Format)</label>
+                <div className="text-[9px] text-zinc-650 font-mono">Format: First, Last, Email, Company, Title</div>
                 <textarea
                   value={contactsText}
                   onChange={(e) => setContactsText(e.target.value)}
-                  className="w-full min-h-[80px] rounded-lg border border-white/[0.08] bg-black/40 p-2.5 font-mono text-[11px] text-zinc-200 focus:border-violet-500 focus:outline-none"
+                  className="w-full min-h-[80px] rounded-xl border border-[#1a1a1a] bg-[#030303] px-4 py-2.5 font-mono text-[10px] text-zinc-300 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all resize-none"
                   required
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-400">Product Brief/Context (Optional)</label>
+              <div className="space-y-1.5">
+                <label className="font-bold text-zinc-500 uppercase tracking-wider font-mono text-[9px]">Product Context / Brief</label>
                 <textarea
                   value={referenceContent}
                   onChange={(e) => setReferenceContent(e.target.value)}
                   placeholder="Paste startup brief, elevator pitch, or landing page copy..."
-                  className="w-full min-h-[60px] rounded-lg border border-white/[0.08] bg-black/40 p-2.5 text-zinc-200 focus:border-violet-500 focus:outline-none"
+                  className="w-full min-h-[60px] rounded-xl border border-[#1a1a1a] bg-[#030303] px-4 py-2.5 text-white placeholder-zinc-700 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading || !startupId}
-                className="w-full rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 py-3 text-center text-xs font-semibold text-white shadow-lg transition-all hover:brightness-110 disabled:opacity-40"
+                className="w-full rounded-xl bg-indigo-500 hover:bg-indigo-600 py-3 text-center text-xs font-bold text-white transition-all cursor-pointer shadow-md shadow-indigo-500/10 disabled:opacity-40 hover:scale-[1.01] active:scale-[0.99]"
               >
                 {loading ? 'Generating Campaign templates...' : 'Compose Campaign Drafts'}
               </button>
@@ -472,93 +483,93 @@ function OutreachContent() {
         <div className="lg:col-span-3 space-y-6">
           {loading ? (
             <div className="space-y-4">
-              <Skeleton className="h-64 rounded-xl" />
-              <Skeleton className="h-32 rounded-xl" />
+              <Skeleton className="h-64 rounded-xl bg-[#18181c]" />
+              <Skeleton className="h-32 rounded-xl bg-[#18181c]" />
             </div>
           ) : activeCampaign ? (
             <>
               {/* Campaign preview */}
-              <div className="rounded-xl border border-white/[0.06] bg-[#0a0a14]/60 p-6 backdrop-blur-xl space-y-6">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
+              <div className="rounded-2xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-6 space-y-6">
+                <div className="flex items-center justify-between border-b border-zinc-850/40 pb-4">
                   <div>
-                    <h2 className="text-lg font-extrabold text-zinc-200">{activeCampaign.name}</h2>
-                    <p className="text-xs text-zinc-500">Draft Campaign Template Sequence</p>
+                    <h2 className="text-base font-bold text-zinc-200">{activeCampaign.name}</h2>
+                    <p className="text-[10px] font-mono text-zinc-500 uppercase mt-0.5">Campaign templates</p>
                   </div>
 
                   {!isApproved ? (
                     <button
                       onClick={handleApproveCampaign}
                       disabled={submittingApprove}
-                      className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-40 cursor-pointer"
+                      className="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer disabled:opacity-40 hover:scale-[1.02] active:scale-[0.98]"
                     >
                       {submittingApprove 
                         ? 'Approving...' 
                         : isConnected 
-                          ? 'Approve & Create Drafts \u2192' 
-                          : 'Approve (Draft Mode)'
+                          ? 'Approve & Sync Gmail \u2192' 
+                          : 'Approve Sequence'
                       }
                     </button>
                   ) : (
-                    <span className="rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 text-xs font-bold flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                      Approved {isConnected ? '(Synced to Gmail)' : '(Simulation Mode)'}
+                    <span className="rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 text-[10px] font-bold flex items-center gap-1.5 font-mono">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      APPROVED {isConnected ? '(SYNCED)' : '(SIMULATION)'}
                     </span>
                   )}
                 </div>
 
                 {/* Send Schedule widget */}
-                <div className="rounded-lg bg-white/[0.02] p-4 flex flex-wrap gap-6 text-xs border border-white/[0.04]">
+                <div className="rounded-xl bg-black/40 p-4 flex flex-wrap gap-6 text-xs border border-zinc-850/40">
                   <div>
-                    <span className="font-semibold text-zinc-500 uppercase tracking-wider block">Recommended Days</span>
-                    <span className="text-zinc-200 mt-1 block">{activeCampaign.send_schedule.best_days.join(', ')}</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider font-mono block">Recommended Days</span>
+                    <span className="text-zinc-200 mt-1 block font-semibold">{activeCampaign.send_schedule.best_days.join(', ')}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-zinc-500 uppercase tracking-wider block">Best Hour Window</span>
-                    <span className="text-zinc-200 mt-1 block">{activeCampaign.send_schedule.time_of_day}</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider font-mono block">Optimal Window</span>
+                    <span className="text-zinc-200 mt-1 block font-semibold">{activeCampaign.send_schedule.time_of_day}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-zinc-500 uppercase tracking-wider block">Recipient Context</span>
-                    <span className="text-zinc-200 mt-1 block">{activeCampaign.send_schedule.timezone}</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider font-mono block">Recipient Timezone</span>
+                    <span className="text-zinc-200 mt-1 block font-semibold">{activeCampaign.send_schedule.timezone}</span>
                   </div>
                 </div>
 
                 {/* Message templates */}
                 <div className="space-y-4">
-                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Email Sequence Steps</h3>
+                  <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">Email Sequence Steps</h3>
                   
                   {activeCampaign.messages.map((msg, index) => {
                     const hasBVariant = activeCampaign.ab_variants?.find(v => v.step === msg.step)
                     return (
-                      <div key={index} className="rounded-lg border border-white/[0.05] bg-black/30 p-4 space-y-3">
-                        <div className="flex items-center justify-between border-b border-white/[0.04] pb-2">
-                          <span className="text-xs font-bold text-violet-400">
+                      <div key={index} className="rounded-xl border border-zinc-850/40 bg-[#050508]/40 p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b border-zinc-850/40 pb-2">
+                          <span className="text-xs font-bold text-indigo-400 font-mono uppercase tracking-wide">
                             Step {msg.step} {msg.delay_days > 0 ? `(Wait ${msg.delay_days} days)` : '(Initial)'}
                           </span>
-                          <span className="rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                          <span className="rounded bg-zinc-900 border border-zinc-850/40 px-2 py-0.5 text-[9px] font-bold text-zinc-400 font-mono">
                             Variant {msg.variant}
                           </span>
                         </div>
                         
                         <div className="text-xs space-y-2">
-                          <p className="text-zinc-200 font-semibold">
-                            <span className="text-zinc-500 mr-2">Subject:</span> {msg.subject}
+                          <p className="text-zinc-200 font-semibold leading-relaxed">
+                            <span className="text-zinc-500 font-mono text-[10px] uppercase font-bold mr-2">Subject:</span> {msg.subject}
                           </p>
-                          <div className="text-zinc-400 whitespace-pre-line leading-relaxed font-sans bg-zinc-950/20 p-3 rounded border border-white/[0.02]">
+                          <div className="text-zinc-300 whitespace-pre-line leading-relaxed font-sans bg-black/40 p-3.5 rounded-lg border border-zinc-850/40 text-xs">
                             {msg.body}
                           </div>
                         </div>
 
                         {/* Display A/B variant if exists for this step */}
                         {hasBVariant && (
-                          <div className="mt-3 border-t border-dashed border-white/[0.06] pt-3 space-y-2">
+                          <div className="mt-3 border-t border-dashed border-zinc-850/40 pt-3 space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-amber-400">A/B Testing Option</span>
-                              <span className="rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                              <span className="text-[9px] font-bold text-amber-400 uppercase font-mono">A/B Testing Option</span>
+                              <span className="rounded bg-zinc-900 border border-zinc-850/40 px-2 py-0.5 text-[9px] font-bold text-zinc-400 font-mono">
                                 Variant {hasBVariant.variant}
                               </span>
                             </div>
-                            <p className="text-xs text-zinc-200 font-semibold">
-                              <span className="text-zinc-500 mr-2">Subject B:</span> {hasBVariant.subject}
+                            <p className="text-xs text-zinc-200 font-semibold leading-relaxed">
+                              <span className="text-zinc-500 font-mono text-[10px] uppercase font-bold mr-2">Subject B:</span> {hasBVariant.subject}
                             </p>
                           </div>
                         )}
@@ -568,38 +579,38 @@ function OutreachContent() {
                 </div>
 
                 {/* Personalization Notes */}
-                <div className="rounded-lg bg-zinc-950/40 border border-white/[0.04] p-4 text-xs space-y-2">
-                  <h4 className="font-bold text-zinc-400 uppercase tracking-wider">AI Personalization Summary</h4>
+                <div className="rounded-xl bg-black/40 border border-zinc-850/40 p-4 text-xs space-y-2">
+                  <h4 className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider font-mono">AI Personalization Summary</h4>
                   <p className="text-zinc-400 leading-relaxed italic">{activeCampaign.personalization_notes}</p>
                 </div>
               </div>
 
               {/* Contacts loaded table */}
-              <div className="rounded-xl border border-white/[0.06] bg-[#0a0a14]/60 p-6 backdrop-blur-xl space-y-4">
+              <div className="rounded-2xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-6 space-y-4">
                 <h3 className="text-sm font-bold text-zinc-200">Campaign Contacts ({campaignContacts.length})</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b border-white/[0.08] text-zinc-500">
-                        <th className="pb-2 font-semibold">Name</th>
-                        <th className="pb-2 font-semibold">Email</th>
-                        <th className="pb-2 font-semibold">Company & Title</th>
-                        <th className="pb-2 font-semibold text-right">Status</th>
+                      <tr className="border-b border-zinc-850/40 text-zinc-500 font-mono text-[10px] uppercase tracking-wider font-bold">
+                        <th className="pb-3">Name</th>
+                        <th className="pb-3">Email</th>
+                        <th className="pb-3">Company & Title</th>
+                        <th className="pb-3 text-right">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/[0.04]">
+                    <tbody className="divide-y divide-zinc-850/30">
                       {campaignContacts.map((contact, idx) => (
-                        <tr key={idx} className="text-zinc-300">
-                          <td className="py-2.5 font-medium">{contact.first_name} {contact.last_name}</td>
-                          <td className="py-2.5 text-zinc-400 font-mono text-[11px]">{contact.email}</td>
-                          <td className="py-2.5 text-zinc-400">{contact.title} at {contact.company}</td>
-                          <td className="py-2.5 text-right">
-                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold border ${
+                        <tr key={idx} className="text-zinc-300 hover:bg-white/[0.01]">
+                          <td className="py-3 font-semibold">{contact.first_name} {contact.last_name}</td>
+                          <td className="py-3 text-zinc-500 font-mono text-[10px]">{contact.email}</td>
+                          <td className="py-3 text-zinc-400">{contact.title} at {contact.company}</td>
+                          <td className="py-3 text-right">
+                            <span className={`rounded px-2 py-0.5 text-[9px] font-bold border font-mono uppercase tracking-wider ${
                               contact.status === 'pending'
-                                ? 'bg-zinc-900 border-zinc-700 text-zinc-400'
+                                ? 'bg-zinc-900 border-zinc-800 text-zinc-450'
                                 : contact.status === 'draft_created'
-                                ? 'bg-violet-950/30 border-violet-500/20 text-violet-400'
-                                : 'bg-emerald-950/30 border-emerald-500/20 text-emerald-400'
+                                ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                             }`}>
                               {isApproved && contact.status === 'pending' ? 'queued' : contact.status}
                             </span>
@@ -612,8 +623,8 @@ function OutreachContent() {
               </div>
             </>
           ) : (
-            <div className="rounded-xl border border-white/[0.06] bg-[#0a0a14]/60 p-12 text-center text-zinc-500">
-              <p className="text-sm">Configure parameters and click &ldquo;Compose Campaign Drafts&rdquo; on the left to start.</p>
+            <div className="rounded-2xl border border-dashed border-[#1a1a1a]/40 bg-[#07070a]/90 p-12 text-center text-zinc-650">
+              <p className="text-xs font-mono">Configure campaign details and click &ldquo;Compose Campaign Drafts&rdquo; on the left to start.</p>
             </div>
           )}
         </div>

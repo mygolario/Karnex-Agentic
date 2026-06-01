@@ -128,7 +128,7 @@ function WarRoomContent() {
         setFounderCapacity({
           weekly_hours: founderRes.weekly_hours_available ?? 20,
           technical_level: founderRes.technical_level ?? 'intermediate',
-          budget_monthly: 500 // fallback
+          budget_monthly: 500
         })
       }
 
@@ -182,7 +182,6 @@ function WarRoomContent() {
   }, [supabase])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     initPage()
   }, [initPage])
 
@@ -226,7 +225,6 @@ function WarRoomContent() {
       }
 
       // 2. Fetch the newly inserted active roadmap from database
-      // The backend saves the roadmap automatically. We just retrieve it.
       const { data: newRoadmap } = await supabase
         .from('roadmaps')
         .select('*')
@@ -241,7 +239,6 @@ function WarRoomContent() {
       }
 
       // 3. Populate sprints and tasks tables for the 12 weeks of the roadmap
-      // Let's delete any old sprints for this roadmap (in case of double triggers)
       await supabase
         .from('sprints')
         .delete()
@@ -340,13 +337,13 @@ function WarRoomContent() {
     }
   }
 
-
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-12">
+      
       {/* Header */}
-      <div className="border-b border-[#1a1a1a] pb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="border-b border-[#1a1a1a]/40 pb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-white">
+          <h1 className="font-display text-3xl font-extrabold text-white">
             War Room
           </h1>
           <p className="mt-1.5 text-sm text-zinc-500">
@@ -358,7 +355,7 @@ function WarRoomContent() {
           type="button"
           onClick={handleRecalibrateRoadmap}
           disabled={recalibrating || !selectedIdea}
-          className="flex items-center gap-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white transition-all cursor-pointer shadow-md shadow-indigo-500/10 self-start md:self-center disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition-all cursor-pointer shadow-md shadow-indigo-500/10 self-start md:self-center disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
         >
           {recalibrating ? (
             <>
@@ -370,7 +367,7 @@ function WarRoomContent() {
             </>
           ) : (
             <>
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
               {activeRoadmap ? 'Recalibrate Roadmap' : 'Generate 90-Day Roadmap'}
@@ -381,25 +378,25 @@ function WarRoomContent() {
 
       {/* Selected Idea Banner context */}
       {selectedIdea ? (
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.02] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.02] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase">Active Target Concept</span>
-            <h4 className="text-sm font-bold text-zinc-200 mt-0.5">{selectedIdea.title}</h4>
-            <p className="text-xs text-zinc-400 mt-1">{selectedIdea.proposed_solution}</p>
+            <span className="text-[9px] font-bold font-mono text-emerald-400 uppercase tracking-wider">Active Target Concept</span>
+            <h4 className="text-xs font-extrabold text-zinc-200 mt-1">{selectedIdea.title}</h4>
+            <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">{selectedIdea.proposed_solution}</p>
           </div>
           <button
             onClick={() => router.push('/ideas')}
-            className="text-xs font-semibold text-zinc-400 hover:text-zinc-200 underline transition-colors cursor-pointer shrink-0"
+            className="text-[10px] font-bold font-mono text-zinc-400 hover:text-zinc-200 underline transition-colors cursor-pointer shrink-0 uppercase"
           >
             Change Idea
           </button>
         </div>
       ) : (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.02] p-5 text-center space-y-3">
-          <p className="text-sm text-zinc-300">You do not have an active idea selected for the War Room.</p>
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.02] p-5 text-center space-y-3">
+          <p className="text-xs text-zinc-300">You do not have an active idea selected for the War Room.</p>
           <button
             onClick={() => router.push('/ideas')}
-            className="rounded bg-amber-500 hover:bg-amber-600 px-4 py-2 text-xs font-semibold text-black transition-all cursor-pointer"
+            className="rounded-lg bg-amber-500 hover:bg-amber-600 px-4 py-2.5 text-xs font-semibold text-black transition-all cursor-pointer"
           >
             Select Idea in Dream Engine
           </button>
@@ -411,8 +408,7 @@ function WarRoomContent() {
         
         {/* Sprint Timeline (Left) */}
         <div className="lg:col-span-2 space-y-6">
-          
-          <h2 className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+          <h2 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase font-mono">
             Active Sprint Execution
           </h2>
 
@@ -422,7 +418,9 @@ function WarRoomContent() {
               <Skeleton className="h-44 rounded-xl" />
             </div>
           ) : activeRoadmap && sprints.length > 0 ? (
-            <div className="space-y-6">
+            
+            /* Connected timeline sprints list */
+            <div className="relative border-l border-zinc-800 ml-4 pl-6 space-y-8 py-2">
               {sprints.map((sprint) => {
                 const isActive = sprint.status === 'active'
                 const completedTasks = sprint.tasks?.filter(t => t.status === 'done') || []
@@ -430,128 +428,148 @@ function WarRoomContent() {
                 const pct = totalTasks.length > 0 ? Math.round((completedTasks.length / totalTasks.length) * 100) : 0
                 
                 return (
-                  <div
-                    key={sprint.id}
-                    className={`rounded-xl border p-6 bg-[#07070a] space-y-4 ${
-                      isActive ? 'border-indigo-500/20' : 'border-[#1a1a1a]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-semibold text-zinc-200">{sprint.title}</h3>
-                        <p className="text-[10px] font-mono text-zinc-500 mt-0.5">
-                          {sprint.week_start} to {sprint.week_end}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isActive ? (
-                          <span className="inline-flex items-center gap-1 rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20 font-mono">
-                            ACTIVE SPRINT
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded bg-[#1a1a1a] px-2 py-0.5 text-[10px] font-medium text-zinc-500 font-mono">
-                            QUEUED
-                          </span>
-                        )}
-                        <span className="text-[10px] font-mono text-zinc-400">
-                          {pct}% Done
-                        </span>
-                      </div>
-                    </div>
+                  <div key={sprint.id} className="relative group">
+                    {/* Timeline Node Point */}
+                    <span className={`absolute -left-[31px] top-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full border bg-[#050505] transition-all duration-300 ${
+                      isActive 
+                        ? 'border-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' 
+                        : pct === 100 
+                        ? 'border-emerald-500/60 text-emerald-400' 
+                        : 'border-zinc-800'
+                    }`}>
+                      {pct === 100 ? (
+                        <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      ) : (
+                        <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-indigo-500 animate-pulse' : 'bg-zinc-800'}`} />
+                      )}
+                    </span>
 
-                    <div className="border-t border-[#1a1a1a] pt-4 space-y-3">
-                      {sprint.tasks && sprint.tasks.length > 0 ? (
-                        sprint.tasks.map((task) => {
-                          const isDone = task.status === 'done'
-                          return (
-                            <div 
-                              key={task.id} 
-                              onClick={() => handleToggleTaskStatus(task.id, task.status)}
-                              className="flex items-center justify-between text-xs cursor-pointer group hover:bg-white/[0.01] p-1.5 rounded transition-all"
-                            >
-                              <div className="flex items-center gap-3">
-                                {isDone ? (
-                                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20 group-hover:bg-emerald-500/25 transition-all">
-                                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                    </svg>
+                    <div className={`rounded-xl border p-5 bg-[#07070a]/90 space-y-4 transition-all duration-300 ${
+                      isActive ? 'border-indigo-500/20 shadow-lg shadow-indigo-500/[0.01]' : 'border-[#1a1a1a]/40 hover:border-zinc-800'
+                    }`}>
+                      <div className="flex items-center justify-between border-b border-zinc-800/40 pb-3">
+                        <div>
+                          <h3 className="text-xs font-bold text-zinc-200">{sprint.title}</h3>
+                          <p className="text-[9px] font-mono text-zinc-500 mt-0.5">
+                            {sprint.week_start} &bull; {sprint.week_end}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isActive ? (
+                            <span className="inline-flex items-center rounded bg-indigo-500/10 px-2 py-0.5 text-[9px] font-bold text-indigo-400 border border-indigo-500/15 font-mono">
+                              ACTIVE SPRINT
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded bg-[#0f0f13] px-2 py-0.5 text-[9px] font-bold text-zinc-500 border border-zinc-800/30 font-mono">
+                              QUEUED
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono text-zinc-400 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800/40">
+                            {pct}% Done
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {sprint.tasks && sprint.tasks.length > 0 ? (
+                          sprint.tasks.map((task) => {
+                            const isDone = task.status === 'done'
+                            return (
+                              <div 
+                                key={task.id} 
+                                onClick={() => handleToggleTaskStatus(task.id, task.status)}
+                                className="flex items-center justify-between text-xs cursor-pointer group/task hover:bg-white/[0.01] px-2 py-1.5 rounded-lg border border-transparent hover:border-zinc-800/30 transition-all duration-200"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {isDone ? (
+                                    <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 transition-all">
+                                      <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                      </svg>
+                                    </span>
+                                  ) : (
+                                    <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-[#050508] text-transparent group-hover/task:border-indigo-500/40 transition-all">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 opacity-0 group-hover/task:opacity-100 transition-opacity" />
+                                    </span>
+                                  )}
+                                  <span className={`text-xs ${isDone ? 'text-zinc-500 line-through font-medium' : 'text-zinc-300 font-semibold'}`}>
+                                    {task.title}
                                   </span>
-                                ) : (
-                                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-800 text-zinc-600 ring-1 ring-inset ring-zinc-800 group-hover:bg-zinc-700 group-hover:text-zinc-300 transition-all">
-                                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                  </span>
-                                )}
-                                <span className={`${isDone ? 'text-zinc-500 line-through' : 'text-zinc-300'}`}>
-                                  {task.title}
+                                </div>
+
+                                <span className={`text-[9px] font-mono capitalize px-2 py-0.5 rounded ${
+                                  isDone 
+                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/10' 
+                                    : 'bg-zinc-900 text-zinc-500 border border-zinc-800/40'
+                                }`}>
+                                  {task.status}
                                 </span>
                               </div>
-
-                              <span className={`text-[10px] font-mono capitalize ${isDone ? 'text-emerald-500' : 'text-zinc-600'}`}>
-                                {task.status}
-                              </span>
-                            </div>
-                          )
-                        })
-                      ) : (
-                        <p className="text-xs text-zinc-600">No sprint tasks generated for this week.</p>
-                      )}
+                            )
+                          })
+                        ) : (
+                          <p className="text-xs text-zinc-650 font-mono italic">No tasks generated for this weekly sprint.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
               })}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-[#1a1a1a] bg-[#07070a] p-12 text-center text-zinc-600">
-              <p className="text-sm">No roadmap generated yet. Select an idea and click &ldquo;Generate 90-Day Roadmap&rdquo;.</p>
+            <div className="rounded-2xl border border-dashed border-[#1a1a1a]/40 bg-[#07070a]/90 p-12 text-center text-zinc-650">
+              <p className="text-xs font-mono">No roadmap generated yet. Select a product concept and click &ldquo;Generate 90-Day Roadmap&rdquo;.</p>
             </div>
           )}
-
         </div>
 
         {/* Phase Tracker Sidebar (Right) */}
         <div className="space-y-6">
           
-          <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-4">
-            <h3 className="text-xs font-semibold text-zinc-400 tracking-wider uppercase font-mono">
-              90-Day Milestones
+          <div className="rounded-2xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-6 space-y-5">
+            <h3 className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase font-mono border-b border-zinc-800/40 pb-3">
+              90-Day Phases Progress
             </h3>
             
             {loading ? (
               <Skeleton className="h-32 rounded" />
             ) : activeRoadmap && activeRoadmap.phases ? (
-              <div className="relative border-l border-[#1a1a1a] ml-2.5 pl-5 space-y-6 py-2">
+              <div className="relative border-l border-zinc-800 ml-2.5 pl-5 space-y-6 py-2">
                 {activeRoadmap.phases.map((phase, idx) => {
-                  const isCurrent = idx === 0 // Mocking phase tracker progression based on phase order
+                  const isCurrent = idx === 0 // Dynamic visual check highlight
                   return (
                     <div key={idx} className="relative">
-                      <span className={`absolute -left-[26px] top-0.5 flex h-3 w-3 items-center justify-center rounded-full ring-4 ring-[#050505] ${
-                        isCurrent ? 'bg-indigo-500' : idx < 1 ? 'bg-emerald-500' : 'bg-[#1a1a1a]'
+                      <span className={`absolute -left-[27px] top-1 flex h-2.5 w-2.5 items-center justify-center rounded-full border bg-[#050505] ${
+                        isCurrent 
+                          ? 'border-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.5)]' 
+                          : idx < 1 
+                          ? 'border-emerald-500' 
+                          : 'border-zinc-800'
                       }`} />
-                      <h4 className="text-xs font-semibold text-zinc-300">Phase {phase.phase_number}: {phase.title}</h4>
-                      <p className="text-[10px] text-zinc-500 mt-0.5">{phase.theme}</p>
+                      <h4 className="text-xs font-bold text-zinc-200">Phase {phase.phase_number}: {phase.title}</h4>
+                      <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">{phase.theme}</p>
                     </div>
                   )
                 })}
               </div>
             ) : (
-              <p className="text-xs text-zinc-600">No milestone details available.</p>
+              <p className="text-xs text-zinc-650 font-mono">No milestone details configured.</p>
             )}
           </div>
 
-          <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-3">
-            <h3 className="text-xs font-semibold text-zinc-400 tracking-wider uppercase font-mono">
-              War Room Rules
+          <div className="rounded-2xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-6 space-y-3.5">
+            <h3 className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase font-mono border-b border-zinc-800/40 pb-3">
+              War Room Parameters
             </h3>
             <p className="text-[11px] text-zinc-500 leading-relaxed">
-              Karnex roadmaps are designed to prevent procrastination. Focus on completing the weekly sprints.
+              Sprints are designed to prevent founder scope-creep. Focus on checking off current weekly nodes.
             </p>
-            <div className="rounded bg-[#020203] border border-[#1a1a1a] p-3 text-[10px] text-zinc-400 font-mono">
-              STATUS_SYS: OK<br />
-              VELOCITY_RATIO: 1.0x<br />
-              BUDGET_CAP: ${founderCapacity.budget_monthly}/mo<br />
-              HOURS_LIMIT: {founderCapacity.weekly_hours}h/wk
+            <div className="rounded bg-[#030305] border border-zinc-800/40 p-3.5 text-[9px] text-zinc-400 font-mono space-y-1">
+              <div className="flex justify-between"><span className="text-zinc-600">SYS_STATUS:</span> <span className="text-indigo-400 font-bold">READY</span></div>
+              <div className="flex justify-between"><span className="text-zinc-600">CAPACITY_LIMIT:</span> <span>{founderCapacity.weekly_hours}h/wk</span></div>
+              <div className="flex justify-between"><span className="text-zinc-600">TECHNICAL_LEVEL:</span> <span className="capitalize">{founderCapacity.technical_level}</span></div>
             </div>
           </div>
 

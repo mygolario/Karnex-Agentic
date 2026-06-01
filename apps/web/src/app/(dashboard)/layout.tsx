@@ -64,7 +64,7 @@ export default async function DashboardLayout({
   // Ensure startup record exists
   const { data: startup, error: startupSelectError } = await supabaseAdmin
     .from('startups')
-    .select('id')
+    .select('id, name, stage')
     .eq('founder_id', user.id)
     .eq('is_active', true)
     .limit(1)
@@ -77,6 +77,8 @@ export default async function DashboardLayout({
   }
 
   let activeStartupId = startup?.id
+  let activeStartupName = startup?.name || `${user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder'}'s Startup`
+  let activeStartupStage = startup?.stage || 'ideation'
 
   if (!startup) {
     const { data: newStartup } = await supabaseAdmin
@@ -92,6 +94,8 @@ export default async function DashboardLayout({
 
     if (newStartup) {
       activeStartupId = newStartup.id
+      activeStartupName = newStartup.name
+      activeStartupStage = newStartup.stage || 'ideation'
       // Update founder current_startup_id
       const { error: founderUpdateError } = await supabaseAdmin
         .from('founders')
@@ -151,19 +155,23 @@ export default async function DashboardLayout({
 
       {/* Main content area */}
       <div className="flex-1 pl-64 flex flex-col min-h-screen">
+        
         {/* Top Header / Status bar */}
-        <header className="h-20 border-b border-[#1a1a1a] flex items-center justify-between px-8 bg-[#050505]">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-500 font-mono">WORKSPACE</span>
-            <span className="text-zinc-600">/</span>
-            <span className="text-xs font-semibold text-zinc-300 font-mono uppercase tracking-wider">
-              {userProps.fullName}&apos;s Startup
+        <header className="sticky top-0 z-30 h-20 border-b border-[#1a1a1a]/40 flex items-center justify-between px-8 bg-[#050505]/75 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-zinc-500 font-mono tracking-wider font-semibold">WORKSPACE</span>
+            <span className="text-zinc-700">/</span>
+            <span className="text-xs font-bold text-zinc-200 font-mono tracking-wide uppercase truncate max-w-[200px]">
+              {activeStartupName}
+            </span>
+            <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[9px] font-bold text-indigo-400 border border-indigo-500/15 font-mono uppercase tracking-wide">
+              {activeStartupStage}
             </span>
           </div>
 
           <div className="flex items-center gap-6">
             {/* System Status */}
-            <div className="flex items-center gap-2 rounded-full border border-[#1a1a1a] bg-[#07070a] px-3.5 py-1.5 text-xs">
+            <div className="flex items-center gap-2 rounded-full border border-[#1a1a1a]/40 bg-[#07070a]/60 px-3.5 py-1.5 text-[10px] font-mono font-semibold tracking-wide">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -174,9 +182,9 @@ export default async function DashboardLayout({
             {/* Quick Action Button */}
             <a
               href="/agents"
-              className="flex items-center gap-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-md shadow-indigo-500/10 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-indigo-500/10 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
             >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               Deploy Agent

@@ -89,8 +89,6 @@ function IdeasContent() {
       if (startup) {
         activeStartupId = startup.id
         setStartupId(startup.id)
-      } else {
-        console.warn('Startup context not resolved yet. Relying on layout auto-provisioning.')
       }
 
       if (!activeStartupId) return
@@ -113,7 +111,6 @@ function IdeasContent() {
   }, [supabase])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     initPage()
   }, [initPage])
 
@@ -256,9 +253,10 @@ function IdeasContent() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-12">
+      
       {/* Header */}
-      <div className="border-b border-[#1a1a1a] pb-6">
-        <h1 className="font-display text-3xl font-bold text-white">
+      <div className="border-b border-[#1a1a1a]/40 pb-6 relative">
+        <h1 className="font-display text-3xl font-extrabold text-white">
           Dream Engine
         </h1>
         <p className="mt-1.5 text-sm text-zinc-500">
@@ -270,26 +268,29 @@ function IdeasContent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left Form Panel */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-zinc-200 tracking-tight">
-              Pain-to-Product Transformer
-            </h2>
-            <p className="text-xs text-zinc-500 leading-relaxed">
-              Paste customer feedback, app store complaints, or your own daily workflow bottlenecks. Our agents will dissect it for latent software opportunities.
-            </p>
+        <div className="lg:col-span-2 space-y-8">
+          
+          <div className="rounded-2xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-6 space-y-5">
+            <div>
+              <h2 className="text-sm font-bold text-zinc-200">
+                Pain-to-Product Transformer
+              </h2>
+              <p className="text-xs text-zinc-500 leading-relaxed mt-1.5">
+                Paste customer feedback, App Store complaints, or your own workflow bottlenecks. Our agent networks will dissect it for software business wedges.
+              </p>
+            </div>
             
             <form onSubmit={handleExtractWedge} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider font-mono">
-                  Raw Input Data
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">
+                  Raw Customer Frustrations
                 </label>
                 <textarea
                   value={painInput}
                   onChange={(e) => setPainInput(e.target.value)}
                   placeholder="E.g., I spend 2 hours every week mapping client invoices to stripe payments. It should be automated. Customers complain that the invoice layout is too complicated..."
-                  rows={6}
-                  className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans transition-all resize-none"
+                  rows={5}
+                  className="w-full rounded-xl border border-[#1a1a1a] bg-[#030303] px-4 py-3.5 text-sm text-white placeholder-zinc-700 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 font-sans transition-all resize-none leading-relaxed"
                   required
                 />
               </div>
@@ -297,7 +298,7 @@ function IdeasContent() {
               <button
                 type="submit"
                 disabled={generating || !painInput.trim()}
-                className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer shadow-md shadow-indigo-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 px-4 py-3 text-xs font-bold text-white transition-all cursor-pointer shadow-md shadow-indigo-500/10 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
               >
                 {generating ? (
                   <>
@@ -305,7 +306,7 @@ function IdeasContent() {
                       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
                       <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75" />
                     </svg>
-                    Analyzing Frustrations...
+                    Executing Pain-Transformer Agents...
                   </>
                 ) : (
                   <>
@@ -321,18 +322,25 @@ function IdeasContent() {
 
           {/* AI Generated Candidates Section */}
           {generatedHypotheses && (
-            <div className="space-y-4 border border-violet-500/20 bg-violet-500/[0.02] p-5 rounded-xl">
-              <h2 className="text-xs font-bold text-violet-400 tracking-wider uppercase font-mono">
-                AI Suggested Product Hypotheses
-              </h2>
-              <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-4 border border-violet-500/15 bg-violet-500/[0.01] p-5 rounded-2xl animate-reveal">
+              <div className="flex items-center gap-2 border-b border-[#1a1a1a]/30 pb-3">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-violet-500"></span>
+                </span>
+                <h2 className="text-[10px] font-bold text-violet-400 tracking-wider uppercase font-mono">
+                  Suggested Startup Wedges
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5">
                 {generatedHypotheses.map((hyp, index) => {
                   const isRecommended = index === recommendedIndex
                   return (
                     <div 
                       key={index} 
                       className={`rounded-xl border p-5 bg-black/40 space-y-4 transition-all ${
-                        isRecommended ? 'border-violet-500/40 ring-1 ring-violet-500/20' : 'border-[#1a1a1a]'
+                        isRecommended ? 'border-violet-500/35 ring-1 ring-violet-500/15' : 'border-[#1a1a1a]'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -340,51 +348,76 @@ function IdeasContent() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-sm font-bold text-zinc-100">{hyp.title}</h3>
                             {isRecommended && (
-                              <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold text-violet-400 ring-1 ring-inset ring-violet-500/20 font-mono">
+                              <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[8px] font-bold text-violet-400 border border-violet-500/15 font-mono uppercase tracking-wide">
                                 RECOMMENDED WEDGE
                               </span>
                             )}
                           </div>
-                          <p className="mt-2 text-xs text-zinc-300 leading-relaxed">
-                            <span className="text-zinc-500 font-semibold font-mono uppercase text-[9px] mr-1">Problem:</span>
-                            {hyp.problem_statement}
-                          </p>
-                          <p className="mt-2 text-xs text-zinc-300 leading-relaxed">
-                            <span className="text-zinc-500 font-semibold font-mono uppercase text-[9px] mr-1">Proposed Solution:</span>
-                            {hyp.proposed_solution}
-                          </p>
+                          
+                          <div className="mt-3 space-y-2.5">
+                            <p className="text-xs text-zinc-400 leading-relaxed">
+                              <span className="text-zinc-600 font-bold font-mono uppercase text-[9px] mr-1.5">PROBLEM STATEMENT</span>
+                              <span className="text-zinc-300">{hyp.problem_statement}</span>
+                            </p>
+                            <p className="text-xs text-zinc-400 leading-relaxed">
+                              <span className="text-zinc-600 font-bold font-mono uppercase text-[9px] mr-1.5">PROPOSED SOLUTION</span>
+                              <span className="text-zinc-300">{hyp.proposed_solution}</span>
+                            </p>
+                          </div>
                         </div>
+
                         <div className="text-right shrink-0">
-                          <span className="rounded bg-indigo-500/15 px-2 py-1 text-[10px] font-bold text-indigo-300 border border-indigo-500/20 font-mono">
-                            Score: {hyp.overall_score}/100
+                          <span className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-bold text-indigo-400 border border-indigo-500/15 font-mono">
+                            {hyp.overall_score}/100
                           </span>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 py-3 border-y border-[#1a1a1a] text-[10px] font-mono">
-                        <div>
-                          <span className="text-zinc-600 block">PAIN INTENSITY</span>
-                          <span className="text-zinc-300 font-bold">{hyp.pain_intensity_score}/100</span>
+                      {/* PREMIUM RATING TRACKS */}
+                      <div className="border-y border-[#1a1a1a]/40 py-4 space-y-3">
+                        {/* Track 1: Pain Intensity */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[9px] font-bold font-mono uppercase">
+                            <span className="text-zinc-500">PAIN INTENSITY METRIC</span>
+                            <span className="text-zinc-300">{hyp.pain_intensity_score}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-zinc-900 overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${hyp.pain_intensity_score}%` }} />
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-zinc-600 block">MARKET POTENTIAL</span>
-                          <span className="text-zinc-300 font-bold">{hyp.market_size_score}/100</span>
+
+                        {/* Track 2: Market Potential */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[9px] font-bold font-mono uppercase">
+                            <span className="text-zinc-500">MARKET POTENTIAL METRIC</span>
+                            <span className="text-zinc-300">{hyp.market_size_score}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-zinc-900 overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" style={{ width: `${hyp.market_size_score}%` }} />
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-zinc-600 block">BUILD FEASIBILITY</span>
-                          <span className="text-zinc-300 font-bold">{hyp.buildability_score}/100</span>
+
+                        {/* Track 3: Build Feasibility */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[9px] font-bold font-mono uppercase">
+                            <span className="text-zinc-500">BUILDABILITY FEASIBILITY</span>
+                            <span className="text-zinc-300">{hyp.buildability_score}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-zinc-900 overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style={{ width: `${hyp.buildability_score}%` }} />
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-1">
-                        <div className="text-[11px] text-zinc-400">
-                          <span className="text-zinc-500 font-semibold font-mono uppercase text-[9px] mr-1">Monetization Estimate:</span>
+                        <div className="text-[10px] text-zinc-400 font-medium">
+                          <span className="text-zinc-500 font-bold font-mono uppercase text-[9px] mr-1.5">MONETIZATION MODEL:</span>
                           {hyp.market_size_estimate}
                         </div>
                         <button
                           type="button"
                           onClick={() => handleSaveHypothesis(hyp)}
-                          className="rounded bg-indigo-600 hover:bg-indigo-500 px-3.5 py-1.5 text-[11px] font-semibold text-white transition-all shadow-md shadow-indigo-600/10 cursor-pointer self-stretch sm:self-auto text-center"
+                          className="rounded-lg bg-indigo-500 hover:bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition-all shadow-md shadow-indigo-500/10 cursor-pointer self-stretch sm:self-auto text-center"
                         >
                           Validate & Save Idea
                         </button>
@@ -398,7 +431,7 @@ function IdeasContent() {
 
           {/* Validated Ideas Feed */}
           <div className="space-y-4">
-            <h2 className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+            <h2 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase font-mono">
               Validated Product Hypotheses
             </h2>
             
@@ -414,52 +447,57 @@ function IdeasContent() {
                   return (
                     <div 
                       key={idea.id} 
-                      className={`rounded-xl border p-5 bg-[#07070a] space-y-4 transition-all hover:border-zinc-700 ${
-                        isSelected ? 'border-emerald-500/30 bg-[#070908]' : 'border-[#1a1a1a]'
+                      className={`rounded-2xl border p-5 bg-[#07070a]/90 space-y-4 transition-all hover:border-zinc-700/60 ${
+                        isSelected ? 'border-emerald-500/30 bg-[#070908]' : 'border-[#1a1a1a]/40'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-sm font-semibold text-zinc-200">{idea.title}</h3>
+                            <h3 className="text-sm font-bold text-zinc-200">{idea.title}</h3>
                             {isSelected && (
-                              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400 ring-1 ring-inset ring-emerald-500/20 font-mono">
+                              <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[8px] font-bold text-emerald-400 border border-emerald-500/15 font-mono uppercase tracking-wide">
                                 ACTIVE SELECTED
                               </span>
                             )}
                           </div>
-                          <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
-                            <span className="text-zinc-500 font-medium">Pain Bottleneck:</span> {idea.pain_description}
-                          </p>
-                          <p className="mt-2 text-xs text-zinc-300 leading-relaxed">
-                            <span className="text-zinc-500 font-medium">Proposed Solution:</span> {idea.proposed_solution}
-                          </p>
+                          
+                          <div className="mt-3 space-y-2 leading-relaxed">
+                            <p className="text-xs text-zinc-400">
+                              <span className="text-zinc-500 font-bold font-mono text-[9px] uppercase mr-1.5">Pain:</span> 
+                              <span className="text-zinc-300">{idea.pain_description}</span>
+                            </p>
+                            <p className="text-xs text-zinc-400">
+                              <span className="text-zinc-500 font-bold font-mono text-[9px] uppercase mr-1.5">Solution:</span> 
+                              <span className="text-zinc-300">{idea.proposed_solution}</span>
+                            </p>
+                          </div>
                         </div>
                         
-                        <div className="flex flex-col items-end gap-2 shrink-0">
-                          <span className="rounded bg-indigo-500/5 px-2 py-0.5 text-[10px] font-semibold text-indigo-400 ring-1 ring-inset ring-indigo-500/20 font-mono">
+                        <div className="flex flex-col items-end gap-2.5 shrink-0">
+                          <span className="rounded-lg bg-indigo-500/5 px-2.5 py-1 text-xs font-bold text-indigo-400 border border-indigo-500/10 font-mono">
                             Score: {idea.overall_score}/100
                           </span>
                           <button
                             onClick={() => handleDeleteIdea(idea.id)}
-                            className="text-zinc-600 hover:text-red-400 text-[10px] font-mono hover:underline transition-colors"
+                            className="text-zinc-600 hover:text-red-400 text-[10px] font-mono hover:underline transition-colors cursor-pointer"
                           >
-                            delete
+                            Delete
                           </button>
                         </div>
                       </div>
 
-                      <div className="border-t border-[#1a1a1a]/60 pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="text-[11px] text-zinc-500 leading-normal">
-                          <span className="text-zinc-400 font-semibold font-mono uppercase text-[9px] tracking-wide mr-1">Moat Wedge:</span>
-                          {idea.product_brief?.proposed_solution || 'N/A'}
+                      <div className="border-t border-[#1a1a1a]/30 pt-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="text-[10px] text-zinc-400">
+                          <span className="text-zinc-500 font-bold font-mono uppercase text-[9px] mr-1.5">ICP target segment:</span>
+                          {idea.icp_document?.target_audience || 'Not configured'}
                         </div>
                         
                         {!isSelected ? (
                           <button
                             type="button"
                             onClick={() => handleSelectIdea(idea.id)}
-                            className="rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 text-[10px] font-semibold transition-all border border-zinc-700 hover:border-zinc-600 shrink-0 self-stretch sm:self-auto text-center"
+                            className="rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-2 text-xs font-bold transition-all border border-zinc-700 hover:border-zinc-600 shrink-0 self-stretch sm:self-auto text-center cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                           >
                             Select for War Room &rarr;
                           </button>
@@ -467,7 +505,7 @@ function IdeasContent() {
                           <button
                             type="button"
                             onClick={() => router.push('/warroom')}
-                            className="rounded bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-400 px-3 py-1.5 text-[10px] font-semibold transition-all border border-emerald-500/20 shrink-0 self-stretch sm:self-auto text-center"
+                            className="rounded-lg bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-400 px-4 py-2 text-xs font-bold transition-all border border-emerald-500/20 shrink-0 self-stretch sm:self-auto text-center cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                           >
                             Open Active War Room &rarr;
                           </button>
@@ -478,8 +516,8 @@ function IdeasContent() {
                 })}
               </div>
             ) : (
-              <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-12 text-center text-zinc-600">
-                <p className="text-sm">No validated product hypotheses saved yet. Add raw bottlenecks above.</p>
+              <div className="rounded-xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-12 text-center text-zinc-600">
+                <p className="text-sm font-mono">No validated hypotheses saved yet. Add raw frustrations above.</p>
               </div>
             )}
           </div>
@@ -489,54 +527,54 @@ function IdeasContent() {
         <div className="space-y-6">
           
           {/* Intelligence Score */}
-          <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-4">
-            <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+          <div className="rounded-2xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-6 space-y-4">
+            <span className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase font-mono block">
               Market Intelligence
             </span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-bold text-white tracking-tight">{ideas.length}</span>
-              <span className="text-xs text-zinc-500 font-semibold">Ideas Analyzed</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-4xl font-extrabold text-white tracking-tight">{ideas.length}</span>
+              <span className="text-xs text-zinc-500 font-bold font-mono uppercase">Validated</span>
             </div>
-            <div className="border-t border-[#1a1a1a] pt-4 space-y-3 text-xs">
+            <div className="border-t border-[#1a1a1a]/40 pt-4 space-y-3 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-500">Validation Speed</span>
-                <span className="font-semibold text-zinc-300">Fast (24h)</span>
+                <span className="font-mono font-bold text-zinc-300">Fast (24h)</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Competitive density scan</span>
-                <span className="font-semibold text-zinc-300">Active</span>
+                <span className="text-zinc-500">Competitive density</span>
+                <span className="font-mono font-bold text-zinc-300">Active</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-500">Target ICP definition</span>
-                <span className="font-semibold text-emerald-400">Complete</span>
+                <span className="font-mono font-bold text-emerald-400">Complete</span>
               </div>
             </div>
           </div>
 
           {/* Socratic Questions */}
-          <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-3">
-            <h3 className="text-xs font-semibold text-zinc-400 tracking-wider uppercase font-mono">
-              Idea Crystallizer Checklist
+          <div className="rounded-2xl border border-[#1a1a1a]/40 bg-[#07070a]/90 p-6 space-y-3">
+            <h3 className="text-[10px] font-bold text-zinc-400 tracking-wider uppercase font-mono">
+              Crystallizer Checklist
             </h3>
             <p className="text-[11px] text-zinc-500 leading-relaxed">
-              Every crystallized idea goes through a Socratic check across 4 critical dimensions before it hits the War Room.
+              Every validated hypothesis undergoes evaluation across 4 critical parameters.
             </p>
-            <ul className="space-y-2.5 text-[11px] pt-2">
-              <li className="flex items-center gap-2 text-zinc-400">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[9px] font-bold">1</span>
-                Who suffers from the bottleneck?
+            <ul className="space-y-3 text-xs pt-2">
+              <li className="flex items-start gap-2 text-zinc-400">
+                <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded bg-emerald-500/10 text-emerald-400 font-mono text-[9px] font-bold border border-emerald-500/10">1</span>
+                <span>Who suffers from the bottleneck?</span>
               </li>
-              <li className="flex items-center gap-2 text-zinc-400">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[9px] font-bold">2</span>
-                What is the current manual workaround?
+              <li className="flex items-start gap-2 text-zinc-400">
+                <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded bg-emerald-500/10 text-emerald-400 font-mono text-[9px] font-bold border border-emerald-500/10">2</span>
+                <span>What is the current manual workaround?</span>
               </li>
-              <li className="flex items-center gap-2 text-zinc-400">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-mono text-[9px] font-bold">3</span>
-                What is the unique technological unlock?
+              <li className="flex items-start gap-2 text-zinc-400">
+                <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded bg-indigo-500/10 text-indigo-400 font-mono text-[9px] font-bold border border-indigo-500/10">3</span>
+                <span>What is the unique technological unlock?</span>
               </li>
-              <li className="flex items-center gap-2 text-zinc-400">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-800 text-zinc-600 font-mono text-[9px] font-bold">4</span>
-                What is the monetization engine?
+              <li className="flex items-start gap-2 text-zinc-400">
+                <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded bg-zinc-850 text-zinc-650 font-mono text-[9px] font-bold border border-zinc-800">4</span>
+                <span>What is the monetization engine?</span>
               </li>
             </ul>
           </div>
