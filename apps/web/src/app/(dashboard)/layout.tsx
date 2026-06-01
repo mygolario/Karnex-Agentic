@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import SidebarNav from '@/components/SidebarNav'
+import { createClient } from '@supabase/supabase-js'
 
 export default async function DashboardLayout({
   children,
@@ -14,8 +15,14 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
+  // Create admin client to bypass RLS for user provisioning
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
   // Ensure founder record exists
-  const { data: founder } = await supabase
+  const { data: founder } = await supabaseAdmin
     .from('founders')
     .select('id')
     .eq('id', user.id)
@@ -23,7 +30,7 @@ export default async function DashboardLayout({
 
   if (!founder) {
     const fullName = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder'
-    await supabase
+    await supabaseAdmin
       .from('founders')
       .insert({
         id: user.id,
@@ -37,7 +44,7 @@ export default async function DashboardLayout({
   }
 
   // Ensure startup record exists
-  const { data: startup } = await supabase
+  const { data: startup } = await supabaseAdmin
     .from('startups')
     .select('id')
     .eq('founder_id', user.id)
@@ -48,7 +55,7 @@ export default async function DashboardLayout({
   let activeStartupId = startup?.id
 
   if (!startup) {
-    const { data: newStartup } = await supabase
+    const { data: newStartup } = await supabaseAdmin
       .from('startups')
       .insert({
         founder_id: user.id,
@@ -62,7 +69,7 @@ export default async function DashboardLayout({
     if (newStartup) {
       activeStartupId = newStartup.id
       // Update founder current_startup_id
-      await supabase
+      await supabaseAdmin
         .from('founders')
         .update({ current_startup_id: newStartup.id })
         .eq('id', user.id)
@@ -70,7 +77,7 @@ export default async function DashboardLayout({
   }
 
   // Ensure subscription record exists
-  const { data: subscription } = await supabase
+  const { data: subscription } = await supabaseAdmin
     .from('subscriptions')
     .select('id')
     .eq('founder_id', user.id)
@@ -79,7 +86,7 @@ export default async function DashboardLayout({
   if (!subscription) {
     const thirtyDaysFromNow = new Date()
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-    await supabase
+    await supabaseAdmin
       .from('subscriptions')
       .insert({
         founder_id: user.id,
