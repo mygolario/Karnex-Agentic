@@ -68,19 +68,18 @@ cd ..
 
 ### 2. Environment Setup
 
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Fill in required variables:
-# - NEXT_PUBLIC_SUPABASE_URL (from Supabase project or local CLI)
-# - NEXT_PUBLIC_SUPABASE_ANON_KEY
-# - SUPABASE_SERVICE_ROLE_KEY
-# - GOOGLE_GEMINI_API_KEY
-# - STRIPE_SECRET_KEY (test mode)
-# - STRIPE_WEBHOOK_SECRET
-# - RESEND_API_KEY
+```powershell
+# Windows — creates .env, syncs SUPABASE_URL for Python, links apps/web
+.\scripts\setup-env.ps1
 ```
+
+Fill in [`.env`](.env) from [`.env.example`](.env.example). See [docs/DEPLOY_ENV.md](docs/DEPLOY_ENV.md) for Vercel/Railway variable matrix and live URLs.
+
+**Required for local dev:** Supabase URL/keys, `OPENROUTER_API_KEY`, service URLs (`localhost:3000` / `8000`).
+
+**Deploy:** `.\scripts\sync-vercel-production-env.ps1` (public URLs) · `.\scripts\verify-deploy.ps1` (smoke tests)
+
+Before committing: `.\scripts\validate-env-example.ps1` (ensures `.env.example` has no real secrets). If secrets were ever committed, see [docs/SECURITY_ROTATION.md](docs/SECURITY_ROTATION.md).
 
 ### 3. Start Local Services
 

@@ -1,0 +1,12 @@
+# Railway agent service — paste into Railway → Variables (same values as root .env)
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+# JWT secret string from Supabase Dashboard → Settings → API → JWT Secret (NOT the jwks URL)
+SUPABASE_JWT_SECRET=
+OPENROUTER_API_KEY=
+GOOGLE_GEMINI_API_KEY=
+ENVIRONMENT=production
+CORS_ORIGINS=https://karnex-agentic-web.vercel.app
+KARNEX_WEB_ORIGIN=https://karnex-agentic-web.vercel.app
+AGENT_SERVICE_INTERNAL_KEY=
+OXAPAY_MERCHANT_API_KEY=
