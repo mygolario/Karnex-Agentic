@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Skeleton } from '@/components/Skeleton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { getAgentApiUrl, readAgentError } from '@/lib/agent-service'
 
 interface Contact {
   first_name: string
@@ -40,8 +41,6 @@ interface CampaignDetails {
   personalization_notes: string
   ab_variants?: CampaignMessage[]
 }
-
-const AGENT_SERVICE_URL = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL || 'http://localhost:8000'
 
 export default function OutreachPage() {
   return (
@@ -87,21 +86,7 @@ function OutreachContent() {
       if (startup) {
         setStartupId(startup.id)
       } else {
-        // Fallback: create a dummy startup for dev if none exists
-        try {
-          const { data: newStartup } = await supabase
-            .from('startups')
-            .insert({
-              founder_id: session.user.id,
-              name: 'My Startup Project',
-              description: 'Generated startup project context.'
-            })
-            .select()
-            .single()
-          if (newStartup) setStartupId(newStartup.id)
-        } catch (e) {
-          console.error('Failed to resolve startup:', e)
-        }
+        console.warn('Startup context not resolved yet. Relying on layout auto-provisioning.')
       }
     }
     loadStartup()
@@ -146,7 +131,7 @@ function OutreachContent() {
       const token = session.access_token
 
       // Trigger Outreach agent
-      const response = await fetch(`${AGENT_SERVICE_URL}/v1/agents/outreach`, {
+      const response = await fetch(getAgentApiUrl('v1/agents/outreach'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -165,7 +150,7 @@ function OutreachContent() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate campaign')
+        throw new Error(await readAgentError(response))
       }
 
       const result = await response.json()
@@ -201,7 +186,8 @@ function OutreachContent() {
       }
     } catch (err) {
       console.error(err)
-      alert('Failed to generate outreach sequence.')
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      alert(`Failed to generate outreach sequence: ${message}`)
     } finally {
       setLoading(false)
     }
@@ -217,7 +203,7 @@ function OutreachContent() {
 
       const token = session.access_token
 
-      const response = await fetch(`${AGENT_SERVICE_URL}/v1/campaigns/${activeCampaign.id}/approve`, {
+      const response = await fetch(getAgentApiUrl(`v1/campaigns/${activeCampaign.id}/approve`), {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
@@ -235,7 +221,7 @@ function OutreachContent() {
           setCampaignContacts(contactData)
         }
       } else {
-        alert('Failed to approve campaign.')
+        alert(`Failed to approve campaign: ${await readAgentError(response)}`)
       }
     } catch (err) {
       console.error(err)

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Skeleton } from '@/components/Skeleton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { getAgentApiUrl, readAgentError } from '@/lib/agent-service'
 
 interface StandupSummary {
   yesterday_completed: string[]
@@ -28,8 +29,6 @@ interface Task {
   status: 'todo' | 'in_progress' | 'done' | 'blocked' | 'deferred'
   description?: string
 }
-
-const AGENT_SERVICE_URL = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL || 'http://localhost:8000'
 
 export default function CompassPage() {
   return (
@@ -61,7 +60,7 @@ function CompassContent() {
       const token = session.access_token
 
       // 1. Fetch momentum history
-      const momRes = await fetch(`${AGENT_SERVICE_URL}/v1/founders/momentum`, {
+      const momRes = await fetch(getAgentApiUrl('v1/founders/momentum'), {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (momRes.ok) {
@@ -125,7 +124,7 @@ function CompassContent() {
       const token = session.access_token
 
       // Call Daily Standup Agent Trigger
-      const response = await fetch(`${AGENT_SERVICE_URL}/v1/agents/daily-standup`, {
+      const response = await fetch(getAgentApiUrl('v1/agents/daily-standup'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -139,7 +138,7 @@ function CompassContent() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to run Daily Standup agent')
+        throw new Error(await readAgentError(response))
       }
 
       const result = await response.json()
@@ -151,7 +150,8 @@ function CompassContent() {
       setActiveTab('checkin')
     } catch (err) {
       console.error('Error submitting standup check-in:', err)
-      alert('Failed to complete standup check-in. Please try again.')
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      alert(`Failed to complete standup check-in: ${message}`)
     } finally {
       setSubmitting(false)
     }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Skeleton } from '@/components/Skeleton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { getAgentApiUrl, readAgentError } from '@/lib/agent-service'
 
 interface TaskRecord {
   id: string
@@ -68,8 +69,6 @@ interface SelectedIdea {
     next_steps?: string[]
   } | null
 }
-
-const AGENT_SERVICE_URL = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL || 'http://localhost:8000'
 
 export default function WarRoomPage() {
   return (
@@ -202,7 +201,7 @@ function WarRoomContent() {
       const token = session.access_token
 
       // 1. Call agent `/v1/agents/war-room` endpoint
-      const response = await fetch(`${AGENT_SERVICE_URL}/v1/agents/war-room`, {
+      const response = await fetch(getAgentApiUrl('v1/agents/war-room'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +222,7 @@ function WarRoomContent() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to recalibrate roadmap via agent service')
+        throw new Error(await readAgentError(response))
       }
 
       // 2. Fetch the newly inserted active roadmap from database
@@ -315,7 +314,8 @@ function WarRoomContent() {
       await initPage()
     } catch (err) {
       console.error(err)
-      alert('Failed to recalibrate roadmap.')
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      alert(`Failed to recalibrate roadmap: ${message}`)
     } finally {
       setRecalibrating(false)
     }

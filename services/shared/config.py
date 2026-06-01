@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     OXAPAY_MERCHANT_API_KEY: str = ""
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3080"
+    KARNEX_WEB_ORIGIN: str = "https://karnex-agentic-web.vercel.app"
     GEMINI_MODEL: str = "google/gemini-2.5-pro-preview-06-05"
     GEMINI_MODEL_FLASH: str = "google/gemini-2.5-flash-preview-05-20"
 

@@ -37,6 +37,10 @@ except Exception as e:
 
 # Parse CORS origins from shared settings config
 allowed_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
+if settings.ENVIRONMENT == "production" and settings.KARNEX_WEB_ORIGIN.strip():
+    production_origin = settings.KARNEX_WEB_ORIGIN.strip()
+    if production_origin not in allowed_origins:
+        allowed_origins.append(production_origin)
 if not allowed_origins:
     allowed_origins = ["http://localhost:3000"]
 

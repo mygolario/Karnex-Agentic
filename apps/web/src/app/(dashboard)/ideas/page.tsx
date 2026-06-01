@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Skeleton } from '@/components/Skeleton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { getAgentApiUrl, readAgentError } from '@/lib/agent-service'
 
 interface ProductHypothesis {
   title: string
@@ -45,8 +46,6 @@ interface IdeaRecord {
   } | null
   created_at: string
 }
-
-const AGENT_SERVICE_URL = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL || 'http://localhost:8000'
 
 export default function IdeasPage() {
   return (
@@ -136,7 +135,7 @@ function IdeasContent() {
 
       const token = session.access_token
 
-      const response = await fetch(`${AGENT_SERVICE_URL}/v1/agents/pain-transformer`, {
+      const response = await fetch(getAgentApiUrl('v1/agents/pain-transformer'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +147,7 @@ function IdeasContent() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to run pain transformer agent')
+        throw new Error(await readAgentError(response))
       }
 
       const result = await response.json()
@@ -158,7 +157,8 @@ function IdeasContent() {
       }
     } catch (err) {
       console.error(err)
-      alert('Failed to analyze pain inputs. Make sure agent service is configured and running.')
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      alert(`Failed to analyze pain inputs: ${message}`)
     } finally {
       setGenerating(false)
     }
