@@ -41,9 +41,7 @@ async def _update_run_status_detail(run_id: str, detail: str):
     """Updates the status column of the agent_runs row to represent the current execution step."""
     try:
         supabase = get_supabase_admin()
-        await asyncio.to_thread(
-            lambda: supabase.table("agent_runs").update({"status": detail}).eq("id", run_id).execute()
-        )
+        supabase.table("agent_runs").update({"status": detail}).eq("id", run_id).execute()
     except Exception as e:
         logger.warning(f"Could not update status detail for run {run_id} to '{detail}': {e}")
 
