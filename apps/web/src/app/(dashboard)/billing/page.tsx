@@ -31,6 +31,21 @@ const pricingTiers = [
     badge: null,
   },
   {
+    id: 'builder',
+    name: 'Builder',
+    price: '$79',
+    description: 'Build and deploy autonomously with increased execution limits.',
+    features: [
+      'Everything in Starter',
+      'All execution agents',
+      'Auto-deploy pipelines',
+      '500 agent tasks / mo',
+      'Compass accountability',
+      'Stripe & PostHog integrations',
+    ],
+    badge: null,
+  },
+  {
     id: 'founder',
     name: 'Founder',
     price: '$149',
@@ -205,7 +220,7 @@ function BillingContent() {
           Available Subscription Tiers
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#1a1a1a] border border-[#1a1a1a] rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-[#1a1a1a] border border-[#1a1a1a] rounded-2xl overflow-hidden">
           {pricingTiers.map((tier) => {
             const isCurrentPlan = subscription?.plan?.toLowerCase() === tier.id.toLowerCase()
             const isCheckingOut = submittingPlan === tier.id
