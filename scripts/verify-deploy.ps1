@@ -1,6 +1,6 @@
 # Smoke-check live Karnex deploy (no secrets required)
 $ErrorActionPreference = "Continue"
-$Frontend = "https://karnex-agentic-web.vercel.app"
+$Frontend = "https://arioai.site"
 $Railway = "https://web-production-7ea9c.up.railway.app"
 $AgentProxy = "$Frontend/api/agent/v1/health"
 

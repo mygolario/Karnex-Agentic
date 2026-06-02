@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     OXAPAY_MERCHANT_API_KEY: str = ""
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3080"
-    KARNEX_WEB_ORIGIN: str = "https://karnex-agentic-web.vercel.app"
+    KARNEX_WEB_ORIGIN: str = "https://arioai.site"
     GEMINI_MODEL: str = "google/gemini-2.5-pro"
     GEMINI_MODEL_FLASH: str = "google/gemini-2.5-flash"
     # Cap OpenRouter max_tokens (default 65536 can exceed credit balance)

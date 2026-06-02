@@ -29,7 +29,7 @@ Get-Content $EnvFile | ForEach-Object {
 }
 
 # Production URLs for platform (override local-only values)
-$prodApp = 'https://karnex-agentic-web.vercel.app'
+$prodApp = 'https://arioai.site'
 $prodOxa = "$prodApp/api/webhooks/oxapay"
 $prodRailway = 'https://web-production-7ea9c.up.railway.app'
 

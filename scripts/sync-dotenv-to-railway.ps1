@@ -27,8 +27,8 @@ Get-Content $EnvFile | ForEach-Object {
 }
 
 $vars['ENVIRONMENT'] = 'production'
-$vars['CORS_ORIGINS'] = 'https://karnex-agentic-web.vercel.app,http://localhost:3000'
-$vars['KARNEX_WEB_ORIGIN'] = 'https://karnex-agentic-web.vercel.app'
+$vars['CORS_ORIGINS'] = 'https://arioai.site,https://www.arioai.site,http://localhost:3000'
+$vars['KARNEX_WEB_ORIGIN'] = 'https://arioai.site'
 
 $railway = Get-Command railway -ErrorAction SilentlyContinue
 if (-not $railway) {

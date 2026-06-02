@@ -1,7 +1,7 @@
 # Add production URL env vars to linked Vercel project (non-secrets only)
 $ErrorActionPreference = "Stop"
 $WebDir = Join-Path (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)) "apps\web"
-$AppUrl = "https://karnex-agentic-web.vercel.app"
+$AppUrl = "https://arioai.site"
 $RailwayUrl = "https://web-production-7ea9c.up.railway.app"
 $OxaCallback = "$AppUrl/api/webhooks/oxapay"
 

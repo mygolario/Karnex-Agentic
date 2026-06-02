@@ -24,7 +24,7 @@ Run once after clone:
 | `AGENT_SERVICE_URL` | Yes (Production) | — |
 | `NEXT_PUBLIC_APP_URL` | Yes | — |
 | `ENVIRONMENT` | — | `production` |
-| `CORS_ORIGINS` | — | `https://karnex-agentic-web.vercel.app` |
+| `CORS_ORIGINS` | — | `https://arioai.site,https://www.arioai.site` |
 | `KARNEX_WEB_ORIGIN` | — | Same as Vercel URL |
 | `AGENT_SERVICE_INTERNAL_KEY` | — | Random secret (match if BFF sends header) |
 | `SUPABASE_JWT_SECRET` | — | Legacy JWT secret (HS256 tokens only) |
@@ -34,9 +34,9 @@ Run once after clone:
 
 | Service | URL |
 |---------|-----|
-| Frontend | https://karnex-agentic-web.vercel.app |
+| Frontend | https://arioai.site |
 | Agent API | https://web-production-7ea9c.up.railway.app |
-| OxaPay webhook | `https://karnex-agentic-web.vercel.app/api/webhooks/oxapay` |
+| OxaPay webhook | `https://arioai.site/api/webhooks/oxapay` |
 | Supabase project | `vwvolsmukrfwrnbmxatc` |
 
 ## Vercel CLI (non-secret values)
@@ -45,7 +45,7 @@ From `apps/web` after `npx vercel link`:
 
 ```powershell
 cd apps\web
-$app = "https://karnex-agentic-web.vercel.app"
+$app = "https://arioai.site"
 "https://web-production-7ea9c.up.railway.app" | npx vercel env add AGENT_SERVICE_URL production
 "$app" | npx vercel env add NEXT_PUBLIC_APP_URL production
 "$app/api/webhooks/oxapay" | npx vercel env add NEXT_PUBLIC_OXAPAY_CALLBACK_URL production
@@ -62,9 +62,9 @@ Set the Python column in the matrix on the service that builds `services/Dockerf
 
 | Setting | Local (`.env`) | Production (Vercel / Railway) |
 |---------|----------------|----------------------------------|
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | `https://karnex-agentic-web.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | `https://arioai.site` |
 | `AGENT_SERVICE_URL` | `http://localhost:8000` or remote Railway URL | `https://web-production-7ea9c.up.railway.app` |
-| `NEXT_PUBLIC_OXAPAY_CALLBACK_URL` | `http://localhost:3000/...` or ngrok | `https://karnex-agentic-web.vercel.app/api/webhooks/oxapay` |
+| `NEXT_PUBLIC_OXAPAY_CALLBACK_URL` | `http://localhost:3000/...` or ngrok | `https://arioai.site/api/webhooks/oxapay` |
 | `ENVIRONMENT` | `development` | `production` (Railway) |
 | `CORS_ORIGINS` / `KARNEX_WEB_ORIGIN` | `localhost:3000` | Vercel app URL |
 | Secrets | Root `.env` only | Platform dashboards only |
