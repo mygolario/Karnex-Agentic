@@ -371,7 +371,10 @@ export default function SettingsPage() {
       if (roadmapErr || !newRoadmap) {
         console.error('Roadmap auto-provisioning failure:', roadmapErr)
       } else {
-        // 5. Insert Sprint 1 and 2 automatically
+        // 5. Initialize Sprints
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+
         const baseDate = new Date()
         for (const phase of newRoadmap.phases) {
           if (Array.isArray(phase.weekly_goals)) {
@@ -381,40 +384,46 @@ export default function SettingsPage() {
               const sprintStart = new Date(baseDate.getTime() + startOffset)
               const sprintEnd = new Date(sprintStart.getTime() + 6 * 24 * 60 * 60 * 1000)
 
-              const { data: spInserted } = await supabase
-                .from('sprints')
-                .insert({
-                  roadmap_id: newRoadmap.id,
-                  founder_id: userId,
-                  sprint_number: weekNum,
-                  title: `Sprint ${weekNum} — ${weeklyGoal.focus || 'Development'}`,
-                  week_start: sprintStart.toISOString().split('T')[0],
-                  week_end: sprintEnd.toISOString().split('T')[0],
-                  goals: weeklyGoal.goals || [],
-                  focus_area: weeklyGoal.focus || 'Build',
-                  capacity_hours: weeklyGoal.estimated_hours || weeklyHours || 20,
-                  status: weekNum === 1 ? 'active' : 'planned'
-                })
-                .select()
-                .single()
-
-              if (spInserted && Array.isArray(weeklyGoal.goals)) {
-                const tasksPayload = weeklyGoal.goals.map((gText: string) => {
-                  const estH = Math.round((weeklyGoal.estimated_hours || weeklyHours || 20) / weeklyGoal.goals.length)
-                  return {
-                    sprint_id: spInserted.id,
-                    founder_id: userId,
-                    title: gText,
-                    description: `Automated roadmap task for Week ${weekNum}`,
-                    priority: 3,
-                    estimated_hours: estH > 0 ? estH : 2,
-                    status: 'todo',
-                    category: 'other'
+              if (weekNum === 1 && token) {
+                // Trigger backend Sprint Planner Agent for Week 1 (does DB sync automatically)
+                try {
+                  const response = await fetch('/api/agent/v1/agents/sprint-planner', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                      roadmap_phase: phase,
+                      week_number: 1,
+                      founder_capacity_this_week: weeklyGoal.estimated_hours || weeklyHours || 20,
+                      blockers: [],
+                      completed_last_week: [],
+                      deferred_tasks: []
+                    })
+                  })
+                  if (!response.ok) {
+                    console.error('Sprint planner agent trigger failed:', await response.text())
                   }
-                })
-                if (tasksPayload.length > 0) {
-                  await supabase.from('tasks').insert(tasksPayload)
+                } catch (sprintAgentErr) {
+                  console.error('Error triggering sprint planner agent:', sprintAgentErr)
                 }
+              } else {
+                // Insert placeholder sprints without tasks for Week 2+ (planned status)
+                await supabase
+                  .from('sprints')
+                  .insert({
+                    roadmap_id: newRoadmap.id,
+                    founder_id: userId,
+                    sprint_number: weekNum,
+                    title: `Sprint ${weekNum} — ${weeklyGoal.focus || 'Development'}`,
+                    week_start: sprintStart.toISOString().split('T')[0],
+                    week_end: sprintEnd.toISOString().split('T')[0],
+                    goals: weeklyGoal.goals || [],
+                    focus_area: weeklyGoal.focus || 'Build',
+                    capacity_hours: weeklyGoal.estimated_hours || weeklyHours || 20,
+                    status: 'planned'
+                  })
               }
             }
           }

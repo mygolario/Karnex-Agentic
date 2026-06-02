@@ -7,15 +7,15 @@
 
 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
   Creating an optimized production build ...
-✓ Compiled successfully in 3.3s
+✓ Compiled successfully in 5.7s
   Running TypeScript ...
-  Finished TypeScript in 3.7s ...
+  Finished TypeScript in 6.5s ...
   Collecting page data using 15 workers ...
-  Generating static pages using 15 workers (0/17) ...
-  Generating static pages using 15 workers (4/17) 
-  Generating static pages using 15 workers (8/17) 
-  Generating static pages using 15 workers (12/17) 
-✓ Generating static pages using 15 workers (17/17) in 412ms
+  Generating static pages using 15 workers (0/21) ...
+  Generating static pages using 15 workers (5/21) 
+  Generating static pages using 15 workers (10/21) 
+  Generating static pages using 15 workers (15/21) 
+✓ Generating static pages using 15 workers (21/21) in 525ms
   Finalizing page optimization ...
 
 Route (app)
@@ -23,14 +23,20 @@ Route (app)
 ├ ○ /_not-found
 ├ ƒ /agents
 ├ ƒ /agents/outreach
+├ ƒ /api/agent/[...path]
 ├ ƒ /api/auth/callback
+├ ƒ /api/auth/callback/gmail
+├ ƒ /api/auth/gmail/connect
 ├ ƒ /api/checkout
+├ ƒ /api/onboarding/analyze
+├ ƒ /api/onboarding/complete
 ├ ƒ /api/webhooks/oxapay
 ├ ƒ /billing
 ├ ƒ /compass
 ├ ƒ /dashboard
 ├ ƒ /ideas
 ├ ƒ /login
+├ ƒ /onboarding
 ├ ƒ /settings
 ├ ƒ /signup
 └ ƒ /warroom

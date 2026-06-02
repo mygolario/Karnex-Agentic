@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     GMAIL_CLIENT_SECRET: str = ""
     ENCRYPTION_KEY: str = ""
     GMAIL_MOCK_MODE: bool = False
+    RESEND_API_KEY: str = ""
 
     class Config:
         env_file = str(_ENV_FILE) if _ENV_FILE.is_file() else ".env"

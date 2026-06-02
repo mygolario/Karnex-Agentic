@@ -8,24 +8,49 @@ import sys
 import os
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any
+import httpx
 
 # Ensure project root is in path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
+from shared.config import settings
 
 
-def simulate_email_delivery(
+def dispatch_renewal_email(
     email: str, subject: str, body: str, reminder_type: str
 ):
-    """Simulates email delivery using structured logs (dev fallback for Resend)."""
-    logger.info(
-        f"[EMAIL SIMULATION] Sent '{reminder_type}' email to {email}\n"
-        f"Subject: {subject}\n"
-        f"Body:\n{body}\n"
-        "------------------------------------------------"
-    )
+    """Sends a renewal reminder email using the Resend API."""
+    if not settings.RESEND_API_KEY:
+        logger.warning(f"[EMAIL MOCK] No Resend API key set. Email to {email}: {subject}\n{body}")
+        return
+
+    logger.info(f"Dispatching renewal email to {email} using Resend...")
+    try:
+        from_email = "billing@arioai.site"
+        url = "https://api.resend.com/emails"
+        headers = {
+            "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        html_body = body.replace("\n", "<br>")
+        payload = {
+            "from": f"Karnex <{from_email}>",
+            "to": [email],
+            "subject": subject,
+            "html": f"<div style='font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;'><h2 style='color: #0f172a;'>Karnex Subscription Alert</h2><p style='color: #334155; font-size: 16px; line-height: 1.5;'>{html_body}</p></div>"
+        }
+        
+        response = httpx.post(url, headers=headers, json=payload, timeout=10.0)
+        if response.status_code in (200, 201):
+            logger.info(f"Successfully sent renewal email to {email} via Resend. Response: {response.json()}")
+        else:
+            logger.error(f"Failed to send email via Resend. Status code: {response.status_code}, Response: {response.text}")
+    except Exception as e:
+        logger.exception(f"Exception raised while sending email via Resend to {email}: {e}")
+
 
 
 def process_subscription_reminders():
@@ -93,7 +118,7 @@ def process_subscription_reminders():
                         "payment_link_expires": (now + timedelta(days=7)).isoformat()
                     }).execute()
                     
-                    simulate_email_delivery(
+                    dispatch_renewal_email(
                         founder_email,
                         "Your Karnex Subscription has Expired",
                         f"Hi founder,\n\nYour Karnex subscription expired on {expires_at_str}. "
@@ -118,7 +143,7 @@ def process_subscription_reminders():
                         "payment_link_expires": expires_at_str
                     }).execute()
                     
-                    simulate_email_delivery(
+                    dispatch_renewal_email(
                         founder_email,
                         "URGENT: Your Karnex Subscription Expires in 24 Hours",
                         f"Hi founder,\n\nYour Karnex subscription expires on {expires_at_str}. "
@@ -143,7 +168,7 @@ def process_subscription_reminders():
                         "payment_link_expires": expires_at_str
                     }).execute()
                     
-                    simulate_email_delivery(
+                    dispatch_renewal_email(
                         founder_email,
                         "Friendly Reminder: Your Karnex Subscription Renews Soon",
                         f"Hi founder,\n\nYour Karnex subscription will expire on {expires_at_str}. "
