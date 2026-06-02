@@ -337,7 +337,7 @@ export default function SettingsPage() {
               weekly_goals: [
                 { week_number: 1, focus: "Market discovery", goals: ["Define 3 competitor wedges", "Conduct 3 customer pain interviews"], estimated_hours: weeklyHours },
                 { week_number: 2, focus: "Value brief", goals: ["Draft product brief concept", "Build waitlist landing page"], estimated_hours: weeklyHours },
-                { week_number: 3, focus: "Traction launch", goals: ["Deploy conversion triggers", "Promote launch waitlist links"], estimated_hours: weeklyHours },
+                { week_number: 3, focus: "Traction launch", goals: ["Deploy conversion triggers", "Promote waitlist landing page"], estimated_hours: weeklyHours },
                 { week_number: 4, focus: "Review data", goals: ["Analyze signup conversion metrics", "Set sprint targets for build phase"], estimated_hours: weeklyHours }
               ]
             },
@@ -436,7 +436,7 @@ export default function SettingsPage() {
   if (loading && startups.length === 0) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <svg className="h-8 w-8 animate-spin text-indigo-500" viewBox="0 0 24 24" fill="none">
+        <svg className="h-8 w-8 animate-spin text-[#6366f1]" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
           <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75" />
         </svg>
@@ -445,47 +445,49 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 pb-12 relative">
+    <div className="mx-auto max-w-[1000px] space-y-10 pb-16 dash-reveal">
       
       {/* Toast Notification */}
       {toastMessage && (
-        <div className={`fixed bottom-8 right-8 z-50 rounded-xl px-5 py-3.5 text-xs font-semibold shadow-xl border flex items-center gap-2.5 animate-reveal ${
+        <div className={`fixed bottom-8 right-8 z-50 rounded-xl px-4 py-3 text-xs font-medium shadow-xl border flex items-center gap-2.5 animate-reveal ${
           toastMessage.type === 'success'
             ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-            : 'bg-red-500/10 border-red-500/20 text-red-400'
+            : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
         }`}>
-          <span className={`h-2 w-2 rounded-full ${toastMessage.type === 'success' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+          <span className={`h-1.5 w-1.5 rounded-full ${toastMessage.type === 'success' ? 'bg-emerald-400' : 'bg-rose-450'}`} />
           {toastMessage.text}
         </div>
       )}
 
       {/* Header */}
-      <div className="border-b border-[#1a1a1a] pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="border-b border-[#1a1a1a] pb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-white">Settings</h1>
-          <p className="mt-1.5 text-sm text-zinc-500">
+          <h1 className="font-display font-bold text-[clamp(28px,3.5vw,36px)] leading-[1.15] tracking-[-0.025em] text-white">
+            Settings
+          </h1>
+          <p className="mt-2 text-[15px] text-[#737373]">
             Manage your founder profile configuration, active startup data, and workspaces.
           </p>
         </div>
 
         {/* Tabs Control */}
-        <div className="flex rounded-lg border border-[#1a1a1a] bg-[#0c0c0c] p-1 self-start sm:self-center">
+        <div className="flex rounded-lg border border-[#1a1a1a] bg-[#050505] p-1 self-start sm:self-center">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`rounded-md px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+            className={`rounded-md px-4 py-2 text-[13px] font-medium transition-all cursor-pointer ${
               activeTab === 'profile'
-                ? 'bg-indigo-500 text-white'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'bg-[#6366f1] text-white'
+                : 'text-[#525252] hover:text-[#a1a1a1]'
             }`}
           >
             Founder Profile
           </button>
           <button
             onClick={() => setActiveTab('projects')}
-            className={`rounded-md px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+            className={`rounded-md px-4 py-2 text-[13px] font-medium transition-all cursor-pointer ${
               activeTab === 'projects'
-                ? 'bg-indigo-500 text-white'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'bg-[#6366f1] text-white'
+                : 'text-[#525252] hover:text-[#a1a1a1]'
             }`}
           >
             Project Hub
@@ -498,13 +500,13 @@ export default function SettingsPage() {
         <form onSubmit={handleSaveProfile} className="space-y-6 animate-reveal">
           
           {/* Section: Profile Info */}
-          <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-6">
-            <h2 className="text-xs font-semibold text-zinc-400 tracking-wider uppercase font-mono border-b border-[#1a1a1a] pb-3">
+          <div className="dash-card p-6 space-y-6">
+            <h2 className="section-label border-b border-[#1a1a1a] pb-3">
               Account Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                <label className="muted-label mb-2 block">
                   Full Name
                 </label>
                 <input
@@ -512,35 +514,35 @@ export default function SettingsPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                  className="dash-input"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                <label className="muted-label mb-2 block">
                   Display Name
                 </label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                  className="dash-input"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                <label className="muted-label mb-2 block">
                   Email Address
                 </label>
                 <input
                   type="email"
                   value={userEmail}
                   disabled
-                  className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303]/60 px-3.5 py-2.5 text-sm text-zinc-500 cursor-not-allowed focus:outline-none"
+                  className="dash-input opacity-60 cursor-not-allowed"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                <label className="muted-label mb-2 block">
                   Primary Goal
                 </label>
                 <input
@@ -548,15 +550,15 @@ export default function SettingsPage() {
                   value={primaryGoal}
                   onChange={(e) => setPrimaryGoal(e.target.value)}
                   placeholder="E.g., Launch MVP to target waitlist beta"
-                  className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                  className="dash-input"
                 />
               </div>
             </div>
           </div>
 
           {/* Section: Collaboration Settings */}
-          <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-6">
-            <h2 className="text-xs font-semibold text-zinc-400 tracking-wider uppercase font-mono border-b border-[#1a1a1a] pb-3">
+          <div className="dash-card p-6 space-y-6">
+            <h2 className="section-label border-b border-[#1a1a1a] pb-3">
               Co-Founder Collaboration Settings
             </h2>
 
@@ -565,10 +567,10 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                    <label className="muted-label">
                       Weekly Capacity Allocation
                     </label>
-                    <span className="text-xs font-mono font-semibold text-indigo-400">{weeklyHours} hours/week</span>
+                    <span className="text-xs font-semibold text-[#6366f1]">{weeklyHours} hours/week</span>
                   </div>
                   <input
                     type="range"
@@ -576,12 +578,12 @@ export default function SettingsPage() {
                     max="80"
                     value={weeklyHours}
                     onChange={(e) => setWeeklyHours(parseInt(e.target.value))}
-                    className="w-full accent-indigo-500 cursor-pointer"
+                    className="w-full accent-[#6366f1] cursor-pointer"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                  <label className="muted-label mb-2 block">
                     Technical Depth level
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -590,10 +592,10 @@ export default function SettingsPage() {
                         key={lvl}
                         type="button"
                         onClick={() => setTechnicalLevel(lvl as any)}
-                        className={`border text-[11px] font-semibold py-2 rounded-lg capitalize transition-all cursor-pointer ${
+                        className={`border text-[12px] font-medium py-2 rounded-lg capitalize transition-all cursor-pointer ${
                           technicalLevel === lvl
-                            ? 'border-indigo-500 bg-indigo-500/10 text-white'
-                            : 'border-[#1a1a1a] bg-[#030303] text-zinc-500 hover:text-zinc-300'
+                            ? 'border-[#6366f1] bg-[#6366f1]/10 text-white'
+                            : 'border-[#1a1a1a] bg-[#050505] text-[#525252] hover:text-[#a1a1a1]'
                         }`}
                       >
                         {lvl}
@@ -605,7 +607,7 @@ export default function SettingsPage() {
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                  <label className="muted-label mb-2 block">
                     Agent Verification Level
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -619,19 +621,19 @@ export default function SettingsPage() {
                         onClick={() => setAgentSpeed(s.key as any)}
                         className={`border text-left p-3 rounded-lg transition-all cursor-pointer ${
                           agentSpeed === s.key
-                            ? 'border-indigo-500 bg-indigo-500/10 text-white'
-                            : 'border-[#1a1a1a] bg-[#030303] text-zinc-500 hover:text-zinc-300'
+                            ? 'border-[#6366f1] bg-[#6366f1]/10 text-white'
+                            : 'border-[#1a1a1a] bg-[#050505] text-[#525252] hover:text-[#a1a1a1]'
                         }`}
                       >
-                        <div className="text-[11px] font-semibold">{s.label}</div>
-                        <div className="text-[9px] text-zinc-500 mt-0.5">{s.desc}</div>
+                        <div className="text-[12px] font-medium">{s.label}</div>
+                        <div className="text-[11px] text-[#525252] mt-0.5">{s.desc}</div>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                  <label className="muted-label mb-2 block">
                     AI Communication Tone
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -640,10 +642,10 @@ export default function SettingsPage() {
                         key={t}
                         type="button"
                         onClick={() => setCommunicationTone(t as any)}
-                        className={`border text-[11px] font-semibold py-2 rounded-lg capitalize transition-all cursor-pointer ${
+                        className={`border text-[12px] font-medium py-2 rounded-lg capitalize transition-all cursor-pointer ${
                           communicationTone === t
-                            ? 'border-indigo-500 bg-indigo-500/10 text-white'
-                            : 'border-[#1a1a1a] bg-[#030303] text-zinc-500 hover:text-zinc-300'
+                            ? 'border-[#6366f1] bg-[#6366f1]/10 text-white'
+                            : 'border-[#1a1a1a] bg-[#050505] text-[#525252] hover:text-[#a1a1a1]'
                         }`}
                       >
                         {t}
@@ -661,14 +663,14 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={fetchData}
-              className="rounded-lg border border-[#1a1a1a] hover:bg-white/[0.02] px-4 py-2.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer"
+              className="dash-btn dash-btn-secondary"
             >
               Reset
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 text-xs font-semibold transition-all cursor-pointer shadow-md shadow-indigo-500/10 disabled:opacity-50"
+              className="dash-btn dash-btn-primary"
             >
               {saving ? 'Saving Profile...' : 'Save Profile Settings'}
             </button>
@@ -684,13 +686,13 @@ export default function SettingsPage() {
           <div className="lg:col-span-2 space-y-6">
             <form onSubmit={handleSaveProjectDetails} className="space-y-6">
               
-              <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-6">
+              <div className="dash-card p-6 space-y-6">
                 <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-3">
-                  <h2 className="text-xs font-semibold text-zinc-400 tracking-wider uppercase font-mono">
+                  <h2 className="section-label">
                     Active Startup Config
                   </h2>
-                  <span className="text-[9px] font-mono bg-indigo-500/15 text-indigo-400 rounded-full px-2.5 py-0.5 border border-indigo-500/15">
-                    WORKSPACE_ACTIVE
+                  <span className="rounded-full px-2.5 py-0.5 text-[11px] font-medium border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">
+                    Active Workspace
                   </span>
                 </div>
 
@@ -698,7 +700,7 @@ export default function SettingsPage() {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                        <label className="muted-label mb-2 block">
                           Startup Name
                         </label>
                         <input
@@ -706,65 +708,65 @@ export default function SettingsPage() {
                           value={projName}
                           onChange={(e) => setProjName(e.target.value)}
                           required
-                          className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                          className="dash-input"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                        <label className="muted-label mb-2 block">
                           Catchy Tagline
                         </label>
                         <input
                           type="text"
                           value={projTagline}
                           onChange={(e) => setProjTagline(e.target.value)}
-                          className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                          className="dash-input"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                      <label className="muted-label mb-2 block">
                         Concept / Idea Description
                       </label>
                       <textarea
                         value={projDesc}
                         onChange={(e) => setProjDesc(e.target.value)}
                         rows={3}
-                        className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                        className="dash-input"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                        <label className="muted-label mb-2 block">
                           Industry
                         </label>
                         <input
                           type="text"
                           value={projIndustry}
                           onChange={(e) => setProjIndustry(e.target.value)}
-                          className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                          className="dash-input"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                        <label className="muted-label mb-2 block">
                           Target Audience
                         </label>
                         <input
                           type="text"
                           value={projAudience}
                           onChange={(e) => setProjAudience(e.target.value)}
-                          className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                          className="dash-input"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                        <label className="muted-label mb-2 block">
                           Stage
                         </label>
                         <select
                           value={projStage}
                           onChange={(e) => setProjStage(e.target.value)}
-                          className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white focus:border-indigo-500/40 focus:outline-none cursor-pointer"
+                          className="dash-input"
                         >
                           <option value="ideation">Ideation</option>
                           <option value="validation">Validation</option>
@@ -777,7 +779,7 @@ export default function SettingsPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                        <label className="muted-label mb-2 block">
                           Website URL
                         </label>
                         <input
@@ -785,11 +787,11 @@ export default function SettingsPage() {
                           value={projWebsite}
                           onChange={(e) => setProjWebsite(e.target.value)}
                           placeholder="https://myproduct.com"
-                          className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                          className="dash-input"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
+                        <label className="muted-label mb-2 block">
                           GitHub Repository URL
                         </label>
                         <input
@@ -797,13 +799,13 @@ export default function SettingsPage() {
                           value={projGithub}
                           onChange={(e) => setProjGithub(e.target.value)}
                           placeholder="https://github.com/myusername/myrepo"
-                          className="w-full rounded-lg border border-[#1a1a1a] bg-[#030303] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                          className="dash-input"
                         />
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-zinc-500 text-xs font-mono">
+                  <div className="text-center py-12 text-[#525252] text-xs">
                     No active startup loaded. Switch to a workspace on the right.
                   </div>
                 )}
@@ -814,7 +816,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 text-xs font-semibold transition-all cursor-pointer shadow-md shadow-indigo-500/10 disabled:opacity-50"
+                    className="dash-btn dash-btn-primary"
                   >
                     {saving ? 'Updating Project...' : 'Update Project Details'}
                   </button>
@@ -825,15 +827,15 @@ export default function SettingsPage() {
 
           {/* Right: Workspace Switcher list */}
           <div className="space-y-6">
-            <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-4">
+            <div className="dash-card p-6 space-y-4">
               <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-3">
-                <h2 className="text-xs font-semibold text-zinc-400 tracking-wider uppercase font-mono">
+                <h2 className="section-label">
                   Your Workspaces
                 </h2>
                 
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                  className="text-[11px] font-medium text-[#6366f1] hover:text-[#5558e6] transition-colors cursor-pointer"
                 >
                   + Create New
                 </button>
@@ -849,8 +851,8 @@ export default function SettingsPage() {
                       onClick={() => handleSwitchProject(s.id)}
                       className={`rounded-lg border p-3 flex items-center justify-between cursor-pointer transition-all hover:bg-white/[0.01] ${
                         isActive
-                          ? 'border-indigo-500/40 bg-indigo-500/[0.02]'
-                          : 'border-[#1a1a1a] bg-[#030303]'
+                          ? 'border-[#6366f1]/40 bg-[#6366f1]/[0.02]'
+                          : 'border-[#1a1a1a] bg-[#050505]'
                       }`}
                     >
                       <div className="space-y-0.5 truncate pr-2">
@@ -862,13 +864,13 @@ export default function SettingsPage() {
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           )}
                         </div>
-                        <span className="text-[10px] text-zinc-600 truncate block">
+                        <span className="text-[10px] text-zinc-650 truncate block">
                           {s.tagline || s.description || 'No concept description.'}
                         </span>
                       </div>
                       
                       {!isActive && (
-                        <span className="text-[9px] font-semibold text-zinc-500 font-mono group-hover:text-zinc-300">
+                        <span className="text-[11px] font-medium text-[#525252] group-hover:text-zinc-300">
                           Switch &rarr;
                         </span>
                       )}
@@ -885,11 +887,11 @@ export default function SettingsPage() {
       {/* CREATE STARTUP MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl border border-[#1a1a1a] bg-[#0c0c0c] p-6 space-y-6 shadow-2xl relative">
+          <div className="w-full max-w-md rounded-2xl border border-[#1a1a1a] bg-[#050505] p-6 space-y-6 shadow-2xl relative animate-reveal">
             <div className="absolute top-4 right-4">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-zinc-500 hover:text-zinc-300 text-sm font-mono cursor-pointer"
+                className="text-[#525252] hover:text-[#a1a1a1] text-sm cursor-pointer"
               >
                 ✕
               </button>
@@ -897,30 +899,30 @@ export default function SettingsPage() {
 
             <div className="space-y-1">
               <h3 className="font-display font-bold text-xl text-white">New Startup Workspace</h3>
-              <p className="text-xs text-zinc-500">Initialize a clean 90-day roadmap for your new startup concept.</p>
+              <p className="text-xs text-[#a1a1a1]">Initialize a clean 90-day roadmap for your new startup concept.</p>
             </div>
 
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">Startup Name</label>
+                <label className="muted-label mb-2 block">Startup Name</label>
                 <input
                   type="text"
                   required
                   placeholder="E.g., Invoicing AI"
                   value={newStartupName}
                   onChange={(e) => setNewStartupName(e.target.value)}
-                  className="w-full rounded-lg border border-[#1a1a1a] bg-[#050505] px-3.5 py-2.5 text-sm text-white focus:border-indigo-500/40 focus:outline-none"
+                  className="dash-input"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">Concept Description</label>
+                <label className="muted-label mb-2 block">Concept Description</label>
                 <textarea
                   placeholder="Describe what pain point you want to solve..."
                   value={newStartupDesc}
                   onChange={(e) => setNewStartupDesc(e.target.value)}
                   rows={3}
-                  className="w-full rounded-lg border border-[#1a1a1a] bg-[#050505] px-3.5 py-2.5 text-sm text-white focus:border-indigo-500/40 focus:outline-none"
+                  className="dash-input"
                 />
               </div>
 
@@ -928,13 +930,13 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg border border-[#1a1a1a] px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer"
+                  className="dash-btn dash-btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 text-xs font-semibold transition-all cursor-pointer shadow-md shadow-indigo-500/10"
+                  className="dash-btn dash-btn-primary"
                 >
                   Create & Launch
                 </button>

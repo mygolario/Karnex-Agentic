@@ -102,7 +102,6 @@ function BillingContent() {
   }, [supabase])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadBillingData()
   }, [loadBillingData])
 
@@ -124,8 +123,6 @@ function BillingContent() {
 
       const data = await response.json()
       if (data.payLink) {
-        // Redirect user to the secure payment page
-        // eslint-disable-next-line react-hooks/immutability
         window.location.href = data.payLink
       } else {
         throw new Error('Payment gateway link was not returned.')
@@ -140,75 +137,75 @@ function BillingContent() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 pb-12">
+    <div className="mx-auto max-w-[1000px] space-y-10 pb-16 dash-reveal">
       {/* Header */}
-      <div className="border-b border-[#1a1a1a] pb-6">
-        <h1 className="font-display text-3xl font-bold text-white">
+      <div className="border-b border-[#1a1a1a] pb-8">
+        <h1 className="font-display font-bold text-[clamp(28px,3.5vw,36px)] leading-[1.15] tracking-[-0.025em] text-white">
           Billing & Subscriptions
         </h1>
-        <p className="mt-1.5 text-sm text-zinc-500">
+        <p className="mt-2 text-[15px] text-[#737373]">
           Manage your startup subscription plan, transaction history, and agent compute resource limits.
         </p>
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#1a1a1a] border border-[#1a1a1a] rounded-2xl overflow-hidden">
         {/* Current Plan */}
-        <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-3">
-          <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+        <div className="bg-[#050505] p-6 space-y-3">
+          <span className="muted-label">
             Active Plan
           </span>
           {loading ? (
-            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-6 w-24 bg-[#1a1a1a]" />
           ) : subscription ? (
             <>
               <h3 className="text-xl font-bold text-white capitalize">{subscription.plan}</h3>
-              <p className="text-xs text-zinc-500 leading-normal">
-                Status: <span className="text-emerald-400 capitalize">{subscription.status}</span>. Expires on {new Date(subscription.expires_at).toLocaleDateString()}.
+              <p className="text-xs text-[#a1a1a1] leading-normal">
+                Status: <span className="text-emerald-450 capitalize">{subscription.status}</span>. Expires on {new Date(subscription.expires_at).toLocaleDateString()}.
               </p>
             </>
           ) : (
             <>
               <h3 className="text-xl font-bold text-white">Free Trial</h3>
-              <p className="text-xs text-zinc-500">Upgrade to an active tier below to deploy unlimited agents.</p>
+              <p className="text-xs text-[#525252]">Upgrade to an active tier below to deploy unlimited agents.</p>
             </>
           )}
         </div>
 
         {/* Compute usage */}
-        <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-3">
-          <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+        <div className="bg-[#050505] p-6 space-y-3">
+          <span className="muted-label">
             Compute Limit
           </span>
           {loading ? (
-            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-6 w-24 bg-[#1a1a1a]" />
           ) : (
             <>
               <h3 className="text-xl font-bold text-white">
                 {subscription?.tasks_used_this_cycle ?? 0} / {subscription?.tasks_limit ?? 10}
               </h3>
-              <p className="text-xs text-zinc-500">Agent tasks run in current billing cycle.</p>
+              <p className="text-xs text-[#a1a1a1]">Agent tasks run in current billing cycle.</p>
             </>
           )}
         </div>
 
         {/* Payment Method */}
-        <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] p-6 space-y-3">
-          <span className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+        <div className="bg-[#050505] p-6 space-y-3">
+          <span className="muted-label">
             Payment Mode
           </span>
           <h3 className="text-xl font-bold text-white">USDT / USDC</h3>
-          <p className="text-xs text-zinc-500">Decentralized merchant checkout via OxaPay.</p>
+          <p className="text-xs text-[#a1a1a1]">Decentralized merchant checkout via OxaPay.</p>
         </div>
       </div>
 
       {/* Upgrade Options */}
       <div className="space-y-4">
-        <h2 className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+        <h2 className="section-label">
           Available Subscription Tiers
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#1a1a1a] border border-[#1a1a1a] rounded-2xl overflow-hidden">
           {pricingTiers.map((tier) => {
             const isCurrentPlan = subscription?.plan?.toLowerCase() === tier.id.toLowerCase()
             const isCheckingOut = submittingPlan === tier.id
@@ -216,31 +213,31 @@ function BillingContent() {
             return (
               <div
                 key={tier.name}
-                className={`rounded-xl border p-6 flex flex-col justify-between bg-[#07070a] relative ${
-                  tier.badge ? 'border-indigo-500/30 shadow-lg shadow-indigo-500/5' : 'border-[#1a1a1a]'
+                className={`bg-[#050505] p-6 flex flex-col justify-between relative ${
+                  tier.badge ? 'bg-[#6366f1]/[0.01]' : ''
                 }`}
               >
                 {tier.badge && (
-                  <span className="absolute -top-2.5 right-6 rounded bg-indigo-500 px-2 py-0.5 text-[9px] font-bold text-white font-mono uppercase tracking-wider">
+                  <span className="absolute top-6 right-6 rounded-full bg-[#6366f1] px-2.5 py-0.5 text-[10px] font-medium text-white uppercase tracking-[0.06em]">
                     {tier.badge}
                   </span>
                 )}
                 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-200">{tier.name}</h3>
                     <div className="mt-2 flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-white tracking-tight">{tier.price}</span>
-                      <span className="text-xs text-zinc-600 font-mono">/ mo</span>
+                      <span className="font-display text-3xl font-bold text-white tracking-tight">{tier.price}</span>
+                      <span className="text-xs text-[#525252]">/ mo</span>
                     </div>
-                    <p className="mt-2 text-xs text-zinc-500 leading-relaxed">{tier.description}</p>
+                    <p className="mt-2 text-xs text-[#a1a1a1] leading-relaxed">{tier.description}</p>
                   </div>
 
                   <div className="border-t border-[#1a1a1a] pt-4">
-                    <ul className="space-y-2">
+                    <ul className="space-y-2.5">
                       {tier.features.map((feat, idx) => (
-                        <li key={idx} className="flex items-center gap-2 text-[11px] text-zinc-400">
-                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                        <li key={idx} className="flex items-center gap-2 text-[12px] text-[#a1a1a1]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#6366f1] opacity-60" />
                           {feat}
                         </li>
                       ))}
@@ -252,15 +249,15 @@ function BillingContent() {
                   type="button"
                   onClick={() => handleCheckout(tier.id)}
                   disabled={isCurrentPlan || isCheckingOut || loading}
-                  className={`mt-6 w-full rounded-lg px-4 py-2 text-xs font-semibold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                  className={`dash-btn w-full mt-6 ${
                     isCurrentPlan
-                      ? 'border border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
+                      ? 'border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 opacity-100 cursor-default'
                       : tier.badge
-                      ? 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-md shadow-indigo-500/10'
-                      : 'border border-[#1a1a1a] hover:bg-white/[0.02] text-zinc-400 hover:text-zinc-200'
+                      ? 'dash-btn-primary'
+                      : 'dash-btn-secondary'
                   }`}
                 >
-                  {isCurrentPlan ? 'Current Plan' : isCheckingOut ? 'Opening Gateway...' : `Choose ${tier.name} Plan`}
+                  {isCurrentPlan ? 'Current Plan' : isCheckingOut ? 'Opening Gateway...' : `Choose ${tier.name}`}
                 </button>
               </div>
             )
@@ -270,50 +267,52 @@ function BillingContent() {
 
       {/* Transaction History Log */}
       <div className="space-y-4">
-        <h2 className="text-xs font-semibold text-zinc-500 tracking-wider uppercase font-mono">
+        <h2 className="section-label">
           Billing Invoice History
         </h2>
-        <div className="rounded-xl border border-[#1a1a1a] bg-[#07070a] overflow-hidden">
+        <div className="dash-card overflow-hidden">
           {loading ? (
             <div className="p-6 space-y-3">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full bg-[#1a1a1a]" />
+              <Skeleton className="h-6 w-full bg-[#1a1a1a]" />
             </div>
           ) : payments.length > 0 ? (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[#1a1a1a] bg-[#020203] text-xs font-semibold text-zinc-400 uppercase font-mono">
-                  <th className="px-6 py-4">Invoice ID</th>
-                  <th className="px-6 py-4">USD Value</th>
-                  <th className="px-6 py-4">Asset</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4 text-right">Payment Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1a1a1a] text-xs">
-                {payments.map((pay) => (
-                  <tr key={pay.id} className="hover:bg-white/[0.01] transition-all text-zinc-300">
-                    <td className="px-6 py-4 font-mono text-[10px] text-zinc-400">{pay.id}</td>
-                    <td className="px-6 py-4 font-bold text-white">${pay.amount_usd}</td>
-                    <td className="px-6 py-4 font-mono text-zinc-400">{pay.currency}</td>
-                    <td className="px-6 py-4 text-zinc-500">{new Date(pay.created_at).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border capitalize ${
-                        pay.status === 'confirmed'
-                          ? 'bg-emerald-950/30 border-emerald-500/20 text-emerald-400'
-                          : pay.status === 'confirming'
-                          ? 'bg-amber-950/30 border-amber-500/20 text-amber-400'
-                          : 'bg-zinc-900 border-zinc-700 text-zinc-500'
-                      }`}>
-                        {pay.status}
-                      </span>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#1a1a1a] bg-[#050505] text-[11px] font-semibold text-[#525252] uppercase tracking-[0.06em]">
+                    <th className="px-6 py-4">Invoice ID</th>
+                    <th className="px-6 py-4">USD Value</th>
+                    <th className="px-6 py-4">Asset</th>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4 text-right">Payment Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[#1a1a1a] text-xs">
+                  {payments.map((pay) => (
+                    <tr key={pay.id} className="hover:bg-white/[0.01] transition-colors text-[#e5e5e5]">
+                      <td className="px-6 py-4 font-mono text-[11px] text-[#a1a1a1]">{pay.id}</td>
+                      <td className="px-6 py-4 font-semibold text-white">${pay.amount_usd}</td>
+                      <td className="px-6 py-4 font-mono text-[#a1a1a1]">{pay.currency}</td>
+                      <td className="px-6 py-4 text-[#737373]">{new Date(pay.created_at).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium border capitalize ${
+                          pay.status === 'confirmed'
+                            ? 'bg-emerald-950/30 border-emerald-500/20 text-emerald-400'
+                            : pay.status === 'confirming'
+                            ? 'bg-amber-950/30 border-amber-500/20 text-amber-450'
+                            : 'bg-[#1a1a1a] border-[#262626] text-[#525252]'
+                        }`}>
+                          {pay.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
-            <div className="p-12 text-center text-zinc-600 text-sm">No transaction invoices recorded.</div>
+            <div className="p-12 text-center text-[#525252] text-sm">No transaction invoices recorded.</div>
           )}
         </div>
       </div>

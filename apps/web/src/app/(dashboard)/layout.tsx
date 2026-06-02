@@ -156,35 +156,32 @@ export default async function DashboardLayout({
       {/* Main content area */}
       <div className="flex-1 pl-64 flex flex-col min-h-screen">
         
-        {/* Top Header / Status bar */}
-        <header className="sticky top-0 z-30 h-20 border-b border-[#1a1a1a]/40 flex items-center justify-between px-8 bg-[#050505]/75 backdrop-blur-md">
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 h-14 border-b border-[#1a1a1a] flex items-center justify-between px-8 bg-[#050505]/90 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <span className="text-[10px] text-zinc-500 font-mono tracking-wider font-semibold">WORKSPACE</span>
-            <span className="text-zinc-700">/</span>
-            <span className="text-xs font-bold text-zinc-200 font-mono tracking-wide uppercase truncate max-w-[200px]">
+            <span className="text-[13px] text-[#525252]">Workspace</span>
+            <span className="text-[#1a1a1a]">/</span>
+            <span className="text-[13px] font-medium text-[#e5e5e5] truncate max-w-[200px]">
               {activeStartupName}
             </span>
-            <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[9px] font-bold text-indigo-400 border border-indigo-500/15 font-mono uppercase tracking-wide">
+            <span className="text-[11px] font-medium tracking-[0.05em] uppercase text-[#6366f1] bg-[#6366f1]/10 px-2 py-0.5 rounded capitalize">
               {activeStartupStage}
             </span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-5">
             {/* System Status */}
-            <div className="flex items-center gap-2 rounded-full border border-[#1a1a1a]/40 bg-[#07070a]/60 px-3.5 py-1.5 text-[10px] font-mono font-semibold tracking-wide">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-zinc-400 font-medium">All Agents Standby</span>
+            <div className="flex items-center gap-2 text-[13px]">
+              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+              <span className="text-[#a1a1a1]">All agents standby</span>
             </div>
 
             {/* Quick Action Button */}
             <a
               href="/agents"
-              className="flex items-center gap-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-indigo-500/10 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              className="dash-btn dash-btn-primary text-[13px] px-4 py-2"
             >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               Deploy Agent
@@ -193,7 +190,7 @@ export default async function DashboardLayout({
         </header>
 
         {/* Content view */}
-        <main className="flex-1 p-8 bg-[#050505]">
+        <main className="flex-1 px-8 py-8 bg-[#050505]">
           {children}
         </main>
       </div>
