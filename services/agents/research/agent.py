@@ -15,27 +15,28 @@ class QueryGeneratorOutput(BaseModel):
     queries: List[str] = Field(..., min_items=3, max_items=3, description="List of exactly 3 search queries.")
 
 
-async def _update_run_status_detail(run_id: str, detail: str):
+async def _update_run_status_detail(supabase: Any, run_id: str, detail: str):
     """Updates the status column of the agent_runs row to represent the current execution step."""
     try:
-        supabase = get_supabase_admin()
         supabase.table("agent_runs").update({"status": detail}).eq("id", run_id).execute()
     except Exception as e:
         logger.warning(f"Could not update status detail for run {run_id} to '{detail}': {e}")
 
 
-async def run_research(input_data: ResearchInput, run_id: str) -> ResearchOutput:
+async def run_research(input_data: ResearchInput, run_id: str, supabase: Any = None) -> ResearchOutput:
     """Executes the Research Agent using a supervisor-worker topology:
     
     1. Spawns query generator sub-agent to formulate 3 distinct queries.
     2. Spawns web scraper workers in parallel to gather DuckDuckGo data.
     3. Spawns a synthesizer sub-agent to compile the structured ResearchBrief.
     """
+    if supabase is None:
+        supabase = get_supabase_admin()
     founder_id = input_data.founder_id
     logger.info(f"Running research-v1 for founder={founder_id}, run_id={run_id}")
 
     # 1. Spawn Query Generator Sub-Agent
-    await _update_run_status_detail(run_id, "generating_search_queries")
+    await _update_run_status_detail(supabase, run_id, "generating_search_queries")
     
     llm_flash = ChatOpenAI(
         model=settings.GEMINI_MODEL_FLASH,
@@ -72,7 +73,7 @@ async def run_research(input_data: ResearchInput, run_id: str) -> ResearchOutput
     logger.info(f"Sub-agent query-generator produced queries: {queries}")
 
     # 2. Spawn Parallel Web Search/Scraper Workers
-    await _update_run_status_detail(run_id, "searching_web_sources")
+    await _update_run_status_detail(supabase, run_id, "searching_web_sources")
     
     # RunDuckDuckGo search concurrently for each query
     search_tasks = []
@@ -87,7 +88,7 @@ async def run_research(input_data: ResearchInput, run_id: str) -> ResearchOutput
         aggregated_context += f"### Results for Query {idx+1}: '{q}'\n{summary}\n\n"
 
     # 3. Spawn Synthesizer Sub-Agent
-    await _update_run_status_detail(run_id, "synthesizing_brief")
+    await _update_run_status_detail(supabase, run_id, "synthesizing_brief")
     
     llm_pro = ChatOpenAI(
         model=settings.GEMINI_MODEL,

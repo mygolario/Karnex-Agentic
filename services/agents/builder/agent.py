@@ -37,10 +37,9 @@ class UICodeOutput(BaseModel):
     react_code: str = Field(..., description="Complete React TypeScript file content.")
 
 
-async def _update_run_status_detail(run_id: str, detail: str):
+async def _update_run_status_detail(supabase: Any, run_id: str, detail: str):
     """Updates the status column of the agent_runs row to represent the current execution step."""
     try:
-        supabase = get_supabase_admin()
         supabase.table("agent_runs").update({"status": detail}).eq("id", run_id).execute()
     except Exception as e:
         logger.warning(f"Could not update status detail for run {run_id} to '{detail}': {e}")
@@ -105,7 +104,7 @@ async def get_github_installation_token(app_id: str, private_key_pem: str, targe
         return None
 
 
-async def run_builder(input_data: BuilderInput, run_id: str) -> BuilderOutput:
+async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = None) -> BuilderOutput:
     """Executes the Builder Agent using a supervisor-worker topology:
     
     1. Supervisor decomposes specs and drafts a file tree plan.
@@ -114,11 +113,13 @@ async def run_builder(input_data: BuilderInput, run_id: str) -> BuilderOutput:
     4. Executes linter and self-repair validation loops.
     5. Commits generated artifacts to a GitHub branch via real or mock tokens.
     """
+    if supabase is None:
+        supabase = get_supabase_admin()
     founder_id = input_data.founder_id
     logger.info(f"Running builder-v1 for founder={founder_id}, run_id={run_id}")
 
     # Step 1: Supervisor Decompose Specs
-    await _update_run_status_detail(run_id, "decomposing_specifications")
+    await _update_run_status_detail(supabase, run_id, "decomposing_specifications")
     
     llm_pro = ChatOpenAI(
         model=settings.GEMINI_MODEL,
@@ -160,7 +161,7 @@ async def run_builder(input_data: BuilderInput, run_id: str) -> BuilderOutput:
     # Step 2: Spawn Sub-Agents for each file in the plan
     for file_spec in plan.files_to_generate:
         if file_spec.role == "db_migration":
-            await _update_run_status_detail(run_id, f"spawning_db_designer")
+            await _update_run_status_detail(supabase, run_id, f"spawning_db_designer")
             
             db_prompt = ChatPromptTemplate.from_messages([
                 ("system", DB_DESIGNER_SYSTEM_PROMPT),
@@ -188,7 +189,7 @@ async def run_builder(input_data: BuilderInput, run_id: str) -> BuilderOutput:
             ))
             
         elif file_spec.role in ("frontend_page", "component", "api_route"):
-            await _update_run_status_detail(run_id, f"spawning_ui_coder")
+            await _update_run_status_detail(supabase, run_id, f"spawning_ui_coder")
             
             ui_prompt = ChatPromptTemplate.from_messages([
                 ("system", UI_CODER_SYSTEM_PROMPT),
@@ -218,7 +219,7 @@ async def run_builder(input_data: BuilderInput, run_id: str) -> BuilderOutput:
             ))
 
     # Step 3: Self-Healing & Linter Verification Loop
-    await _update_run_status_detail(run_id, "running_linter_validation")
+    await _update_run_status_detail(supabase, run_id, "running_linter_validation")
     await asyncio.sleep(1.0) # Simulate compilation step
     
     # Simple verification logic check
@@ -232,7 +233,7 @@ async def run_builder(input_data: BuilderInput, run_id: str) -> BuilderOutput:
                 gf.content += "\n// Fixed brace mismatch: compiled successfully."
 
     # Step 4: Commit to GitHub (Real or Simulated)
-    await _update_run_status_detail(run_id, "committing_to_github")
+    await _update_run_status_detail(supabase, run_id, "committing_to_github")
     
     github_repo_url = input_data.github_repo or "https://github.com/myusername/myrepo"
     app_id = settings.GMAIL_CLIENT_ID # Overload/use GITHUB_APP_ID if loaded in settings config

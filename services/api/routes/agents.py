@@ -317,7 +317,7 @@ async def run_research_async_wrapper(run_id: str, input_data: ResearchInput):
         }).eq("id", run_id).execute()
 
         # Run the agent with a 5-minute timeout (300 seconds)
-        result = await asyncio.wait_for(run_research(input_data, run_id), timeout=300.0)
+        result = await asyncio.wait_for(run_research(input_data, run_id, supabase=supabase), timeout=300.0)
 
         # Update run status to success
         supabase.table("agent_runs").update({
@@ -370,7 +370,7 @@ async def run_builder_async_wrapper(run_id: str, input_data: BuilderInput):
         }).eq("id", run_id).execute()
 
         # Run the agent with a 5-minute timeout (300 seconds)
-        result = await asyncio.wait_for(run_builder(input_data, run_id), timeout=300.0)
+        result = await asyncio.wait_for(run_builder(input_data, run_id, supabase=supabase), timeout=300.0)
 
         # Update run status to success
         supabase.table("agent_runs").update({
