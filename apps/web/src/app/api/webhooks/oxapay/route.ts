@@ -84,6 +84,11 @@ export async function POST(req: Request) {
       webhook_received_at: now.toISOString(),
     }, { onConflict: 'oxapay_track_id' })
 
+    let tasksLimit = 100
+    if (plan === 'builder') tasksLimit = 500
+    else if (plan === 'founder') tasksLimit = 999999
+    else if (plan === 'studio') tasksLimit = 999999
+
     // Activate or renew subscription
     await supabase.from('subscriptions').upsert({
       founder_id: founderId,
@@ -93,6 +98,7 @@ export async function POST(req: Request) {
       expires_at: expiresAt.toISOString(),
       renewed_at: now.toISOString(),
       tasks_used_this_cycle: 0,
+      tasks_limit: tasksLimit,
     }, { onConflict: 'founder_id' })
 
     return new Response('ok', { status: 200 })
