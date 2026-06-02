@@ -58,7 +58,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: errorMsg }, { status: 500 })
     }
 
-    const payLink = data.payLink || data.paymentUrl || data.data?.payLink || data.data?.paymentUrl || data.result?.paymentUrl || data.result?.payLink
+    const payLink = 
+      data.payLink || 
+      data.paymentUrl || 
+      data.payment_url || 
+      data.data?.payLink || 
+      data.data?.paymentUrl || 
+      data.data?.payment_url || 
+      data.data?.pay_link || 
+      data.result?.paymentUrl || 
+      data.result?.payment_url || 
+      data.result?.payLink || 
+      data.result?.pay_link
+
     if (!payLink) {
       return NextResponse.json({ error: 'Payment gateway link was not returned by provider' }, { status: 500 })
     }
