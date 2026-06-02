@@ -27,26 +27,43 @@ export async function POST(req: Request) {
     const response = await fetch('https://api.oxapay.com/v1/payment/invoice', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'merchant_api_key': process.env.OXAPAY_MERCHANT_API_KEY || ''
       },
       body: JSON.stringify({
-        key: process.env.OXAPAY_MERCHANT_API_KEY,
         amount: price,
         currency: 'USD',
-        order_id: orderId,
+        orderId: orderId,
         email: user.email,
-        callback_url: process.env.NEXT_PUBLIC_OXAPAY_CALLBACK_URL,
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing`,
+        callbackUrl: process.env.NEXT_PUBLIC_OXAPAY_CALLBACK_URL,
+        returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/billing`,
         sandbox: process.env.NEXT_PUBLIC_OXAPAY_SANDBOX === 'true'
       })
     })
 
     const data = await response.json()
-    if (data.status !== 1) {
-      return NextResponse.json({ error: data.message || 'Failed to initialize payment gateway' }, { status: 500 })
+    console.log('OxaPay invoice response:', data)
+
+    // Check success. OxaPay success can be indicated by response.ok and (status === 200 or result === 1)
+    const isSuccess = response.ok && (
+      data.status === 200 ||
+      data.result === 1 ||
+      (data.message && /success/i.test(data.message)) ||
+      (typeof data.result === 'object' && data.result !== null) ||
+      (typeof data.data === 'object' && data.data !== null)
+    )
+
+    if (!isSuccess) {
+      const errorMsg = data.message || data.error || 'Failed to initialize payment gateway'
+      return NextResponse.json({ error: errorMsg }, { status: 500 })
     }
 
-    return NextResponse.json({ payLink: data.payLink })
+    const payLink = data.payLink || data.paymentUrl || data.data?.payLink || data.data?.paymentUrl || data.result?.paymentUrl || data.result?.payLink
+    if (!payLink) {
+      return NextResponse.json({ error: 'Payment gateway link was not returned by provider' }, { status: 500 })
+    }
+
+    return NextResponse.json({ payLink })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     console.error('Checkout error:', err)
