@@ -269,3 +269,72 @@ select.dash-input {
   height: 100%;
   object-fit: cover;
 }
+
+/* ──────────── Forge Workspace ──────────── */
+
+.forge-grid-bg {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.forge-accent-bar {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #6366f1 20%, #a855f7 50%, #06b6d4 80%, transparent);
+  opacity: 0.5;
+}
+
+.forge-panel {
+  background: rgba(10, 10, 14, 0.85);
+  border: 1px solid #141417;
+}
+
+.forge-tab-indicator {
+  transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Agent feed message entry */
+.forge-msg-enter {
+  animation: forgeMsgIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes forgeMsgIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Thinking dots */
+.forge-dots span {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #525252;
+  animation: forgeDot 1.2s infinite ease-in-out both;
+}
+.forge-dots span:nth-child(2) { animation-delay: 0.15s; }
+.forge-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes forgeDot {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* Code syntax tokens */
+.syn-kw { color: #818cf8; }
+.syn-str { color: #6ee7b7; }
+.syn-cmt { color: #3f3f46; font-style: italic; }
+.syn-tag { color: #67e8f9; }
+.syn-num { color: #fcd34d; }
+.syn-fn { color: #c4b5fd; }
+.syn-op { color: #a1a1aa; }
+.syn-attr { color: #86efac; }
+
+/* Forge scrollbar — thinner for panels */
+.forge-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.forge-scroll::-webkit-scrollbar-track { background: transparent; }
+.forge-scroll::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; }
+.forge-scroll::-webkit-scrollbar-thumb:hover { background: #262626; }
+
+/* Browser chrome dots */
+.forge-dot-red { background: #ef4444; }
+.forge-dot-yellow { background: #eab308; }
+.forge-dot-green { background: #22c55e; }

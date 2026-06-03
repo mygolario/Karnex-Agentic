@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import SidebarNav from '@/components/SidebarNav'
 import { createClient } from '@supabase/supabase-js'
@@ -148,6 +149,11 @@ export default async function DashboardLayout({
     fullName: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder',
   }
 
+  // Detect if we're on the Forge route for full-bleed layout
+  const headersList = await headers()
+  const pathname = headersList.get('x-pathname') || headersList.get('x-invoke-path') || ''
+  const isForge = pathname.startsWith('/forge')
+
   return (
     <div className="flex min-h-screen bg-[#050505] font-sans antialiased text-[#e5e5e5]">
       {/* Sidebar Navigation */}
@@ -156,41 +162,43 @@ export default async function DashboardLayout({
       {/* Main content area */}
       <div className="flex-1 pl-64 flex flex-col min-h-screen">
         
-        {/* Top Header */}
-        <header className="sticky top-0 z-30 h-14 border-b border-[#1a1a1a] flex items-center justify-between px-8 bg-[#050505]/90 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <span className="text-[13px] text-[#525252]">Workspace</span>
-            <span className="text-[#1a1a1a]">/</span>
-            <span className="text-[13px] font-medium text-[#e5e5e5] truncate max-w-[200px]">
-              {activeStartupName}
-            </span>
-            <span className="text-[11px] font-medium tracking-[0.05em] uppercase text-[#6366f1] bg-[#6366f1]/10 px-2 py-0.5 rounded capitalize">
-              {activeStartupStage}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-5">
-            {/* System Status */}
-            <div className="flex items-center gap-2 text-[13px]">
-              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span className="text-[#a1a1a1]">All agents standby</span>
+        {/* Top Header — hidden on Forge for full-bleed IDE */}
+        {!isForge && (
+          <header className="sticky top-0 z-30 h-14 border-b border-[#1a1a1a] flex items-center justify-between px-8 bg-[#050505]/90 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <span className="text-[13px] text-[#525252]">Workspace</span>
+              <span className="text-[#1a1a1a]">/</span>
+              <span className="text-[13px] font-medium text-[#e5e5e5] truncate max-w-[200px]">
+                {activeStartupName}
+              </span>
+              <span className="text-[11px] font-medium tracking-[0.05em] uppercase text-[#6366f1] bg-[#6366f1]/10 px-2 py-0.5 rounded capitalize">
+                {activeStartupStage}
+              </span>
             </div>
 
-            {/* Quick Action Button */}
-            <a
-              href="/agents"
-              className="dash-btn dash-btn-primary text-[13px] px-4 py-2"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Deploy Agent
-            </a>
-          </div>
-        </header>
+            <div className="flex items-center gap-5">
+              {/* System Status */}
+              <div className="flex items-center gap-2 text-[13px]">
+                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                <span className="text-[#a1a1a1]">All agents standby</span>
+              </div>
 
-        {/* Content view */}
-        <main className="flex-1 px-8 py-8 bg-[#050505]">
+              {/* Quick Action Button */}
+              <a
+                href="/agents"
+                className="dash-btn dash-btn-primary text-[13px] px-4 py-2"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Deploy Agent
+              </a>
+            </div>
+          </header>
+        )}
+
+        {/* Content view — no padding on Forge */}
+        <main className={isForge ? 'flex-1 bg-[#050505] overflow-hidden' : 'flex-1 px-8 py-8 bg-[#050505]'}>
           {children}
         </main>
       </div>
