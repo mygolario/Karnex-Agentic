@@ -52,7 +52,7 @@ export default function ForgeHeader({
       </div>
 
       {/* Center — Tabs */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+      <div className="absolute left-[calc(50%-32px)] -translate-x-1/2 flex items-center">
         <div className="flex items-center gap-1">
           {tabs.map((tab) => (
             <button
