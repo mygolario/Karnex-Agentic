@@ -139,19 +139,23 @@ export async function POST(
 
     const runId = run.id
 
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    const authHeader = token ? `Bearer ${token}` : (request.headers.get('authorization') || '')
+
     // Start background processing without blocking the HTTP response
     const afterFn = (NextServer as any).after || (NextServer as any).unstable_after
     if (afterFn) {
       afterFn(async () => {
         try {
-          await runAgentInBackground(runId, agentId, user.id, input, request.headers.get('authorization'))
+          await runAgentInBackground(runId, agentId, user.id, input, authHeader)
         } catch (err) {
           console.error(`Error executing background agent ${agentId} (run ${runId}):`, err)
         }
       })
     } else {
       console.warn('Next.js after() API is not supported in this runtime. Running background execution directly.')
-      runAgentInBackground(runId, agentId, user.id, input, request.headers.get('authorization')).catch(err => {
+      runAgentInBackground(runId, agentId, user.id, input, authHeader).catch(err => {
         console.error(`Error executing background agent ${agentId} (run ${runId}) fallback:`, err)
       })
     }

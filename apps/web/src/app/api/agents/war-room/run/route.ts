@@ -91,7 +91,9 @@ export async function POST(request: NextRequest) {
 
     // 3. Fire the war-room run by making a POST request to the Python service
     const agentServiceUrl = process.env.AGENT_SERVICE_URL || 'http://localhost:8000'
-    const authHeader = request.headers.get('authorization') || ''
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    const authHeader = token ? `Bearer ${token}` : (request.headers.get('authorization') || '')
 
     console.log(`Firing war-room agent run for founder ${user.id} at ${agentServiceUrl}/v1/agents/war-room`)
 
