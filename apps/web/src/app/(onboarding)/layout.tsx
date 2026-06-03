@@ -10,8 +10,8 @@ export default function OnboardingLayout({
       {/* Background Loop Video */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
         <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-25">
+          <source src="/videos/Onboarding-Background-Loop-Video.mp4" type="video/mp4" />
           <source src="/videos/Onboarding-Background-Loop-Video.MOV" type="video/quicktime" />
-          <source src="/videos/Onboarding-Background-Loop-Video.MOV" type="video/mp4" />
         </video>
         {/* Subtle overlays for maximum text legibility & smooth gradients */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/80 via-transparent to-[#050505]" />
