@@ -51,7 +51,7 @@ const agentDirectory: AgentInfo[] = [
     status: 'online',
     health: 100,
     category: 'Execution',
-    href: '/agents/builder',
+    href: '/forge',
   },
   {
     id: 'outreach-v1',
