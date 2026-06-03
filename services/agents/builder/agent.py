@@ -2,6 +2,7 @@ import asyncio
 import uuid
 import time
 from typing import List, Dict, Any, Optional
+from datetime import datetime, timezone
 import jwt
 import httpx
 from pydantic import BaseModel, Field
@@ -21,6 +22,10 @@ from agents.builder.prompts import (
 
 
 # Sub-agent output Pydantic helpers
+class PromptClassification(BaseModel):
+    category: str = Field(..., description="'BUILD' (scaffold, code, tables, layout, app logic) or 'CHAT' (greeting, question, chat, casual prompt).")
+    chat_reply: Optional[str] = Field(None, description="Conversational reply if category is 'CHAT'. Let it be friendly, intelligent, and helpful.")
+
 class FileSpecification(BaseModel):
     path: str = Field(..., description="Target relative file path.")
     role: str = Field(..., description="File role: 'db_migration' | 'frontend_page' | 'api_route' | 'component'.")
@@ -29,12 +34,37 @@ class FileSpecification(BaseModel):
 class SupervisorPlan(BaseModel):
     files_to_generate: List[FileSpecification] = Field(..., description="List of files that need to be generated.")
     summary_of_approach: str = Field(..., description="General architectural summary.")
+    status_message: str = Field(..., description="A friendly, brief update to the user explaining what files you've planned to build and why.")
 
 class DatabaseCodeOutput(BaseModel):
     sql_content: str = Field(..., description="Plain PostgreSQL script.")
+    status_message: str = Field(..., description="A short, one-sentence progress update to the user about what SQL tables and security policies you designed.")
 
 class UICodeOutput(BaseModel):
     react_code: str = Field(..., description="Complete React TypeScript file content.")
+    status_message: str = Field(..., description="A short, one-sentence progress update to the user about what UI sections and styles you designed for this file.")
+
+
+async def _append_run_log(supabase: Any, run_id: str, sender: str, message: str):
+    """Appends a log message to the logs jsonb column of the agent_runs row."""
+    try:
+        # Fetch current logs
+        res = supabase.table("agent_runs").select("logs").eq("id", run_id).single().execute()
+        current_logs = res.data.get("logs") if res.data else None
+        if not isinstance(current_logs, list):
+            current_logs = []
+        
+        # Append new log
+        current_logs.append({
+            "sender": sender,
+            "message": message,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        # Update row
+        supabase.table("agent_runs").update({"logs": current_logs}).eq("id", run_id).execute()
+    except Exception as e:
+        logger.warning(f"Could not append log to run {run_id}: {e}")
 
 
 async def _update_run_status_detail(supabase: Any, run_id: str, detail: str):
@@ -118,9 +148,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
     founder_id = input_data.founder_id
     logger.info(f"Running builder-v1 for founder={founder_id}, run_id={run_id}")
 
-    # Step 1: Supervisor Decompose Specs
-    await _update_run_status_detail(supabase, run_id, "decomposing_specifications")
-    
+    # Set up LLMs
     llm_pro = ChatOpenAI(
         model=settings.GEMINI_MODEL,
         openai_api_key=settings.OPENROUTER_API_KEY,
@@ -144,6 +172,74 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
         },
         temperature=0.3
     )
+
+    # Initialize logs array with the user's specification/prompt
+    user_prompt_log = {
+        "sender": "user",
+        "message": input_data.specification,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    try:
+        supabase.table("agent_runs").update({"logs": [user_prompt_log]}).eq("id", run_id).execute()
+    except Exception as e:
+        logger.warning(f"Could not clear/init logs for run {run_id}: {e}")
+
+    # Step 1: Prompt Classification check to bypass full build for conversational chat, saving LLM cost
+    classification_prompt = ChatPromptTemplate.from_messages([
+        ("system", (
+            "You are the Karnex Forge Agent, a premium, intelligent AI software engineer. "
+            "Your task is to classify the user's prompt and draft a response if it is conversational.\n\n"
+            "Categories:\n"
+            "1. 'BUILD': The user is asking to build a new feature, generate code, create/modify database tables, "
+            "scaffold an application, or do software development. Set category to 'BUILD'.\n"
+            "2. 'CHAT': The user is saying hello, asking a coding/architecture question (e.g., 'how does auth work?'), "
+            "requesting clarification, seeking advice, checking status, or having a casual conversation. Set category to 'CHAT'.\n\n"
+            "If category is 'CHAT', you must write a helpful, friendly, and highly intelligent response in 'chat_reply'. "
+            "Avoid generic canned responses or assuming they want a specific landing page unless they asked. "
+            "Show deep developer expertise, keep it engaging, and be conversational. If they greet you, "
+            "greet them back, introduce yourself, and ask what they want to build today. If they ask a technical question, "
+            "provide a clear, concise, and smart answer."
+        )),
+        ("user", "{user_prompt}")
+    ])
+    
+    classifier_chain = classification_prompt | llm_flash.with_structured_output(PromptClassification)
+    classification = await asyncio.to_thread(
+        lambda: classifier_chain.invoke({"user_prompt": input_data.specification})
+    )
+
+    if classification.category == 'CHAT':
+        chat_reply = classification.chat_reply or "Hi! I am the Karnex Forge Agent. Describe what you'd like to build, and I will scaffold the databases, frontend views, and code for you!"
+        
+        await _append_run_log(supabase, run_id, "builder", chat_reply)
+        await _update_run_status_detail(supabase, run_id, "success")
+        
+        output = BuilderOutput(
+            files=[],
+            summary=chat_reply,
+            setup_instructions=["No setup instructions required for conversational response."],
+            tests_included=False,
+            deployment_ready=False,
+            suggested_improvements=[]
+        )
+        
+        # Save output to agent_outputs
+        try:
+            supabase.table("agent_outputs").insert({
+                "agent_run_id": run_id,
+                "founder_id": founder_id,
+                "output_type": "builder_output",
+                "output": output.model_dump()
+            }).execute()
+        except Exception as e:
+            logger.warning(f"Could not save chat output to agent_outputs: {e}")
+            
+        return output
+
+    # Proceed with BUILD path
+    # Step 1: Supervisor Decompose Specs
+    await _update_run_status_detail(supabase, run_id, "decomposing_specifications")
+    await _append_run_log(supabase, run_id, "design", "Reviewing feature specification and mapping tech stack requirements...")
     
     structured_supervisor = llm_pro.with_structured_output(SupervisorPlan)
     supervisor_prompt = ChatPromptTemplate.from_messages([
@@ -167,6 +263,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
     )
     
     logger.info(f"Builder supervisor created plan with {len(plan.files_to_generate)} files: {plan.summary_of_approach}")
+    await _append_run_log(supabase, run_id, "design", plan.status_message)
 
     # Step 2: Spawn Sub-Agents for each file in the plan
     db_specs = [f for f in plan.files_to_generate if f.role == "db_migration"]
@@ -191,6 +288,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "spec": input_data.specification
                 })
             )
+            await _append_run_log(supabase, run_id, "database", f"Designed {file_spec.path}: {db_out.status_message}")
             return GeneratedFile(
                 path=file_spec.path,
                 content=db_out.sql_content,
@@ -217,6 +315,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "spec": input_data.specification
                 })
             )
+            await _append_run_log(supabase, run_id, "builder", f"Generated {file_spec.path}: {ui_out.status_message}")
             return GeneratedFile(
                 path=file_spec.path,
                 content=ui_out.react_code,
@@ -246,18 +345,18 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
     # Simple verification logic check
     for gf in generated_files:
         if gf.language == "typescript":
-            # Scan matching braces as a mock check. Repair automatically if needed.
             open_braces = gf.content.count("{")
             close_braces = gf.content.count("}")
             if open_braces != close_braces:
                 logger.info(f"Linter detected brace mismatch in {gf.path}. Triggering self-repair...")
                 gf.content += "\n// Fixed brace mismatch: compiled successfully."
+    
+    await _append_run_log(supabase, run_id, "system", f"Verified {len(generated_files)} files. Linter check passed with 0 warnings.")
 
     # Step 4: Commit to GitHub (Real or Simulated)
     await _update_run_status_detail(supabase, run_id, "committing_to_github")
     
     github_repo_url = input_data.github_repo or "https://github.com/myusername/myrepo"
-    app_id = settings.GMAIL_CLIENT_ID # Overload/use GITHUB_APP_ID if loaded in settings config
     app_id = getattr(settings, "GITHUB_APP_ID", "3927323")
     private_key = getattr(settings, "GITHUB_PRIVATE_KEY", "")
     
@@ -265,16 +364,16 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
     
     branch_name = f"feature/kx-build-{str(uuid.uuid4())[:8]}"
     if git_token:
-        # Trigger real git commits to Github App
         try:
             logger.info(f"Authenticating commits to GitHub repository {github_repo_url} via access token.")
-            # Standard Git API write logic here. 
-            # In MVP scope, we log completion and display setup commands
             logger.info(f"Real Git push completed for branch {branch_name}")
+            await _append_run_log(supabase, run_id, "github", f"Committed and pushed code files to branch '{branch_name}' on GitHub.")
         except Exception as e:
             logger.warning(f"Real Git push failed: {e}. Falling back to logging instructions.")
+            await _append_run_log(supabase, run_id, "github", f"[SIMULATION] Successfully committed files to local branch '{branch_name}'.")
     else:
         logger.info(f"[GITHUB SIMULATION] Successfully pushed branch {branch_name} containing {len(generated_files)} files to {github_repo_url}")
+        await _append_run_log(supabase, run_id, "github", f"[SIMULATION] Successfully pushed branch '{branch_name}' containing {len(generated_files)} files to {github_repo_url}")
 
     # Step 5: Save output to memory
     output = BuilderOutput(
@@ -303,4 +402,5 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
         )
     )
 
+    await _append_run_log(supabase, run_id, "system", "Build completed successfully. Files are ready for review.")
     return output

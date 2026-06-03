@@ -188,14 +188,14 @@ function ForgeWorkspace() {
 
       const { data: runs } = await supabase
         .from('agent_runs')
-        .select('id, input, created_at')
+        .select('id, input, created_at, status, logs, error_message')
         .eq('founder_id', session.user.id)
         .eq('agent_id', 'builder-v1')
-        .eq('status', 'success')
         .order('created_at', { ascending: false })
 
       if (runs) {
-        const formatted = runs.map((r: any) => ({
+        const successRuns = runs.filter((r: any) => r.status === 'success')
+        const formatted = successRuns.map((r: any) => ({
           id: r.id,
           spec: r.input?.specification || 'Code Build',
           created_at: r.created_at,
@@ -203,7 +203,7 @@ function ForgeWorkspace() {
         setPastBuilds(formatted)
 
         // Populate versions list for timeline
-        const historyVersions = runs.map((r: any) => ({
+        const historyVersions = successRuns.map((r: any) => ({
           id: r.id,
           prompt: r.input?.specification || 'Code Build',
           fileCount: 0, // Will be updated when files load
@@ -215,30 +215,71 @@ function ForgeWorkspace() {
         if (runs.length > 0 && !currentRunId && !builderOutput) {
           const latestRun = runs[0]
           setProjectName(latestRun.input?.specification?.slice(0, 40) || 'Code Build')
-          
-          setChatMessages([
+
+          // Check if latest run is in progress
+          const isInProgress = [
+            'queued',
+            'decomposing_specifications',
+            'spawning_db_designer',
+            'spawning_ui_coder',
+            'running_linter_validation',
+            'committing_to_github'
+          ].includes(latestRun.status)
+
+          // Restore chat history from the latest run logs
+          let restoredLogs: ChatMessage[] = []
+          if (latestRun.logs && Array.isArray(latestRun.logs)) {
+            restoredLogs = latestRun.logs.map((log: any, idx: number) => ({
+              id: `${latestRun.id}-${idx}`,
+              sender: log.sender,
+              message: log.message,
+              timestamp: new Date(log.timestamp),
+              fileCreated: log.fileCreated
+            }))
+          }
+
+          // If empty logs, fallback to user prompt
+          if (restoredLogs.length === 0 && latestRun.input?.specification) {
+            restoredLogs.push({
+              id: `${latestRun.id}-0`,
+              sender: 'user',
+              message: latestRun.input.specification,
+              timestamp: new Date(latestRun.created_at)
+            })
+          }
+
+          const messages: ChatMessage[] = [
             {
               id: 'welcome',
               sender: 'system',
               message: 'Welcome to Karnex Forge. Describe your idea below to begin.',
               timestamp: new Date(latestRun.created_at),
             },
-            {
-              id: 'restored-user',
-              sender: 'user',
-              message: latestRun.input?.specification || 'Create a build',
-              timestamp: new Date(latestRun.created_at),
-            },
-            {
-              id: 'restored-success',
-              sender: 'system',
-              message: 'Workspace restored from last successful build.',
-              timestamp: new Date(),
-            }
-          ])
+            ...restoredLogs
+          ]
 
-          // Load the output files
-          fetchRunOutput(latestRun.id)
+          // If latest run was error, show error message
+          if (latestRun.status === 'error') {
+            messages.push({
+              id: `${latestRun.id}-error`,
+              sender: 'system',
+              message: `Build failed: ${latestRun.error_message || 'Unknown error'}`,
+              timestamp: new Date(latestRun.created_at)
+            })
+          }
+
+          setChatMessages(messages)
+
+          if (isInProgress) {
+            // Re-start polling and loading state
+            setLoading(true)
+            setCurrentRunId(latestRun.id)
+            setCurrentRunStatus(latestRun.status)
+            setBuildStartTime(new Date(latestRun.created_at).getTime())
+          } else if (latestRun.status === 'success') {
+            // Load the output files
+            fetchRunOutput(latestRun.id)
+          }
         }
       }
     } catch (err) {
@@ -272,7 +313,7 @@ function ForgeWorkspace() {
       try {
         const { data: run, error } = await supabase
           .from('agent_runs')
-          .select('status, error_message')
+          .select('status, error_message, logs')
           .eq('id', currentRunId)
           .single()
 
@@ -281,8 +322,22 @@ function ForgeWorkspace() {
 
         if (run.status !== currentRunStatus) {
           setCurrentRunStatus(run.status)
-          const msg = statusToChatMessage(run.status)
-          if (msg) appendChat(msg.sender, msg.message)
+        }
+
+        // Sync logs from the database
+        if (run.logs && Array.isArray(run.logs)) {
+          const incomingLogs = run.logs.map((log: any, idx: number) => ({
+            id: `${currentRunId}-${idx}`,
+            sender: log.sender,
+            message: log.message,
+            timestamp: new Date(log.timestamp),
+            fileCreated: log.fileCreated
+          }))
+
+          setChatMessages((prev) => {
+            const cleanMessages = prev.filter(m => !m.id.startsWith('temp-user-') && !m.id.startsWith(currentRunId))
+            return [...cleanMessages, ...incomingLogs]
+          })
         }
 
         if (run.status === 'success') {
@@ -294,7 +349,16 @@ function ForgeWorkspace() {
         } else if (run.status === 'error') {
           clearInterval(interval)
           setLoading(false)
-          appendChat('system', `Build failed: ${run.error_message || 'Unknown error'}`)
+          setChatMessages((prev) => {
+            const errorMsg = `Build failed: ${run.error_message || 'Unknown error'}`
+            if (prev.some(m => m.message === errorMsg)) return prev
+            return [...prev, {
+              id: `${currentRunId}-error`,
+              sender: 'system',
+              message: errorMsg,
+              timestamp: new Date()
+            }]
+          })
         }
       } catch (err) {
         console.error('Poll error:', err)
@@ -302,7 +366,7 @@ function ForgeWorkspace() {
     }, 2000)
 
     return () => clearInterval(interval)
-  }, [currentRunId, currentRunStatus, supabase, appendChat, loadHistory, fetchRunOutput, buildStartTime])
+  }, [currentRunId, currentRunStatus, supabase, loadHistory, fetchRunOutput, buildStartTime])
 
   // Trigger build
   const handleBuild = async (promptText: string) => {
@@ -320,7 +384,16 @@ function ForgeWorkspace() {
       setProjectName(promptText.slice(0, 40))
     }
 
-    appendChat('user', promptText)
+    const tempUserMsgId = `temp-user-${Date.now()}`
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        id: tempUserMsgId,
+        sender: 'user',
+        message: promptText,
+        timestamp: new Date(),
+      }
+    ])
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
