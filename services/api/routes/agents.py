@@ -317,8 +317,8 @@ async def run_research_async_wrapper(run_id: str, input_data: ResearchInput):
             "status": "running"
         }).eq("id", run_id).execute()
 
-        # Run the agent with a 5-minute timeout (300 seconds)
-        result = await asyncio.wait_for(run_research(input_data, run_id, supabase=supabase), timeout=300.0)
+        # Run the agent with a 10-minute timeout (600 seconds)
+        result = await asyncio.wait_for(run_research(input_data, run_id, supabase=supabase), timeout=600.0)
 
         # Update run status to success
         supabase.table("agent_runs").update({
@@ -335,13 +335,13 @@ async def run_research_async_wrapper(run_id: str, input_data: ResearchInput):
         }).execute()
 
     except asyncio.TimeoutError:
-        logger.error(f"Research Agent run {run_id} timed out after 5 minutes.")
+        logger.error(f"Research Agent run {run_id} timed out after 10 minutes.")
         try:
             supabase = get_supabase_admin()
             supabase.table("agent_runs").update({
                 "status": "error",
                 "completed_at": datetime.now(timezone.utc).isoformat(),
-                "error_message": "Execution timed out after 5 minutes.",
+                "error_message": "Execution timed out after 10 minutes.",
                 "error_type": "timeout"
             }).eq("id", run_id).execute()
         except Exception as db_err:
@@ -370,8 +370,8 @@ async def run_builder_async_wrapper(run_id: str, input_data: BuilderInput):
             "status": "running"
         }).eq("id", run_id).execute()
 
-        # Run the agent with a 5-minute timeout (300 seconds)
-        result = await asyncio.wait_for(run_builder(input_data, run_id, supabase=supabase), timeout=300.0)
+        # Run the agent with a 10-minute timeout (600 seconds)
+        result = await asyncio.wait_for(run_builder(input_data, run_id, supabase=supabase), timeout=600.0)
 
         # Update run status to success
         supabase.table("agent_runs").update({
@@ -388,13 +388,13 @@ async def run_builder_async_wrapper(run_id: str, input_data: BuilderInput):
         }).execute()
 
     except asyncio.TimeoutError:
-        logger.error(f"Builder Agent run {run_id} timed out after 5 minutes.")
+        logger.error(f"Builder Agent run {run_id} timed out after 10 minutes.")
         try:
             supabase = get_supabase_admin()
             supabase.table("agent_runs").update({
                 "status": "error",
                 "completed_at": datetime.now(timezone.utc).isoformat(),
-                "error_message": "Execution timed out after 5 minutes.",
+                "error_message": "Execution timed out after 10 minutes.",
                 "error_type": "timeout"
             }).eq("id", run_id).execute()
         except Exception as db_err:

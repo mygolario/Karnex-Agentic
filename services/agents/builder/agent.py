@@ -156,13 +156,12 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
     
     logger.info(f"Builder supervisor created plan with {len(plan.files_to_generate)} files: {plan.summary_of_approach}")
 
-    generated_files: List[GeneratedFile] = []
+    # Step 2: Spawn Sub-Agents for each file in the plan concurrently
+    await _update_run_status_detail(supabase, run_id, "spawning_ui_coder")
 
-    # Step 2: Spawn Sub-Agents for each file in the plan
-    for file_spec in plan.files_to_generate:
+    async def generate_file(file_spec) -> Optional[GeneratedFile]:
         if file_spec.role == "db_migration":
-            await _update_run_status_detail(supabase, run_id, f"spawning_db_designer")
-            
+            logger.info(f"Spawning DB designer for {file_spec.path}")
             db_prompt = ChatPromptTemplate.from_messages([
                 ("system", DB_DESIGNER_SYSTEM_PROMPT),
                 ("user", (
@@ -171,7 +170,6 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "Feature specification: {spec}"
                 ))
             ])
-            
             db_chain = db_prompt | llm_pro.with_structured_output(DatabaseCodeOutput)
             db_out: DatabaseCodeOutput = await asyncio.to_thread(
                 lambda: db_chain.invoke({
@@ -180,17 +178,14 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "spec": input_data.specification
                 })
             )
-            
-            generated_files.append(GeneratedFile(
+            return GeneratedFile(
                 path=file_spec.path,
                 content=db_out.sql_content,
                 language="sql",
                 description=file_spec.description
-            ))
-            
+            )
         elif file_spec.role in ("frontend_page", "component", "api_route"):
-            await _update_run_status_detail(supabase, run_id, f"spawning_ui_coder")
-            
+            logger.info(f"Spawning UI coder for {file_spec.path}")
             ui_prompt = ChatPromptTemplate.from_messages([
                 ("system", UI_CODER_SYSTEM_PROMPT),
                 ("user", (
@@ -200,7 +195,6 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "Feature specification: {spec}"
                 ))
             ])
-            
             ui_chain = ui_prompt | llm_pro.with_structured_output(UICodeOutput)
             ui_out: UICodeOutput = await asyncio.to_thread(
                 lambda: ui_chain.invoke({
@@ -210,13 +204,17 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "spec": input_data.specification
                 })
             )
-            
-            generated_files.append(GeneratedFile(
+            return GeneratedFile(
                 path=file_spec.path,
                 content=ui_out.react_code,
                 language="typescript" if file_spec.path.endswith((".ts", ".tsx")) else "javascript",
                 description=file_spec.description
-            ))
+            )
+        return None
+
+    tasks = [generate_file(f) for f in plan.files_to_generate]
+    results = await asyncio.gather(*tasks)
+    generated_files: List[GeneratedFile] = [res for res in results if res is not None]
 
     # Step 3: Self-Healing & Linter Verification Loop
     await _update_run_status_detail(supabase, run_id, "running_linter_validation")
