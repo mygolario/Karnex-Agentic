@@ -56,6 +56,7 @@ def run_icp_definer(input_data: ICPDefinerInput) -> ICPDefinerOutput:
             max_tokens=settings.OPENROUTER_MAX_TOKENS,
             default_headers={"HTTP-Referer": "https://karnex.ai", "X-Title": "Karnex"},
             temperature=0.7,
+            timeout=30,
         )
         structured_llm = llm.with_structured_output(ICPDefinerLLMOutput)
         prompt = ChatPromptTemplate.from_messages([

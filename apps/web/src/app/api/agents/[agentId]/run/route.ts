@@ -67,6 +67,7 @@ async function tryBackendPost(
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15000),
     })
     if (res.ok) return (await res.json()) as Record<string, unknown>
     console.warn(`Backend ${path} returned status:`, res.status)
@@ -175,6 +176,7 @@ async function runAgentInBackground(
               Authorization: authHeader,
             },
             body: JSON.stringify({ pain_description: painDescription }),
+            signal: AbortSignal.timeout(15000),
           })
           if (res.ok) {
             output = await res.json()
@@ -260,6 +262,7 @@ async function runAgentInBackground(
               icp_document: input.icp_document || {},
               founder_capacity: input.founder_capacity || { weekly_hours: 20, technical_level: 'intermediate', budget_monthly: 0 },
             }),
+            signal: AbortSignal.timeout(15000),
           })
           if (res.ok) {
             output = await res.json()
