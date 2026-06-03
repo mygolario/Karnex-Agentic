@@ -132,6 +132,18 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
         },
         temperature=0.3
     )
+
+    llm_flash = ChatOpenAI(
+        model=settings.GEMINI_MODEL_FLASH,
+        openai_api_key=settings.OPENROUTER_API_KEY,
+        openai_api_base=settings.OPENROUTER_BASE_URL,
+        max_tokens=settings.OPENROUTER_MAX_TOKENS,
+        default_headers={
+            "HTTP-Referer": "https://karnex.ai",
+            "X-Title": "Karnex"
+        },
+        temperature=0.3
+    )
     
     structured_supervisor = llm_pro.with_structured_output(SupervisorPlan)
     supervisor_prompt = ChatPromptTemplate.from_messages([
@@ -170,7 +182,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "Feature specification: {spec}"
                 ))
             ])
-            db_chain = db_prompt | llm_pro.with_structured_output(DatabaseCodeOutput)
+            db_chain = db_prompt | llm_flash.with_structured_output(DatabaseCodeOutput)
             db_out: DatabaseCodeOutput = await asyncio.to_thread(
                 lambda: db_chain.invoke({
                     "path": file_spec.path,
@@ -195,7 +207,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "Feature specification: {spec}"
                 ))
             ])
-            ui_chain = ui_prompt | llm_pro.with_structured_output(UICodeOutput)
+            ui_chain = ui_prompt | llm_flash.with_structured_output(UICodeOutput)
             ui_out: UICodeOutput = await asyncio.to_thread(
                 lambda: ui_chain.invoke({
                     "path": file_spec.path,
