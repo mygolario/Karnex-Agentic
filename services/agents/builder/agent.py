@@ -168,8 +168,9 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
     
     logger.info(f"Builder supervisor created plan with {len(plan.files_to_generate)} files: {plan.summary_of_approach}")
 
-    # Step 2: Spawn Sub-Agents for each file in the plan concurrently
-    await _update_run_status_detail(supabase, run_id, "spawning_ui_coder")
+    # Step 2: Spawn Sub-Agents for each file in the plan
+    db_specs = [f for f in plan.files_to_generate if f.role == "db_migration"]
+    ui_specs = [f for f in plan.files_to_generate if f.role in ("frontend_page", "component", "api_route")]
 
     async def generate_file(file_spec) -> Optional[GeneratedFile]:
         if file_spec.role == "db_migration":
@@ -224,9 +225,19 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
             )
         return None
 
-    tasks = [generate_file(f) for f in plan.files_to_generate]
-    results = await asyncio.gather(*tasks)
-    generated_files: List[GeneratedFile] = [res for res in results if res is not None]
+    generated_files: List[GeneratedFile] = []
+
+    if db_specs:
+        await _update_run_status_detail(supabase, run_id, "spawning_db_designer")
+        db_tasks = [generate_file(f) for f in db_specs]
+        db_results = await asyncio.gather(*db_tasks)
+        generated_files.extend([res for res in db_results if res is not None])
+
+    if ui_specs:
+        await _update_run_status_detail(supabase, run_id, "spawning_ui_coder")
+        ui_tasks = [generate_file(f) for f in ui_specs]
+        ui_results = await asyncio.gather(*ui_tasks)
+        generated_files.extend([res for res in ui_results if res is not None])
 
     # Step 3: Self-Healing & Linter Verification Loop
     await _update_run_status_detail(supabase, run_id, "running_linter_validation")
