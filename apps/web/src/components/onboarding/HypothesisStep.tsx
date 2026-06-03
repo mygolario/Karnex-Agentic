@@ -51,7 +51,7 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const [animateBars, setAnimateBars] = useState(false)
   const [isSelecting, setIsSelecting] = useState(false)
-  const [activeTooltip, setActiveTooltip] = useState<number | null>(null)
+  const [openRiskIdx, setOpenRiskIdx] = useState<number | null>(null)
 
   // Polling run status
   useEffect(() => {
@@ -119,19 +119,19 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
 
       // 1. Create a startup row in startups table
       const { data: startup, error: startupErr } = await supabase
-        .from('startups')
-        .insert({
-          founder_id: user.id,
-          name: hypothesis.title,
-          tagline: hypothesis.proposed_solution.slice(0, 100),
-          description: hypothesis.problem_statement.slice(0, 500),
-          industry: 'SaaS',
-          target_audience: hypothesis.target_audience.slice(0, 200),
-          stage: 'ideation',
-          is_active: true
-        })
-        .select()
-        .single()
+          .from('startups')
+          .insert({
+            founder_id: user.id,
+            name: hypothesis.title,
+            tagline: hypothesis.proposed_solution.slice(0, 100),
+            description: hypothesis.problem_statement.slice(0, 500),
+            industry: 'SaaS',
+            target_audience: hypothesis.target_audience.slice(0, 200),
+            stage: 'ideation',
+            is_active: true
+          })
+          .select()
+          .single()
 
       if (startupErr || !startup) {
         throw new Error(`Failed to initialize startup profile: ${startupErr?.message}`)
@@ -139,23 +139,23 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
 
       // 2. Insert idea to ideas table with status = 'selected'
       const { data: idea, error: ideaErr } = await supabase
-        .from('ideas')
-        .insert({
-          startup_id: startup.id,
-          founder_id: user.id,
-          title: hypothesis.title,
-          pain_description: hypothesis.problem_statement,
-          problem_statement: hypothesis.problem_statement,
-          proposed_solution: hypothesis.proposed_solution,
-          pain_intensity_score: hypothesis.pain_intensity_score,
-          market_size_score: hypothesis.market_size_score,
-          buildability_score: hypothesis.buildability_score,
-          overall_score: hypothesis.overall_score,
-          status: 'selected',
-          selected_at: new Date().toISOString()
-        })
-        .select()
-        .single()
+          .from('ideas')
+          .insert({
+            startup_id: startup.id,
+            founder_id: user.id,
+            title: hypothesis.title,
+            pain_description: hypothesis.problem_statement,
+            problem_statement: hypothesis.problem_statement,
+            proposed_solution: hypothesis.proposed_solution,
+            pain_intensity_score: hypothesis.pain_intensity_score,
+            market_size_score: hypothesis.market_size_score,
+            buildability_score: hypothesis.buildability_score,
+            overall_score: hypothesis.overall_score,
+            status: 'selected',
+            selected_at: new Date().toISOString()
+          })
+          .select()
+          .single()
 
       if (ideaErr || !idea) {
         throw new Error(`Failed to save selected hypothesis: ${ideaErr?.message}`)
@@ -163,9 +163,9 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
 
       // 3. Update founder current startup ID
       const { error: founderErr } = await supabase
-        .from('founders')
-        .update({ current_startup_id: startup.id })
-        .eq('id', user.id)
+          .from('founders')
+          .update({ current_startup_id: startup.id })
+          .eq('id', user.id)
 
       if (founderErr) {
         console.warn('Could not link startup to founder record:', founderErr)
@@ -173,30 +173,30 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
 
       // 4. Save selected hypothesis context to DB
       await supabase
-        .from('founder_memory')
-        .upsert({
-          founder_id: user.id,
-          namespace: 'onboarding',
-          key: 'selected_hypothesis',
-          value: {
-            hypothesis: hypothesis,
-            startupName: hypothesis.title,
-            tagline: hypothesis.proposed_solution,
-            industry: 'SaaS',
-            targetAudience: hypothesis.target_audience,
-            stage: 'ideation'
-          }
-        }, { onConflict: 'founder_id,namespace,key' })
+          .from('founder_memory')
+          .upsert({
+            founder_id: user.id,
+            namespace: 'onboarding',
+            key: 'selected_hypothesis',
+            value: {
+              hypothesis: hypothesis,
+              startupName: hypothesis.title,
+              tagline: hypothesis.proposed_solution,
+              industry: 'SaaS',
+              targetAudience: hypothesis.target_audience,
+              stage: 'ideation'
+            }
+          }, { onConflict: 'founder_id,namespace,key' })
 
       // 4b. Update founder onboarding step in founder_memory (to step 3)
       await supabase
-        .from('founder_memory')
-        .upsert({
-          founder_id: user.id,
-          namespace: 'onboarding',
-          key: 'step',
-          value: { step: 3 }
-        }, { onConflict: 'founder_id,namespace,key' })
+          .from('founder_memory')
+          .upsert({
+            founder_id: user.id,
+            namespace: 'onboarding',
+            key: 'step',
+            value: { step: 3 }
+          }, { onConflict: 'founder_id,namespace,key' })
 
       // 5. Trigger crystallizer and icp-definer runs in parallel via BFF
       const headers = {
@@ -241,38 +241,148 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
 
   // Render polling loading state
   if (status === 'loading') {
-    const CurrentIcon = LOADING_MESSAGES[currentMessageIndex].icon
-    const colorClass = LOADING_MESSAGES[currentMessageIndex].color
+    // Generate list of detailed technical logs matching the current message index to show progress
+    const mockLogs = [
+      "SYS: Initializing secure pipeline to co-founder agent mesh...",
+      `SYS: Signal received (Frustration data, length: ${runId ? "64-bit SHA" : "RAW"})...`,
+      "AGENT-CORE: Spawning Pain-to-Product vector model node...",
+      "AGENT-CORE: Setting dynamic parameters (temperatures: 0.25, threshold: 85%)...",
+      "DATA-GRID: Querying market indexes & competitive databases...",
+      "DATA-GRID: Evaluating pain intensity index against historic benchmarks...",
+      "VALIDATOR: Calculating feasibility metrics (Buildability, Market Size, Pain Value)...",
+      "VALIDATOR: Checking constraints (90-day time-to-MVP threshold)...",
+      "SYNTHESIZER: Compiling 3 distinctive product hypothesis matrices...",
+      "SYNTHESIZER: Calculating overall concept match vector alignment...",
+      "SYS: final mappings resolved. serializing hypothesis outputs..."
+    ];
+
+    // Show logs up to currentMessageIndex * 2 + 3
+    const visibleLogs = mockLogs.slice(0, currentMessageIndex * 2 + 3);
 
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] py-12 px-4 text-center">
-        <div className="relative mb-8">
-          {/* Subtle glowing ring decoration */}
-          <div className="absolute inset-0 bg-violet-600/20 rounded-full blur-xl scale-125 animate-pulse" />
-          
-          <div className={`relative p-5 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl transition-all duration-500 transform ${colorClass}`}>
-            <CurrentIcon className="w-10 h-10 animate-bounce" />
+      <div className="w-full max-w-4xl mx-auto space-y-8 px-4 animate-reveal">
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+          }
+          .scanline-effect::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.03), transparent);
+            animation: scanline 4s linear infinite;
+            pointer-events: none;
+          }
+        `}} />
+
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a] bg-[#050505] px-3.5 py-1 text-[11px] font-mono font-semibold text-[#6366f1] tracking-wider">
+            <svg className="h-3 w-3 animate-spin text-[#6366f1]" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+              <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75" />
+            </svg>
+            <span>02 // Spawning Hypotheses</span>
           </div>
+          <h2 className="font-display font-bold text-3xl md:text-4xl text-white tracking-tight">
+            Synthesizing Product Hypotheses
+          </h2>
+          <p className="text-sm text-[#a1a1a1] max-w-xl mx-auto">
+            Converting raw frustrations into structured startup ideas by mapping competitive density and buildability metrics.
+          </p>
         </div>
 
-        <h3 className="text-xl font-semibold text-slate-100 mb-2 transition-all duration-300">
-          Generating Startup Ideas
-        </h3>
-        
-        <p className="text-slate-400 text-sm max-w-sm h-6 transition-all duration-300 font-medium tracking-wide">
-          {LOADING_MESSAGES[currentMessageIndex].text}
-        </p>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+          {/* Left panel: Logs terminal */}
+          <div className="md:col-span-7 bg-[#0c0c0f]/40 backdrop-blur-xl border border-[#1a1a1a] rounded-2xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[380px] scanline-effect">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-[#6366f1]/20 to-transparent" />
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-3">
+                <span className="text-[10px] font-bold text-[#525252] uppercase tracking-widest font-mono">
+                  TELEMETRY LOGS // CONSOLE_01
+                </span>
+                <span className="h-1.5 w-1.5 rounded-full bg-[#6366f1]/70 animate-pulse" />
+              </div>
+              
+              <div className="font-mono text-[11px] space-y-2 leading-relaxed text-[#737373]">
+                {visibleLogs.map((log, index) => {
+                  const isLast = index === visibleLogs.length - 1;
+                  const isError = log.includes("ERR") || log.includes("FATAL");
+                  const isOk = log.includes("SYS:") || log.includes("[OK]");
+                  
+                  return (
+                    <div key={index} className={`flex items-start gap-2.5 transition-all duration-300 ${isLast ? 'text-[#e5e5e5] font-semibold' : ''}`}>
+                      <span className="text-[#525252] shrink-0 select-none">[{new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}]</span>
+                      <span className={isError ? 'text-rose-400' : isOk ? 'text-emerald-400/90' : ''}>
+                        {log}
+                        {isLast && <span className="inline-block w-1.5 h-3 bg-[#6366f1] ml-1 animate-pulse" />}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-        {/* Dynamic cycling indicators */}
-        <div className="flex gap-1.5 mt-8">
-          {LOADING_MESSAGES.map((_, idx) => (
-            <div
-              key={idx}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
-                idx === currentMessageIndex ? 'w-6 bg-violet-500' : 'w-1.5 bg-slate-800'
-              }`}
-            />
-          ))}
+            <div className="mt-6 pt-4 border-t border-[#1a1a1a] flex justify-between items-center text-[10px] font-mono text-[#525252]">
+              <span>STATUS: PROCESSING_OPPORTUNITY_MATRIX</span>
+              <span>INDEX: {currentMessageIndex + 1}/5</span>
+            </div>
+          </div>
+
+          {/* Right panel: Modern Editorial Process Grid */}
+          <div className="md:col-span-5 bg-[#0c0c0f]/40 backdrop-blur-xl border border-[#1a1a1a] rounded-2xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[380px]">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-[#6366f1]/20 to-transparent" />
+            
+            <div className="space-y-6">
+              <div className="border-b border-[#1a1a1a] pb-3 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#525252] uppercase tracking-widest font-mono">
+                  MATRIX PIPELINE
+                </span>
+                <span className="text-[10px] font-mono text-[#6366f1]">ACTIVE_NODE</span>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  { name: "Opportunity Scanner", metric: "VECTOR_ALIGN", status: currentMessageIndex >= 1 ? "COMPLETED" : "PROCESSING" },
+                  { name: "Market Volume Estimator", metric: "ICP_VOLUME_EST", status: currentMessageIndex >= 3 ? "COMPLETED" : currentMessageIndex >= 1 ? "PROCESSING" : "PENDING" },
+                  { name: "Buildability Index Solver", metric: "MVP_TECH_FEAS", status: currentMessageIndex >= 4 ? "COMPLETED" : currentMessageIndex >= 3 ? "PROCESSING" : "PENDING" }
+                ].map((node, nIdx) => (
+                  <div key={nIdx} className={`p-4 rounded-xl border transition-colors duration-300 ${
+                    node.status === "COMPLETED" ? "border-emerald-500/10 bg-emerald-500/[0.02]" :
+                    node.status === "PROCESSING" ? "border-[#6366f1]/20 bg-[#6366f1]/[0.02]" :
+                    "border-[#1a1a1a] opacity-55"
+                  }`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-bold text-white font-mono tracking-tight">{node.name}</span>
+                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded uppercase ${
+                        node.status === "COMPLETED" ? "bg-emerald-500/10 text-emerald-400" :
+                        node.status === "PROCESSING" ? "bg-[#6366f1]/10 text-[#6366f1] animate-pulse" :
+                        "bg-[#1a1a1a] text-[#525252]"
+                      }`}>{node.status}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[9px] font-mono text-[#525252]">
+                      <span>METRIC: {node.metric}</span>
+                      {node.status === "PROCESSING" && (
+                        <div className="w-16 h-1 bg-[#161616] rounded-full overflow-hidden shrink-0 ml-2">
+                          <div className="h-full bg-[#6366f1] rounded-full animate-pulse w-2/3" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-[#1a1a1a] text-center">
+              <span className="text-[10px] font-mono text-[#525252]">
+                RESOLVING VECTOR NODE: <span className="text-[#a1a1a1] font-semibold">{LOADING_MESSAGES[currentMessageIndex].text}</span>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -297,12 +407,12 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
 
   // Render hypotheses list
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-reveal">
       <div className="text-center max-w-2xl mx-auto space-y-2">
-        <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-slate-100 via-slate-200 to-slate-400 bg-clip-text text-transparent">
+        <h2 className="text-3xl font-bold tracking-[-0.02em] bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent font-display">
           Select Your Product Concept
         </h2>
-        <p className="text-slate-400 text-sm">
+        <p className="text-[#a1a1a1] text-sm">
           We analyzed your inputs and synthesized 3 distinct product concepts. Choose the hypothesis you wish to crystallize and build.
         </p>
       </div>
@@ -311,6 +421,8 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
         {hypotheses.map((hyp, index) => {
           const isRecommended = index === recommendedIndex
           const isSelected = index === selectedCardIndex
+          const conceptIndex = `0${index + 1}`;
+          const isRiskOpen = openRiskIdx === index;
 
           return (
             <div
@@ -318,99 +430,98 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
               onClick={() => setSelectedCardIndex(index)}
               className={`relative flex flex-col justify-between p-6 rounded-2xl cursor-pointer transition-all duration-300 border ${
                 isSelected
-                  ? 'border-violet-500/50 bg-slate-900/90 ring-2 ring-violet-500 shadow-[0_0_30px_rgba(139,92,246,0.25)]'
-                  : 'border-slate-800/80 bg-slate-950/40 hover:border-slate-700/80 hover:bg-slate-950/60'
+                  ? 'border-[#6366f1] bg-[#0c0c0f]/40 ring-1 ring-[#6366f1]/20 shadow-[0_0_30px_rgba(99,102,241,0.06)]'
+                  : 'border-[#1a1a1a] bg-[#050505]/20 backdrop-blur-sm hover:border-[#262626] hover:bg-[#050505]/40'
               }`}
             >
               {isRecommended && (
-                <div className="absolute -top-3 left-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-lg border border-violet-400/50 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-violet-200 animate-pulse" />
-                  RECOMMENDED
+                <div className="absolute -top-3 left-4 bg-[#050505] text-[#6366f1] text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full border border-[#6366f1]/30 flex items-center gap-1 shadow-sm">
+                  <Sparkles className="w-3 h-3 text-[#6366f1] animate-pulse" />
+                  Recommended Config
                 </div>
               )}
 
               <div className="space-y-4">
-                {/* Title and Audience */}
+                {/* Monospace index & Title */}
                 <div>
-                  <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-[#525252] block mb-1">
+                    CONCEPT_{conceptIndex} // STRATEGY_NODE
+                  </span>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2 font-display">
                     {hyp.title}
                   </h3>
-                  <p className="text-xs text-violet-400/80 font-medium mt-1 uppercase tracking-wider">
-                    Target: {hyp.target_audience}
+                  <p className="text-[10px] text-[#6366f1] font-mono mt-1 uppercase tracking-wider">
+                    TARGET: {hyp.target_audience}
                   </p>
                 </div>
 
                 {/* Description and Solution */}
-                <div className="space-y-2.5">
-                  <div className="text-xs bg-slate-900/60 rounded-lg p-2.5 border border-slate-800/40">
-                    <span className="font-semibold text-slate-400 block mb-0.5 uppercase tracking-wide text-[10px]">Problem Context:</span>
-                    <p className="text-slate-300 leading-relaxed text-[11px] line-clamp-3">
-                      {hyp.problem_statement}
-                    </p>
+                <div className="border-t border-[#1a1a1a] pt-3.5 mt-3 space-y-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-[#525252] uppercase tracking-wider block">Problem Context</span>
+                    <p className="text-[#a1a1a1] text-xs leading-relaxed font-sans">{hyp.problem_statement}</p>
                   </div>
-                  <div className="text-xs bg-violet-950/10 rounded-lg p-2.5 border border-violet-900/20">
-                    <span className="font-semibold text-violet-400 block mb-0.5 uppercase tracking-wide text-[10px]">Proposed Solution:</span>
-                    <p className="text-slate-300 leading-relaxed text-[11px] line-clamp-3">
-                      {hyp.proposed_solution}
-                    </p>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-[#6366f1]/90 uppercase tracking-wider block">Proposed Solution</span>
+                    <p className="text-[#e5e5e5] text-xs leading-relaxed font-sans">{hyp.proposed_solution}</p>
                   </div>
                 </div>
 
                 {/* Score Bars */}
-                <div className="space-y-2 pt-2 border-t border-slate-800/40">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Feasibility Metrics</span>
+                <div className="space-y-3 pt-4 border-t border-[#1a1a1a]">
+                  <span className="text-[10px] font-mono font-bold text-[#525252] uppercase tracking-wider block">Feasibility Metrics</span>
                   
                   {/* Pain Intensity */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                      <span>Pain Intensity</span>
-                      <span className="text-slate-300">{hyp.pain_intensity_score}/100</span>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] font-mono text-[#a1a1a1]">
+                      <span>PAIN_INTENSITY</span>
+                      <span>{hyp.pain_intensity_score}%</span>
                     </div>
-                    <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                    <div className="h-1 w-full bg-[#161616] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-red-500 to-rose-500 rounded-full transition-all duration-1000 ease-out"
+                        className="h-full bg-zinc-500 rounded-full transition-all duration-1000 ease-out"
                         style={{ width: animateBars ? `${hyp.pain_intensity_score}%` : '0%' }}
                       />
                     </div>
                   </div>
 
                   {/* Market Size */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                      <span>Market Size</span>
-                      <span className="text-slate-300">{hyp.market_size_score}/100</span>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] font-mono text-[#a1a1a1]">
+                      <span>MARKET_SIZE</span>
+                      <span>{hyp.market_size_score}%</span>
                     </div>
-                    <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                    <div className="h-1 w-full bg-[#161616] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-1000 ease-out"
+                        className="h-full bg-zinc-500 rounded-full transition-all duration-1000 ease-out"
                         style={{ width: animateBars ? `${hyp.market_size_score}%` : '0%' }}
                       />
                     </div>
                   </div>
 
                   {/* Buildability */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                      <span>Buildability</span>
-                      <span className="text-slate-300">{hyp.buildability_score}/100</span>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] font-mono text-[#a1a1a1]">
+                      <span>BUILDABILITY</span>
+                      <span>{hyp.buildability_score}%</span>
                     </div>
-                    <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                    <div className="h-1 w-full bg-[#161616] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-1000 ease-out"
+                        className="h-full bg-zinc-500 rounded-full transition-all duration-1000 ease-out"
                         style={{ width: animateBars ? `${hyp.buildability_score}%` : '0%' }}
                       />
                     </div>
                   </div>
 
                   {/* Overall Score */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] text-slate-300 font-bold">
-                      <span>Overall Match</span>
-                      <span className="text-violet-400">{hyp.overall_score}/100</span>
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex justify-between text-[11px] font-mono font-bold text-white">
+                      <span>OVERALL_FIT</span>
+                      <span className="text-[#6366f1]">{hyp.overall_score}%</span>
                     </div>
-                    <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-[#161616] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 ease-out"
+                        className="h-full bg-[#6366f1] rounded-full transition-all duration-1000 ease-out"
                         style={{ width: animateBars ? `${hyp.overall_score}%` : '0%' }}
                       />
                     </div>
@@ -419,31 +530,38 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
               </div>
 
               {/* Footer interactive components */}
-              <div className="mt-6 pt-4 border-t border-slate-800/40 flex items-center justify-between">
-                {/* Risks Tooltip Trigger */}
-                <div
-                  className="relative cursor-pointer text-xs text-slate-400 hover:text-rose-400 flex items-center gap-1.5 transition-colors"
-                  onMouseEnter={() => setActiveTooltip(index)}
-                  onMouseLeave={() => setActiveTooltip(null)}
-                >
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-500/80" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Risks</span>
-                  
-                  {activeTooltip === index && (
-                    <div className="absolute bottom-full left-0 mb-2.5 w-64 bg-slate-950 border border-slate-800 text-white rounded-xl p-3 shadow-2xl z-50 animate-fade-in">
-                      <div className="font-bold text-rose-400 text-[10px] uppercase tracking-wider mb-1.5">Key Vulnerabilities & Risks:</div>
-                      <ul className="list-disc pl-4 space-y-1 text-slate-300 text-[10px]">
-                        {hyp.key_risks.map((risk, i) => (
-                          <li key={i}>{risk}</li>
-                        ))}
-                      </ul>
-                      <div className="absolute top-full left-4 border-8 border-transparent border-t-slate-950" />
-                    </div>
-                  )}
+              <div className="mt-6 pt-4 border-t border-[#1a1a1a]">
+                <div className="flex justify-between items-center text-xs">
+                  {/* Risks Disclosure Trigger */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenRiskIdx(isRiskOpen ? null : index);
+                    }}
+                    className="text-xs text-[#a1a1a1] hover:text-[#e5e5e5] flex items-center gap-1.5 transition-colors font-mono font-semibold"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 text-[#6366f1]/80" />
+                    <span>// RISK SPECS</span>
+                    <svg
+                      width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"
+                      className={`shrink-0 transition-transform duration-200 ${isRiskOpen ? 'rotate-90' : ''}`}
+                    >
+                      <path d="M6 12l4-4-4-4" />
+                    </svg>
+                  </button>
+
+                  <div className="text-[#525252] text-[10px] font-mono">
+                    MKT: {hyp.market_size_estimate}
+                  </div>
                 </div>
 
-                <div className="text-slate-500 text-[10px]">
-                  Market: {hyp.market_size_estimate}
+                {/* Risks expandable items */}
+                <div className={`overflow-hidden transition-all duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] ${isRiskOpen ? 'max-h-[140px] opacity-100 mt-3 pt-3 border-t border-[#1a1a1a]' : 'max-h-0 opacity-0'}`}>
+                  <ul className="list-disc pl-4 space-y-1 font-mono text-[10px] text-[#737373]">
+                    {hyp.key_risks.map((risk, i) => (
+                      <li key={i}>{risk}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
@@ -456,13 +574,13 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
           <button
             onClick={() => handleSelectHypothesis(hypotheses[selectedCardIndex], selectedCardIndex)}
             disabled={isSelecting}
-            className="px-8 py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all duration-300 transform active:scale-95 shadow-[0_4px_25px_rgba(139,92,246,0.3)] flex items-center justify-center gap-2 text-sm"
+            className="px-8 py-3.5 bg-[#6366f1] hover:bg-[#5558e6] disabled:opacity-50 text-white font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-2.5 text-sm cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
           >
             {isSelecting ? (
               <>Crystallizing Workspace...</>
             ) : (
               <>
-                Select this idea
+                Confirm Concept Selection
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

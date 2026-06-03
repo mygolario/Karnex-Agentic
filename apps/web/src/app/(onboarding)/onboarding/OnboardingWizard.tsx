@@ -404,69 +404,117 @@ export default function OnboardingWizard({ initialName, savedStep, savedContext 
     <div className="w-full">
       {/* STEP 1: DEFINE PAIN */}
       {step === 1 && (
-        <div className="space-y-8 max-w-2xl mx-auto">
-          <div className="text-center space-y-3">
-            <h1 className="font-display font-extrabold text-[32px] md:text-[40px] tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-[#f5f5f5] to-neutral-400 leading-tight">
-              Tell me about your frustration.
-            </h1>
-            <p className="text-[#a3a3a3] text-[15px] max-w-md mx-auto">
-              Our Pain-to-Product agent analyzes real-world frustrations, checks competitive gaps, and extracts 3 validated product hypotheses.
-            </p>
+        <div className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch animate-reveal">
+          <style dangerouslySetInnerHTML={{ __html: `
+            .prompt-cursor {
+              display: inline-block;
+              width: 6px;
+              height: 14px;
+              background-color: #6366f1;
+              animation: cursor-blink 1s infinite steps(2, start);
+            }
+            @keyframes cursor-blink {
+              0%, 100% { opacity: 0; }
+              50% { opacity: 1; }
+            }
+          `}} />
+
+          {/* Left panel: Brand context & explanation */}
+          <div className="md:col-span-5 flex flex-col justify-between py-4 pr-0 md:pr-8 border-b md:border-b-0 md:border-r border-[#1a1a1a]">
+            <div className="space-y-6">
+              <span className="text-[11px] font-mono text-[#737373] tracking-widest uppercase">
+                01 // Define Pain
+              </span>
+              <h1 className="font-display font-bold text-[36px] md:text-[42px] tracking-[-0.025em] text-white leading-[1.15]">
+                Tell us about your frustration.
+              </h1>
+              <p className="text-[#a1a1a1] text-sm leading-relaxed max-w-sm">
+                Our Pain-to-Product agent analyzes real-world frustrations, inspects competitive densities, and structures 3 validated product hypotheses.
+              </p>
+            </div>
+            
+            <div className="mt-8 md:mt-0 pt-6 border-t border-[#1a1a1a] flex gap-3.5 items-center">
+              <div className="w-2 h-2 rounded-full bg-[#6366f1] opacity-60" />
+              <span className="text-[10px] font-mono text-[#525252] uppercase tracking-widest">
+                Karnex Core: Pain Analyzer Node
+              </span>
+            </div>
           </div>
 
-          <div className="dash-card p-6 md:p-8 space-y-6 relative overflow-hidden">
-            {/* Input fields */}
-            <div className="space-y-4">
+          {/* Right panel: Editor Card */}
+          <div className="md:col-span-7 bg-[#0c0c0f]/40 backdrop-blur-xl border border-[#1a1a1a] rounded-2xl p-6 md:p-8 shadow-xl space-y-6 relative overflow-hidden flex flex-col justify-between">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-[#6366f1]/20 to-transparent" />
+            
+            <div className="space-y-6">
               <div>
-                <label className="muted-label block mb-2">The Pain Point / Frustration</label>
-                <div className="relative">
-                  <textarea
-                    className="dash-input min-h-[140px] font-sans text-sm focus:ring-1 focus:ring-indigo-500"
-                    placeholder="Describe a problem you or your target audience experiences..."
-                    value={painInput}
-                    onChange={(e) => setPainInput(e.target.value)}
-                    disabled={transforming}
-                  />
-                  {painInput.length === 0 && (
-                    <div 
-                      className="absolute top-3 left-[15px] right-[15px] pointer-events-none text-neutral-600 text-sm font-sans transition-opacity duration-300 leading-relaxed"
-                      style={{ opacity: placeholderOpacity }}
-                    >
-                      <span className="text-indigo-400/80 mr-1.5 font-mono">e.g.</span>
-                      {PLACEHOLDERS[placeholderIdx]}
-                    </div>
-                  )}
+                <label className="text-[10px] font-mono font-bold text-[#525252] uppercase tracking-wider block mb-2.5">
+                  Input Pain Point / User Frustration
+                </label>
+                <div className="relative border border-[#1a1a1a] focus-within:border-[#6366f1]/45 transition-colors duration-200 rounded-xl bg-[#050505]/40 p-1 flex">
+                  {/* Mock IDE Line Numbers for professional styling */}
+                  <div className="flex flex-col text-[11px] font-mono text-[#525252] select-none text-right pr-3.5 pl-2 py-3 border-r border-[#1a1a1a] leading-relaxed shrink-0">
+                    <span>01</span>
+                    <span>02</span>
+                    <span>03</span>
+                    <span>04</span>
+                    <span>05</span>
+                  </div>
+                  
+                  <div className="relative flex-grow">
+                    <textarea
+                      className="w-full bg-transparent border-0 ring-0 outline-none text-[#e5e5e5] text-sm p-3 font-sans leading-relaxed min-h-[140px] resize-none placeholder-transparent focus:outline-none focus:ring-0 focus:border-0"
+                      placeholder="Describe a problem you or your target audience experiences..."
+                      value={painInput}
+                      onChange={(e) => setPainInput(e.target.value)}
+                      disabled={transforming}
+                    />
+                    {painInput.length === 0 && (
+                      <div 
+                        className="absolute top-3 left-3 right-3 pointer-events-none text-[#737373] text-sm font-sans transition-opacity duration-300 leading-relaxed"
+                        style={{ opacity: placeholderOpacity }}
+                      >
+                        <span className="text-[#6366f1]/80 mr-1.5 font-mono">e.g.</span>
+                        {PLACEHOLDERS[placeholderIdx]}
+                        <span className="prompt-cursor ml-1" />
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between items-center mt-2 text-[12px]">
-                  <span className={painInput.length >= 30 ? 'text-emerald-500' : 'text-neutral-500'}>
-                    {painInput.length} / 30 characters minimum
+                
+                <div className="flex justify-between items-center mt-2.5 text-[11px] font-mono text-[#525252]">
+                  <span className={painInput.length >= 30 ? 'text-emerald-500 font-semibold' : 'text-[#525252]'}>
+                    {painInput.length} / 30 characters min
                   </span>
-                  <span className="text-neutral-500">Max 5000</span>
+                  <span>Max 5000</span>
                 </div>
               </div>
 
               <div>
-                <label className="muted-label block mb-2">Industry Context (Optional)</label>
-                <input
-                  type="text"
-                  className="dash-input"
-                  placeholder="e.g. Real Estate, Medical Billing, Legal Tech, Developer Tools"
-                  value={industryContext}
-                  onChange={(e) => setIndustryContext(e.target.value)}
-                  disabled={transforming}
-                />
+                <label className="text-[10px] font-mono font-bold text-[#525252] uppercase tracking-wider block mb-2.5">
+                  Industry Context (Optional)
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    className="w-full bg-[#050505]/40 border border-[#1a1a1a] focus:border-[#6366f1]/45 transition-colors duration-200 rounded-xl px-4 py-3 text-[#e5e5e5] text-sm placeholder-[#525252] focus:outline-none"
+                    placeholder="e.g. Real Estate, Medical Billing, Legal Tech, Developer Tools"
+                    value={industryContext}
+                    onChange={(e) => setIndustryContext(e.target.value)}
+                    disabled={transforming}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Logs when running */}
             {transforming && (
-              <div className="mt-4 p-4 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] space-y-2 font-mono text-[12px] text-[#a3a3a3]">
+              <div className="mt-4 p-4 rounded-xl border border-[#1a1a1a] bg-[#050505]/50 space-y-2 font-mono text-[11px] text-[#737373]">
                 {transformLogs.map((log, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     {idx === transformLogs.length - 1 ? (
-                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-ping" />
+                      <span className="h-1 w-1 rounded-full bg-[#6366f1] animate-ping" />
                     ) : (
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span className="h-1 w-1 rounded-full bg-[#525252]" />
                     )}
                     <span>{log}</span>
                   </div>
@@ -475,9 +523,9 @@ export default function OnboardingWizard({ initialName, savedStep, savedContext 
             )}
 
             {/* Action CTA */}
-            <div className="pt-2 flex justify-end">
+            <div className="pt-4 border-t border-[#1a1a1a] flex justify-end">
               <button
-                className="dash-btn dash-btn-primary w-full sm:w-auto px-6 py-2.5 shadow-lg shadow-indigo-500/20"
+                className="w-full sm:w-auto px-6 py-3 bg-[#6366f1] hover:bg-[#5558e6] disabled:opacity-40 disabled:hover:bg-[#6366f1] text-white font-medium text-[13px] font-sans rounded-lg transition-colors shadow-lg shadow-[#6366f1]/10 flex items-center justify-center gap-2.5 cursor-pointer"
                 onClick={handleTransformPain}
                 disabled={painInput.length < 30 || transforming}
               >
@@ -487,14 +535,12 @@ export default function OnboardingWizard({ initialName, savedStep, savedContext 
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Running Analysis...
+                    Analyzing...
                   </>
                 ) : (
                   <>
-                    Transform Pain
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                    </svg>
+                    Analyze Pain Signal
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 7h12m-5-5 5 5-5 5"/></svg>
                   </>
                 )}
               </button>

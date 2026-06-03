@@ -457,87 +457,79 @@ export default function RoadmapStep({
   if (status === 'loading' || status === 'queued' || status === 'running') {
     return (
       <div className="w-full max-w-4xl mx-auto space-y-12 animate-reveal px-4">
-        {/* Style block for animations */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes fadeInLeft {
-            from {
-              opacity: 0;
-              transform: translateX(-20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-          .animate-fade-in-left-1 {
-            animation: fadeInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          }
-          .animate-fade-in-left-2 {
-            animation: fadeInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
-            opacity: 0;
-          }
-          .animate-fade-in-left-3 {
-            animation: fadeInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
-            opacity: 0;
-          }
-        `}} />
-
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/5 px-3 py-1 text-xs font-mono font-semibold text-indigo-400">
-            <svg className="h-3 w-3 animate-spin text-indigo-500" viewBox="0 0 24 24" fill="none">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a] bg-[#050505] px-3.5 py-1 text-[11px] font-mono font-semibold text-[#6366f1] tracking-wider">
+            <svg className="h-3 w-3 animate-spin text-[#6366f1]" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
               <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75" />
             </svg>
-            <span>AI CO-FOUNDER ARCHITECTING ROADMAP...</span>
+            <span>04 // Spawning Roadmap</span>
           </div>
-          <h2 className="font-display font-extrabold text-3xl md:text-4xl text-white tracking-tight">
-            Synthesizing Your 90-Day Plan
+          <h2 className="font-display font-bold text-3xl md:text-4xl text-white tracking-tight">
+            Structuring Execution Roadmap
           </h2>
-          <p className="text-sm md:text-base text-zinc-400 max-w-xl mx-auto">
-            Mapping technical depth, weekly bandwidth, and market wedge validation to form a structured execution model.
+          <p className="text-sm text-[#a1a1a1] max-w-xl mx-auto leading-relaxed">
+            Resolving goals, sprint backlogs, and key milestones based on your available capacity of <span className="text-[#6366f1] font-semibold">{weeklyHoursAvailable} hrs/week</span>.
           </p>
         </div>
 
-        {/* 3 pulsing skeletons */}
+        {/* 3 wireframe phase skeletons */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-          {[1, 2, 3].map((i) => (
-            <div 
-              key={i} 
-              className="bg-[#0c0c0c]/40 border border-[#1a1a1a] rounded-2xl p-6 space-y-6 relative overflow-hidden"
-            >
-              {/* Pulsing indicator block */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 animate-pulse" />
-              
-              <div className="space-y-3">
-                {/* Theme & days skeleton */}
-                <div className="flex justify-between items-center">
-                  <div className="h-5 bg-white/[0.06] rounded w-20 animate-pulse" />
-                  <div className="h-4 bg-white/[0.04] rounded w-16 animate-pulse" />
-                </div>
-                {/* Title skeleton */}
-                <div className="h-7 bg-white/[0.08] rounded w-5/6 animate-pulse" />
-                {/* Description skeleton */}
-                <div className="space-y-1.5">
-                  <div className="h-3 bg-white/[0.03] rounded w-full animate-pulse" />
-                  <div className="h-3 bg-white/[0.03] rounded w-4/5 animate-pulse" />
-                </div>
-              </div>
-
-              {/* Milestones list skeleton */}
-              <div className="space-y-4 pt-5 border-t border-[#161616]">
-                <div className="h-3 bg-white/[0.04] rounded w-24 animate-pulse" />
-                {[1, 2, 3].map((j) => (
-                  <div key={j} className="flex items-start gap-3">
-                    <div className="h-4 w-4 bg-white/[0.05] rounded-full shrink-0 animate-pulse mt-0.5" />
-                    <div className="space-y-1.5 flex-1">
-                      <div className="h-3.5 bg-white/[0.04] rounded w-full animate-pulse" />
-                      <div className="h-2.5 bg-white/[0.02] rounded w-1/3 animate-pulse" />
-                    </div>
+          {[1, 2, 3].map((i) => {
+            const daysLabel = i === 1 ? "DAYS 01 - 30" : i === 2 ? "DAYS 31 - 60" : "DAYS 61 - 90";
+            const themeLabel = i === 1 ? "VALIDATION" : i === 2 ? "BUILDING" : "MONETIZING";
+            
+            return (
+              <div 
+                key={i} 
+                className="bg-[#0c0c0f]/20 backdrop-blur border border-[#1a1a1a] rounded-2xl p-6 space-y-6 relative overflow-hidden min-h-[380px] flex flex-col justify-between"
+              >
+                <div className="space-y-4">
+                  {/* Wireframe Header */}
+                  <div className="flex justify-between items-center text-[10px] font-mono text-[#525252]">
+                    <span className="border border-[#1a1a1a] px-2 py-0.5 rounded uppercase font-semibold">
+                      {themeLabel}
+                    </span>
+                    <span>{daysLabel}</span>
                   </div>
-                ))}
+
+                  {/* Wireframe Title */}
+                  <div className="space-y-2">
+                    <div className="h-3 bg-[#161616] rounded w-2/3 animate-pulse" />
+                    <div className="h-4 bg-[#161616] rounded w-5/6 animate-pulse" />
+                  </div>
+
+                  {/* Wireframe Checklist items */}
+                  <div className="space-y-3 pt-4 border-t border-[#1a1a1a]">
+                    <span className="text-[9px] font-bold text-[#525252] uppercase tracking-widest font-mono block mb-2">
+                      SPRINT BACKLOG RESOLVER
+                    </span>
+                    {[1, 2].map((k) => (
+                      <div key={k} className="flex items-start gap-2.5 opacity-55 animate-pulse">
+                        <div className="w-3.5 h-3.5 rounded border border-[#1a1a1a] shrink-0 mt-0.5" />
+                        <div className="space-y-1.5 flex-grow">
+                          <div className="h-2.5 bg-[#161616] rounded w-full" />
+                          <div className="h-2 bg-[#161616]/60 rounded w-1/3" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Wireframe Milestones */}
+                <div className="space-y-3 pt-5 border-t border-[#1a1a1a]">
+                  <div className="flex justify-between items-center text-[9px] font-bold text-[#525252] uppercase tracking-widest font-mono">
+                    <span>KEY INDICATORS</span>
+                    <span className="text-[8px] text-[#6366f1] animate-pulse">RESOLVING...</span>
+                  </div>
+                  <div className="flex items-center gap-2 opacity-50">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#525252] shrink-0" />
+                    <div className="h-2 bg-[#161616] rounded w-1/2" />
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     )
@@ -575,12 +567,11 @@ export default function RoadmapStep({
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-12 animate-reveal px-4">
-      {/* Style block for fadeInLeft and reveal animations */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fadeInLeft {
           from {
             opacity: 0;
-            transform: translateX(-20px);
+            transform: translateX(-16px);
           }
           to {
             opacity: 1;
@@ -591,27 +582,27 @@ export default function RoadmapStep({
           animation: fadeInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .animate-fade-in-left-2 {
-          animation: fadeInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+          animation: fadeInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
           opacity: 0;
         }
         .animate-fade-in-left-3 {
-          animation: fadeInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+          animation: fadeInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
           opacity: 0;
         }
       `}} />
 
       {/* Heading section */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 text-xs font-mono font-semibold text-emerald-400">
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3.5 py-1 text-xs font-mono font-semibold text-emerald-450 tracking-wider">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>ROADMAP SYNCED & VALIDATED</span>
+          <span>[ROADMAP SYNCED & VALIDATED]</span>
         </div>
-        <h2 className="font-display font-extrabold text-3xl md:text-4xl text-white tracking-tight">
+        <h2 className="font-display font-bold text-3xl md:text-4xl text-white tracking-tight">
           Your 90-Day Blueprint
         </h2>
-        <p className="text-sm md:text-base text-zinc-400 max-w-xl mx-auto">
-          Tailored to your constraints: <span className="text-indigo-400 font-medium">{weeklyHoursAvailable} hrs/week</span>. 
-          Speed: <span className="text-indigo-400 capitalize font-medium">{preferredAgentSpeed}</span>.
+        <p className="text-sm text-[#a1a1a1] max-w-xl mx-auto leading-relaxed">
+          Tailored to your constraints: <span className="text-[#6366f1] font-semibold">{weeklyHoursAvailable} hrs/week</span>. 
+          Execution Speed: <span className="text-[#6366f1] capitalize font-semibold">{preferredAgentSpeed}</span>.
         </p>
       </div>
 
@@ -619,73 +610,78 @@ export default function RoadmapStep({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
         {phases.slice(0, 3).map((phase, idx) => {
           let themeLabel = phase.theme || 'Validation'
-          let daysLabel = `Days ${phase.start_day || 1} - ${phase.end_day || 30}`
+          let daysLabel = `DAYS 0${phase.start_day || 1} - 0${phase.end_day || 30}`
           
           if (idx === 0) {
-            themeLabel = 'Validation'
-            daysLabel = 'Days 1 - 30'
+            themeLabel = 'VALIDATION'
+            daysLabel = 'DAYS 01 - 30'
           } else if (idx === 1) {
-            themeLabel = 'Building'
-            daysLabel = 'Days 31 - 60'
+            themeLabel = 'BUILDING'
+            daysLabel = 'DAYS 31 - 60'
           } else if (idx === 2) {
-            themeLabel = 'Launch'
-            daysLabel = 'Days 61 - 90'
+            themeLabel = 'LAUNCH'
+            daysLabel = 'DAYS 61 - 90'
           }
 
           const milestones = phase.milestones && phase.milestones.length > 0
             ? phase.milestones.slice(0, 3)
             : fallbackRoadmap.phases[idx].milestones
 
+          const phaseIndex = `0${idx + 1}`;
+
           return (
             <div 
               key={phase.phase_number} 
-              className={`bg-[#0c0c0c]/80 backdrop-blur border border-[#1a1a1a] rounded-2xl p-6 space-y-6 hover:border-indigo-500/20 transition-all duration-300 relative group min-h-[380px] flex flex-col justify-between
+              className={`bg-[#0c0c0f]/20 backdrop-blur-sm border border-[#1a1a1a] rounded-2xl p-6 space-y-6 hover:border-[#262626] transition-all duration-305 relative group min-h-[380px] flex flex-col justify-between
                 ${idx === 0 ? 'animate-fade-in-left-1' : idx === 1 ? 'animate-fade-in-left-2' : 'animate-fade-in-left-3'}
               `}
             >
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent group-hover:via-indigo-500/40 transition-all duration-500" />
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-[#6366f1]/20 to-transparent" />
               
               <div className="space-y-4">
                 {/* Header */}
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                <div className="flex justify-between items-center text-[10px] font-mono">
+                  <span className="font-bold text-[#6366f1] bg-[#6366f1]/5 border border-[#6366f1]/20 px-2 py-0.5 rounded uppercase tracking-wider">
                     {themeLabel}
                   </span>
-                  <span className="font-mono font-medium text-zinc-500">
+                  <span className="font-semibold text-[#525252]">
                     {daysLabel}
                   </span>
                 </div>
                 
                 {/* Title */}
                 <div>
-                  <h3 className="font-display font-bold text-lg text-white group-hover:text-indigo-300 transition-colors duration-300 leading-snug">
+                  <span className="text-[10px] font-mono text-[#525252] block mb-1">
+                    PHASE_{phaseIndex} // STRATEGY_BLOCK
+                  </span>
+                  <h3 className="font-display font-bold text-lg text-white group-hover:text-[#6366f1] transition-colors duration-300 leading-snug">
                     {phase.title}
                   </h3>
-                  <p className="text-xs text-zinc-500 mt-2 leading-relaxed font-sans line-clamp-3">
+                  <p className="text-xs text-[#737373] mt-2.5 leading-relaxed font-sans line-clamp-3">
                     {phase.theme}
                   </p>
                 </div>
               </div>
 
               {/* Milestones */}
-              <div className="space-y-4 pt-5 border-t border-[#161616] flex-grow flex flex-col justify-end">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono block">
+              <div className="space-y-4 pt-5 border-t border-[#1a1a1a] flex-grow flex flex-col justify-end">
+                <span className="text-[9px] font-bold text-[#525252] uppercase tracking-widest font-mono block">
                   Top 3 Milestones
                 </span>
                 
                 <div className="space-y-3.5 mt-2">
                   {milestones.map((m, mIdx) => (
                     <div key={mIdx} className="flex items-start gap-2.5">
-                      <div className="h-4 w-4 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center shrink-0 mt-0.5 text-indigo-400">
-                        <svg className="h-2 w-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
+                      <div className="h-4 w-4 rounded bg-[#6366f1]/10 border border-[#6366f1]/30 flex items-center justify-center shrink-0 mt-0.5 text-[#6366f1]">
+                        <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                       </div>
-                      <div className="text-xs">
-                        <p className="font-medium text-zinc-300 leading-tight">
+                      <div className="text-[11px] font-sans">
+                        <p className="font-medium text-[#e5e5e5] leading-tight">
                           {m.title}
                         </p>
-                        <p className="text-[9px] font-mono text-zinc-500 mt-0.5">
+                        <p className="text-[9px] font-mono text-[#525252] mt-0.5 uppercase tracking-wide">
                           Target: W{m.target_week} &bull; {m.metric}
                         </p>
                       </div>
@@ -699,26 +695,26 @@ export default function RoadmapStep({
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-b from-[#0a0a0d] to-[#050507] border border-[#1a1a1a] rounded-2xl p-6 md:p-8 space-y-6 text-center relative overflow-hidden">
-        <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/5 rounded-full blur-[80px] pointer-events-none" />
+      <div className="border border-[#1a1a1a] bg-[#0c0c0f]/10 backdrop-blur-xl rounded-2xl p-8 md:p-12 space-y-6 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.03)_0%,transparent_70%)] pointer-events-none" />
         
         {/* Loaded Badge */}
-        <div className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-4 py-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+        <div className="inline-flex items-center gap-2 rounded-xl border border-[#6366f1]/20 bg-[#6366f1]/5 px-4 py-2">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6366f1] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#6366f1]"></span>
           </span>
-          <span className="text-xs font-mono font-bold text-indigo-300">
+          <span className="text-xs font-mono font-bold text-[#6366f1]">
             Sprint 1 is loaded. 7 tasks ready.
           </span>
         </div>
 
         {/* Description CTA */}
         <div className="space-y-2 max-w-xl mx-auto">
-          <p className="text-zinc-200 text-sm md:text-base font-semibold leading-relaxed">
+          <p className="text-white text-sm md:text-base font-semibold leading-relaxed font-display">
             You have a plan. Most founders never get this far.
           </p>
-          <p className="text-zinc-400 text-xs md:text-sm leading-normal">
+          <p className="text-[#a1a1a1] text-xs md:text-sm leading-normal">
             Your AI co-founder is ready. Let's go.
           </p>
         </div>
@@ -728,7 +724,7 @@ export default function RoadmapStep({
           <button
             onClick={handleOpenWorkspace}
             disabled={completing}
-            className="w-full md:w-auto min-w-[240px] px-8 py-4 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-500/50 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 flex items-center justify-center gap-2 mx-auto cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+            className="w-full md:w-auto min-w-[240px] px-8 py-3.5 bg-[#6366f1] hover:bg-[#5558e6] disabled:bg-[#6366f1]/50 text-white font-medium text-sm rounded-lg transition-colors shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-2 mx-auto cursor-pointer"
           >
             {completing ? (
               <>
