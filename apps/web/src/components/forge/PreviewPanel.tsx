@@ -18,6 +18,229 @@ const viewportWidths: Record<Viewport, string> = {
   mobile: '375px',
 }
 
+/* ── HTML / React Compiler Helpers ── */
+
+const extractClassName = (attrs: string): string => {
+  const match = attrs.match(/className=["']([^"']+)["']/);
+  return match ? match[1] : '';
+};
+
+const cleanAttrs = (attrs: string): string => {
+  return attrs
+    .replace(/className=["']([^"']+)["']/g, '')
+    .replace(/onClick=\{[^}]+\}/g, '')
+    .replace(/onChange=\{[^}]+\}/g, '')
+    .replace(/onSubmit=\{[^}]+\}/g, '');
+};
+
+const uiComponentsMap: Record<string, (attrs: string, children: string) => string> = {
+  Card: (attrs, children) => `<div class="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 ${extractClassName(attrs)}">${children}</div>`,
+  CardHeader: (attrs, children) => `<div class="mb-4 ${extractClassName(attrs)}">${children}</div>`,
+  CardTitle: (attrs, children) => `<h3 class="text-xl font-bold tracking-tight text-white ${extractClassName(attrs)}">${children}</h3>`,
+  CardDescription: (attrs, children) => `<p class="text-sm text-zinc-400 mt-1 ${extractClassName(attrs)}">${children}</p>`,
+  CardContent: (attrs, children) => `<div class="space-y-4 ${extractClassName(attrs)}">${children}</div>`,
+  CardFooter: (attrs, children) => `<div class="flex items-center pt-4 border-t border-zinc-800 mt-4 ${extractClassName(attrs)}">${children}</div>`,
+  Button: (attrs, children) => `<button class="inline-flex items-center justify-center rounded-lg text-xs font-semibold px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${extractClassName(attrs)}">${children}</button>`,
+  Input: (attrs, children) => `<input class="flex h-9 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 ${extractClassName(attrs)}" ${cleanAttrs(attrs)} />`,
+  Textarea: (attrs, children) => `<textarea class="flex min-h-[60px] w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 ${extractClassName(attrs)}" ${cleanAttrs(attrs)}>${children}</textarea>`,
+  CheckIcon: (attrs) => `<svg class="h-4 w-4 text-indigo-400 inline shrink-0 ${extractClassName(attrs)}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`,
+  XIcon: (attrs) => `<svg class="h-4 w-4 text-zinc-500 inline shrink-0 ${extractClassName(attrs)}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`,
+  XMarkIcon: (attrs) => `<svg class="h-4 w-4 text-zinc-500 inline shrink-0 ${extractClassName(attrs)}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`,
+};
+
+const parseArrayLiteral = (fileContent: string, arrayName: string): any[] | null => {
+  const regex = new RegExp(`const\\s+${arrayName}\\s*(?::\\s*[^=]+)?=\\s*(\\[[\\s\\S]*?\\])\\s*(?:;|\\n)`);
+  const match = fileContent.match(regex);
+  if (!match) return null;
+  const arrayStr = match[1].replace(/as\s+[a-zA-Z0-9_\[\]<>|\s]+/g, '');
+  try {
+    const evalFn = new Function(`return ${arrayStr}`);
+    return evalFn();
+  } catch (e) {
+    console.warn("Failed to parse array literal:", arrayName, e);
+    return null;
+  }
+};
+
+const findFileByImport = (importedSymbol: string, importPath: string, files: Array<{ path: string; content: string }>) => {
+  const cleanPath = importPath.replace(/^@\//, '').replace(/^\.+\//, '').toLowerCase();
+  const pathParts = cleanPath.split('/');
+  const lastPart = pathParts[pathParts.length - 1];
+
+  // 1. Direct path match
+  let matched = files.find(f => f.path.toLowerCase().includes(cleanPath));
+  if (matched) return matched;
+
+  // 2. Match last part of path
+  matched = files.find(f => {
+    const filename = f.path.split('/').pop()?.toLowerCase() || '';
+    return filename.includes(lastPart);
+  });
+  if (matched) return matched;
+
+  // 3. Match symbol name in file contents
+  matched = files.find(f => {
+    const content = f.content;
+    return content.includes(`export function ${importedSymbol}`) ||
+           content.includes(`export const ${importedSymbol}`) ||
+           content.includes(`export default function ${importedSymbol}`) ||
+           content.includes(`export default ${importedSymbol}`);
+  });
+  return matched;
+};
+
+const extractReturnBlock = (code: string): string => {
+  if (!code) return '';
+  const mainFuncMatch = code.match(/(?:export\s+default\s+function|export\s+function|export\s+const\s+[A-Z]\w+)/);
+  let searchArea = code;
+  if (mainFuncMatch && mainFuncMatch.index !== undefined) {
+    searchArea = code.slice(mainFuncMatch.index);
+  }
+  const returnMatch = searchArea.match(/return\s*\(\s*([\s\S]*?)\s*\)/);
+  if (returnMatch && returnMatch[1]) {
+    return returnMatch[1];
+  }
+  const singleLineMatch = searchArea.match(/return\s+(<[\s\S]*?>);/);
+  if (singleLineMatch && singleLineMatch[1]) {
+    return singleLineMatch[1];
+  }
+  return '';
+};
+
+const extractLocalComponentReturn = (fileContent: string, componentName: string): string => {
+  const index = fileContent.indexOf(`function ${componentName}`);
+  if (index === -1) return '';
+  const searchArea = fileContent.slice(index);
+  const returnMatch = searchArea.match(/return\s*\(\s*([\s\S]*?)\s*\)/);
+  return returnMatch ? returnMatch[1] : '';
+};
+
+const resolveJSX = (
+  jsx: string,
+  currentFile: { path: string; content: string } | null,
+  files: Array<{ path: string; content: string }>,
+  depth = 0
+): string => {
+  if (depth > 6) return '';
+  if (!jsx) return '';
+
+  // Parse imports map
+  const importsMap: Record<string, string> = {};
+  if (currentFile) {
+    const importRegex = /import\s+([\w+\s*,{}]+)\s+from\s+['"]([^'"]+)['"]/g;
+    let match;
+    while ((match = importRegex.exec(currentFile.content)) !== null) {
+      const importSource = match[2];
+      const importSpecifier = match[1].trim();
+      if (importSpecifier.startsWith('{')) {
+        const names = importSpecifier.replace(/[{}]/g, '').split(',');
+        names.forEach(n => {
+          const name = n.trim().split(' as ')[0].trim();
+          if (name) importsMap[name] = importSource;
+        });
+      } else {
+        const name = importSpecifier.replace(/\*\s+as\s+/, '').split(',')[0].trim();
+        if (name) importsMap[name] = importSource;
+      }
+    }
+  }
+
+  // Handle map loops
+  let resolved = jsx;
+  const mapRegex = /\{\s*([a-zA-Z0-9_]+)\.map\(\s*\(\s*([a-zA-Z0-9_]+)\s*(?:,\s*([a-zA-Z0-9_]+)\s*)?\)\s*=>\s*(?:\(\s*([\s\S]*?)\s*\)|([\s\S]*?))\s*\)\s*\}/g;
+  resolved = resolved.replace(mapRegex, (fullMatch: string, arrayName: string, itemName: string, indexName: string | undefined, template1: string | undefined, template2: string | undefined) => {
+    const templateJSX = template1 || template2 || '';
+    const array = parseArrayLiteral(currentFile?.content || '', arrayName);
+    
+    if (!array || array.length === 0) {
+      return resolveJSX(templateJSX, currentFile, files, depth + 1);
+    }
+    
+    let result = '';
+    array.forEach((item: any, index: number) => {
+      let instance = templateJSX;
+      const fieldRegex = new RegExp(`\\{\\s*${itemName}\\.([a-zA-Z0-9_]+)\\s*\\}`, 'g');
+      instance = instance.replace(fieldRegex, (m: string, fieldName: string) => {
+        return item[fieldName] !== undefined ? item[fieldName] : '';
+      });
+
+      if (indexName) {
+        const idxRegex = new RegExp(`\\{\\s*${indexName}\\s*\\}`, 'g');
+        instance = instance.replace(idxRegex, String(index));
+      }
+
+      const ternaryRegex = new RegExp(`\\{\\s*${itemName}\\.([a-zA-Z0-9_]+)\\s*\\?\\s*['"]([^'"]*)['"]\\s*:\\s*['"]([^'"]*)['"]\\s*\\}`, 'g');
+      instance = instance.replace(ternaryRegex, (m: string, fieldName: string, val1: string, val2: string) => {
+        return item[fieldName] ? val1 : val2;
+      });
+
+      const conditionalRegex = new RegExp(`\\{\\s*${itemName}\\.([a-zA-Z0-9_]+)\\s*\\?\\s*([\\s\\S]*?)\\s*:\\s*(?:null|undefined)\\s*\\}`, 'g');
+      instance = instance.replace(conditionalRegex, (m: string, fieldName: string, trueBlock: string) => {
+        return item[fieldName] ? trueBlock : '';
+      });
+
+      result += resolveJSX(instance, currentFile, files, depth + 1);
+    });
+    return result;
+  });
+
+  // Resolve JSX components and HTML tags
+  const tagRegex = /<([a-zA-Z0-9]+)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/\1>)/g;
+  resolved = resolved.replace(tagRegex, (fullMatch: string, TagName: string, attributes: string, children: string | undefined) => {
+    const isStandardHtml = TagName[0] === TagName[0].toLowerCase();
+
+    if (isStandardHtml) {
+      const resolvedChildren = children ? resolveJSX(children, currentFile, files, depth + 1) : '';
+      const closedTag = fullMatch.endsWith('/>') ? ' />' : `>${resolvedChildren}</${TagName}>`;
+      const cleanedAttrs = attributes
+        .replace(/className=/g, 'class=')
+        .replace(/onClick=\{[^}]+\}/g, '')
+        .replace(/onChange=\{[^}]+\}/g, '')
+        .replace(/onSubmit=\{[^}]+\}/g, '');
+      return `<${TagName}${cleanedAttrs}${closedTag}`;
+    }
+
+    const resolvedChildren = children ? resolveJSX(children, currentFile, files, depth + 1) : '';
+
+    if (uiComponentsMap[TagName]) {
+      return uiComponentsMap[TagName](attributes, resolvedChildren);
+    }
+
+    if (importsMap[TagName]) {
+      const matchedFile = findFileByImport(TagName, importsMap[TagName], files);
+      if (matchedFile) {
+        let returnBlock = extractReturnBlock(matchedFile.content);
+        if (resolvedChildren) {
+          returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, resolvedChildren);
+        } else {
+          returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, '');
+        }
+        return resolveJSX(returnBlock, matchedFile, files, depth + 1);
+      }
+    }
+
+    if (currentFile && currentFile.content.includes(`function ${TagName}`)) {
+      let returnBlock = extractLocalComponentReturn(currentFile.content, TagName);
+      if (resolvedChildren) {
+        returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, resolvedChildren);
+      } else {
+        returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, '');
+      }
+      return resolveJSX(returnBlock, currentFile, files, depth + 1);
+    }
+
+    return resolvedChildren || `<div class="p-4 border border-zinc-800 text-zinc-500 rounded text-center text-xs font-mono">&lt;${TagName} /&gt;</div>`;
+  });
+
+  // Clean up remaining React/JS curly brace expressions
+  resolved = resolved.replace(/\{\s*[^?}]+\?\s*['"]([^'"]*)['"]\s*:\s*['"]([^'"]*)['"]\s*\}/g, '$2');
+  resolved = resolved.replace(/\{\s*[^}&&]+&&\s*([\s\S]*?)\s*\}/g, '');
+  resolved = resolved.replace(/\{\s*[a-zA-Z0-9_.]+(?:\?\.[a-zA-Z0-9_.]+)*\s*\}/g, '');
+  resolved = resolved.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+
+  return resolved;
+};
+
 export default function PreviewPanel({
   files,
   inspectMode,
@@ -40,19 +263,12 @@ export default function PreviewPanel({
   const compileToHTML = (code: string): string => {
     if (!code) return ''
 
-    let bodyContent = code
-    if (code.includes('import') || code.includes('export default')) {
-      const returnMatch = code.match(/return\s*\(\s*([\s\S]*?)\s*\)/)
-      if (returnMatch && returnMatch[1]) {
-        bodyContent = returnMatch[1]
-      } else {
-        bodyContent = code
-          .replace(/import[\s\S]*?;/g, '')
-          .replace(/export\s+default\s+function[\s\S]*?{/g, '')
-          .replace(/return\s+[\s\S]*?/g, '')
-          .replace(/^[}{]\s*$/gm, '')
-      }
-    }
+    const primaryFile =
+      files.find(f => f.path.toLowerCase().endsWith('page.tsx') || f.path.toLowerCase().endsWith('page.html')) ||
+      files.find(f => f.path.toLowerCase().endsWith('index.html')) ||
+      files[0];
+
+    const resolvedBody = resolveJSX(extractReturnBlock(code), primaryFile || null, files);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -83,7 +299,7 @@ export default function PreviewPanel({
   </style>
 </head>
 <body class="p-8 min-h-screen">
-  <div id="preview-root">${bodyContent}</div>
+  <div id="preview-root">${resolvedBody}</div>
   <script>
     if (${inspectMode}) {
       document.addEventListener('mouseover', function(e) {
@@ -227,7 +443,7 @@ export default function PreviewPanel({
 
         {hasFiles && (
           <div
-            className="h-full transition-all duration-300 ease-out"
+            className="w-full h-full transition-all duration-300 ease-out"
             style={{
               width: viewportWidths[viewport],
               maxWidth: '100%',
