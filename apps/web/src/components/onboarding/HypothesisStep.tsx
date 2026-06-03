@@ -171,14 +171,31 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
         console.warn('Could not link startup to founder record:', founderErr)
       }
 
-      // 4. Update founder onboarding step in founder_memory (to step 2)
+      // 4. Save selected hypothesis context to DB
+      await supabase
+        .from('founder_memory')
+        .upsert({
+          founder_id: user.id,
+          namespace: 'onboarding',
+          key: 'selected_hypothesis',
+          value: {
+            hypothesis: hypothesis,
+            startupName: hypothesis.title,
+            tagline: hypothesis.proposed_solution,
+            industry: 'SaaS',
+            targetAudience: hypothesis.target_audience,
+            stage: 'ideation'
+          }
+        }, { onConflict: 'founder_id,namespace,key' })
+
+      // 4b. Update founder onboarding step in founder_memory (to step 3)
       await supabase
         .from('founder_memory')
         .upsert({
           founder_id: user.id,
           namespace: 'onboarding',
           key: 'step',
-          value: { step: 2 }
+          value: { step: 3 }
         }, { onConflict: 'founder_id,namespace,key' })
 
       // 5. Trigger crystallizer and icp-definer runs in parallel via BFF

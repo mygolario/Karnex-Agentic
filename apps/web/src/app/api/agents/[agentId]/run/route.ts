@@ -41,7 +41,8 @@ const ENVELOPE_BY_AGENT: Record<
 }
 
 function withEnvelope(agentId: string, payload: Record<string, unknown>, contextSummary: string) {
-  const meta = ENVELOPE_BY_AGENT[agentId] ?? {
+  const baseAgentId = agentId.replace(/-v\d+$/, '')
+  const meta = ENVELOPE_BY_AGENT[baseAgentId] ?? {
     step_labels: ['Running agent pipeline'],
     suggested_next_agent: null,
   }
@@ -89,7 +90,31 @@ export async function POST(
     }
 
     const body = await request.json()
-    const input = body.input || {}
+    let input = body.input || {}
+    const ideaId = body.ideaId || input.ideaId
+
+    if (ideaId) {
+      const { data: ideaData } = await supabase
+        .from('ideas')
+        .select('*')
+        .eq('id', ideaId)
+        .maybeSingle()
+
+      if (ideaData) {
+        input = {
+          ...input,
+          selected_hypothesis: {
+            title: ideaData.title,
+            problem_statement: ideaData.problem_statement,
+            proposed_solution: ideaData.proposed_solution,
+            pain_intensity_score: ideaData.pain_intensity_score,
+            market_size_score: ideaData.market_size_score,
+            buildability_score: ideaData.buildability_score,
+            overall_score: ideaData.overall_score
+          }
+        }
+      }
+    }
 
     // Create a new agent run in the database
     const { data: run, error: runErr } = await supabase
@@ -130,12 +155,13 @@ async function runAgentInBackground(
   authHeader: string | null
 ) {
   const supabase = await createSupabaseServerClient()
+  const baseAgentId = agentId.replace(/-v\d+$/, '')
 
   try {
     let output: any = null
     const startTime = Date.now()
 
-    if (agentId === 'pain-transformer') {
+    if (baseAgentId === 'pain-transformer') {
       const painDescription = input.pain_description || ''
       
       // Try backend first
@@ -171,7 +197,7 @@ async function runAgentInBackground(
         )
       }
 
-    } else if (agentId === 'idea-crystallizer') {
+    } else if (baseAgentId === 'idea-crystallizer') {
       const selectedHyp = input.selected_hypothesis || {}
       const backend = await tryBackendPost(
         'idea-crystallizer',
@@ -196,7 +222,7 @@ async function runAgentInBackground(
         )
       }
 
-    } else if (agentId === 'icp-definer') {
+    } else if (baseAgentId === 'icp-definer') {
       const productBrief = input.product_brief || {}
       const backend = await tryBackendPost(
         'icp-definer',
@@ -218,7 +244,7 @@ async function runAgentInBackground(
         )
       }
 
-    } else if (agentId === 'war-room') {
+    } else if (baseAgentId === 'war-room') {
       // Try backend first
       let backendSuccess = false
       if (authHeader) {
