@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const redirect = searchParams.get('redirect') ?? '/dashboard'
+  const redirect = searchParams.get('redirect') ?? '/home'
 
   if (code) {
     const response = NextResponse.redirect(`${origin}${redirect}`)

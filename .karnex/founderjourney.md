@@ -12,251 +12,125 @@ For the past 18 months, she's been frustrated by the same thing: every freelance
 
 Sarah knows exactly what to build. She's designed it in Figma already — a beautiful, designer-first client management and invoicing tool called "Folio." But she's stuck. She can code a bit (HTML/CSS, some React), but she's not a developer. She can't afford a dev agency ($40K+ quotes). And she's terrified of wasting her limited evenings and weekends on something that might not work.
 
-She's tried ChatGPT. It gave her generic advice. She's tried Cursor. She got stuck on auth and deployment. She's read every Indie Hackers post about validation. She still hasn't started.
+She's tried ChatGPT. It gave her generic advice. She's tried Cursor. She got stuck on auth and deployment. She still hasn't started.
 
 Then she finds Karnex.
 
 ---
 
-## Day 1: The First Session
+## Day 1: The Magic Onboarding (< 10 minutes)
 
 **6:47 PM — After dinner, laptop open on the couch.**
 
-Sarah signs up with Google. Takes 10 seconds. No credit card. No 15-minute onboarding tutorial.
+Sarah signs up with Google. Takes 10 seconds. No credit card required.
 
-Karnex asks three questions:
-1. "What should we call you?" → *Sarah*
-2. "How many hours per week can you dedicate to your project?" → *12 hours*
-3. "How technical are you?" → *Intermediate*
-
-Then: **"Now tell me what's keeping you up at night."**
-
+**Step 1: The Pain Input (60s)**
+Karnex presents a single text area: *"What pain kept you up last night?"*
 Sarah types:
-
 > *"Every freelance designer I know wastes 5+ hours a week on invoicing and client management. The tools that exist are ugly and built for accountants. Designers need something beautiful that understands their workflow — project scoping, revision tracking, invoice generation, and client communication in one place."*
 
-She clicks **"Transform this into a product."**
+**Step 2: Pain-to-Product score cards (15s)**
+She clicks **"Transform this into a product."** The screen displays a loading animation: *"Scanning market gaps... Scoring buildability..."* 
+Fifteen seconds later, three hypothesis cards appear with scores.
+*   **Hypothesis 1: Folio** — "A designer-first client management tool with integrated invoicing, project scoping, and revision tracking." (Pain Intensity: 78/100, Market Size: 62/100, Buildability: 71/100. Overall: 71/100)
+*   **Hypothesis 2: ClientCanvas** — "A visual project hub for creative freelancers." (Overall: 64/100)
+*   **Hypothesis 3: DesignFlow** — "An automated invoicing tool specifically for design deliverables." (Overall: 58/100)
 
-The loading screen says: *"🔍 Analyzing your pain... Finding the product opportunity..."*
+**Step 3: Product Brief & ICP (2min)**
+Sarah selects **Folio**. In the background, the *Idea Crystallizer* and *ICP Definer* run in parallel. A beautiful one-page Product Brief reveals:
+*   **Name & Tagline**: Folio — *"Client management designed for designers"*
+*   **Features prioritized**: Must-have (invoicing, project timeline, client portal) vs Nice-to-have.
+*   **3 Personas**: One persona — *"Mia, 28, freelance brand designer in Portland"* — feels so real that Sarah screenshots it and sends it to her friend.
 
-Twelve seconds later, three product hypothesis cards appear.
+**Step 4: Roadmap Generation & First Sprint (30s)**
+The *90-Day War Room* generates her roadmap. A timeline animation shows Phase 1, Phase 2, and Phase 3. 
+*   *"Sprint 1 is loaded. Your co-founder is ready."*
+*   CTA: **"Open my workspace"**
 
-**Hypothesis 1: Folio** — "A designer-first client management tool with integrated invoicing, project scoping, and revision tracking."
-- Pain Intensity: 78/100
-- Market Size: 62/100
-- Buildability: 71/100
-- Overall: 71/100
-
-**Hypothesis 2: ClientCanvas** — "A visual project hub for creative freelancers that replaces the Notion/Sheets/Slack mess."
-- Overall: 64/100
-
-**Hypothesis 3: DesignFlow** — "An automated invoicing tool specifically for design deliverables — generates invoices from project milestones."
-- Overall: 58/100
-
-Sarah's eyes widen. *"Holy shit. It actually understood what I was saying."*
-
-She selects Folio. The Idea Crystallizer runs. Fifteen seconds later, she has:
-- 5 name candidates (Folio wins — she likes the design connotation)
-- A tagline: "Client management designed for designers"
-- An elevator pitch she could text to a friend
-- Features prioritized: must-have (invoicing, project timeline, client portal), nice-to-have (revision tracking, contract templates), future (team collaboration)
-- Pricing hypothesis: $19/mo Solo, $39/mo Studio
-- Go-to-market: Dribbble community, Design Twitter, r/freelanceDesigners
-
-Then the ICP Definer creates three personas. One of them — "Mia, 28, freelance brand designer in Portland" — feels so real that Sarah screenshots it and sends it to her friend: *"THIS is who I'm building for."*
-
-Finally, the 90-Day War Room generates her roadmap:
-- Phase 1 (Weeks 1-4): Validate the problem. 10 customer interviews. Landing page. First 50 email list signups.
-- Phase 2 (Weeks 5-8): Build MVP. Invoicing + project timeline + client portal. Supabase + Next.js.
-- Phase 3 (Weeks 9-12): Launch. Beta invites. First 5 paying customers.
-
-Sprint 1 appears on her dashboard. Seven tasks. First one: **"Write 10 cold DMs to freelance designers on Dribbble asking about their invoicing pain."**
-
-Sarah closes her laptop at 7:22 PM. She's been on Karnex for 35 minutes. She has a product brief, an ICP, a 90-day roadmap, and Sprint 1 loaded with tasks.
-
-She feels something she hasn't felt in 18 months: **momentum.**
+Sarah closes her laptop at 6:55 PM. She's been on Karnex for 8 minutes. She has a product brief, personas, a 90-day roadmap, and Sprint 1 loaded. She feels **momentum**.
 
 ---
 
-## Day 7: First Agent Task Completed
+## Day 7: First Execution
 
-**7:15 AM — Morning coffee, daily standup.**
+**7:15 AM — Morning coffee, daily HQ Journey page.**
 
-Sarah opens Karnex. The Daily Standup asks: *"Good morning, Sarah. What happened yesterday?"*
+Sarah opens Karnex and lands on her **Home (Journey)** page. The sidebar has only 5 items: **Home, Studio, Integrations, Vault, Settings**. 
 
-She types: *"Did 4 customer interviews. All 4 confirmed the invoicing pain. One said she'd pay $29/mo today if it existed."*
+Under **Today's Standup**, it asks: *"What did you ship yesterday?"* She type-syncs: *"Did 4 customer interviews. One said she'd pay $29/mo today if it existed."* The standup collapses and is replaced by a coaching insight: 
+> 💬 *Four positive signals is excellent early validation. Hit 7/10 interviews to validate problem-market fit.*
 
-Standup response:
-> ✅ 4 customer interviews completed (target: 10)
-> 🎯 Today: Finish interview script refinement, prep Outreach Agent for batch 2
-> 📈 Momentum: 67 (+8 from yesterday). You're building a strong validation case.
-> 💬 Four positive signals from interviews is excellent early validation. If you hit 7/10 with this level of enthusiasm, you've got strong product-market fit signal.
+On her dashboard, she sees **Your 3 Tasks for Today**:
+1.  Map 5 invoicing competitors `[Let Karnex]`
+2.  Email 10 freelance designers `[Let Karnex]`
+3.  Refine discovery interview script `[Let Karnex]`
 
-That evening, Sarah triggers the **Outreach Agent**. She gives it 15 contact emails from Dribbble designers and asks it to compose a customer discovery outreach sequence.
+Sarah clicks **Let Karnex** on the second task. A slide-over panel opens, showing what the Outreach Agent will do: *"Write a 3-stage customer discovery sequence and prepare a list of 10 Portland brand designers."*
 
-The agent generates a 3-email sequence. Subject line: *"Quick question about how you handle invoicing."* First email is 4 sentences long. Personalized per contact. A/B variant on the subject line.
+Sarah clicks **"Go — let Karnex handle this."** 
+A live progress bar updates: *"Generating templates... Fetching profiles... Campaign prepared."* The task status auto-marks as done, the outreach templates are auto-saved to her **Vault**, and draft campaigns are queued. 
 
-Sarah previews each email. They're good — not salesy, genuinely curious. She clicks **"Approve & Send."**
-
-By Day 10, she has 8 replies. 6 are positive. One designer asks: *"When can I sign up?"*
-
-**The Outreach Agent just did in 45 minutes what would have taken Sarah 6 hours to do manually.**
+She did in 1 minute what would have taken her 4 hours.
 
 ---
 
-## Day 14: First Pivot Decision
+## Day 14: The Spine Adapts
 
-**Sprint 3. Sarah is in the War Room reviewing progress.**
+**Sprint 2. Sarah is looking at her 90-Day Roadmap on the Journey page.**
 
-The Sprint Planner flags something: *"Based on customer interviews, 'revision tracking' was mentioned as a pain point more than 'project timeline.' Consider re-prioritizing."*
+Karnex suggests: *"Based on customer interviews, 'revision tracking' was mentioned as a pain point more than 'project timeline.' Re-prioritizing."*
+Sarah logs her decision in the Decision Journal contextually:
+> **Decision**: Move revision tracking to must-have. Deprioritize timeline to v2.
+> **Rationale**: 70% of interviews cited revision tracking as top pain.
 
-Sarah checks the Decision Journal. She had initially deprioritized revision tracking because it seemed complex. But 7 out of 10 interviewees mentioned it as their #1 frustration.
-
-She opens the Decision Journal and logs:
-
-> **Decision:** Move revision tracking from "nice-to-have" to "must-have." Deprioritize project timeline to v2.
-> **Rationale:** 70% of interviews cited revision tracking as top pain. Project timeline was mentioned by only 20%.
-> **Reversibility:** Easily reversible — can add timeline back later.
-> **Confidence:** High.
-
-The roadmap adjusts automatically. Phase 2 now focuses on: invoicing + revision tracking + client portal (instead of invoicing + project timeline + client portal).
-
-**This is the pivot that would have taken Sarah weeks of agonizing if she were working alone. With data from interviews and a structured decision process, it took 10 minutes.**
+The roadmap adjusts automatically. The founder didn't have to prompt or navigate layers. The roadmap is the spine.
 
 ---
 
-## Day 30: End of Validation Phase
+## Day 45: The "Holy Shit" Moment in Studio
 
-**What Sarah has after 30 days:**
+Sarah navigates to **Studio** (her simplified Forge). 
 
-| Asset | Status | How She Got It |
-|-------|--------|---------------|
-| Product brief | Complete, twice-refined | Pain-to-Product → Idea Crystallizer |
-| ICP document | Validated by 10 interviews | ICP Definer + Outreach Agent interviews |
-| Competitive analysis | 8 competitors mapped | Competitive Landscape Agent |
-| 90-day roadmap | Phase 1 complete, Phase 2 started | 90-Day War Room |
-| Landing page | Live at folio-app.com | Builder Agent (deployed to Vercel) |
-| Email list | 127 signups | Outreach Agent + landing page |
-| Interview insights | 10 transcripts, synthesized | Research Agent |
-| Decision log | 6 decisions logged | Decision Journal |
-| Momentum Score | 74 — "strong momentum" | Daily Standups (26 of 30 days) |
+Instead of a complex IDE, she is greeted by **Karnex Says** (CTO-over-shoulder chat) on the left, and a **Live Preview** iframe on the right.
 
-**What Sarah feels:** Confident. Not "I hope this works" confident — "I have data that says this works" confident. She's talked to real people. She's seen real demand. She has a plan.
+```
+KARNEX SAYS: "I've checked your schema. Ready to build the invoicing module. Pushing the branch in ~60 seconds."
+[ Go — build this ]
+```
 
-**Phase 1 go/no-go gate:** ✅ PASS. 8/10 interviewees confirmed pain intensity > 7/10. 127 landing page signups without advertising. 1 potential customer said "I'd pay today."
+Sarah clicks **Go — build this**. 
+The Live Preview pane switches to a building screen showing progress:
+*   *Supabase table created*
+*   *API routes scaffolded*
+*   *Generating UI components...*
+*   *Tests run*
+*   *Deploying to Vercel...*
 
----
+Ninety seconds later, the Live Preview updates: `folio-preview.vercel.app/invoicing` is live. Sarah types a test invoice directly inside the preview iframe, clicks send, and sees it work. 
 
-## Day 45: The "Holy Shit" Moment
-
-**Sarah triggers the Builder Agent for the first time.**
-
-She's been dreading this. She's not a developer. She's semi-technical — she can read React code, but writing a full application from scratch? No way.
-
-She opens the Agent Hub, clicks Builder Agent, and types:
-
-> "Build the invoicing module for Folio. It should: (1) let a designer create an invoice with line items (service description, hours, rate), (2) calculate totals automatically, (3) generate a clean PDF, and (4) send the invoice to the client via email with a payment link. Use Stripe [v2 - deferred] for payments. Make it beautiful — this is for designers."
-
-She clicks **Run Agent.**
-
-The progress indicator shows steps: *"Analyzing requirements... Generating database schema... Building API routes... Creating React components... Generating Stripe [v2 - deferred] integration... Writing tests..."*
-
-87 seconds later, the Builder Agent produces:
-- 14 files: database migration, API routes, React components, Stripe [v2 - deferred] integration, PDF generator, email template
-- A setup guide
-- 3 test files
-
-Sarah pushes it to her GitHub repo via Karnex. Creates a PR automatically. She opens the PR, reviews the code (she can read it, even if she couldn't write it), and merges.
-
-She deploys to Vercel. Opens the URL. There it is — a working invoicing page. She creates a test invoice, enters line items, and clicks "Send." A beautiful PDF arrives in her email with a Stripe [v2 - deferred] payment link.
-
-**She literally says "holy shit" out loud.** Her partner asks what happened. "My AI co-founder just built my invoicing system."
-
-This is the moment Sarah becomes a paying Karnex customer. She upgrades from the free trial to Builder ($79/mo) without hesitation.
+She literally says *"holy shit"* out loud. She upgrades from the Free Trial to the **Builder** tier ($79/mo) because she wants this to run automatically and push directly to her live GitHub repo.
 
 ---
 
-## Day 60: MVP Shipped
+## Day 75: Re-engaging from the Valley
 
-**What the Builder Agent produced over Days 31-60:**
+Sarah's momentum dips. Her Momentum Score drops to 48. She hasn't opened Karnex in 4 days.
 
-| Component | Description | Agent Runs |
-|-----------|-------------|-----------|
-| Invoicing module | Full CRUD + PDF generation + Stripe [v2 - deferred] payments | 3 runs |
-| Client portal | Clients can view invoices, approve revisions, leave feedback | 2 runs |
-| Revision tracker | Upload revisions, track approval status, link to invoices | 2 runs |
-| Auth system | Supabase Auth with Google login, protected routes | 1 run |
-| Dashboard | Overview of active projects, pending invoices, recent activity | 1 run |
-| Landing page (v2) | Redesigned with testimonials from beta testers | 1 run |
-
-Sarah has also used:
-- **Research Agent** — Deep dive on design freelancer pricing (confirmed $19-39/mo sweet spot)
-- **Content & SEO Agent** — 3 blog posts on freelancer invoicing tips (driving organic traffic)
-- **Outreach Agent** — 2 campaigns totaling 75 emails, 31 replies, 12 beta signups
-
-**Her MVP is live at folio-app.com.** It's not perfect — there are rough edges, missing features, and a to-do list a mile long. But it works. Real designers are using it.
-
----
-
-## Day 75: The Grind Gets Real
-
-**This is the valley.** Sarah's momentum dips for the first time. Her Momentum Score drops from 72 to 48 over 10 days.
-
-Two of her beta testers reported bugs she doesn't know how to fix. Her landing page conversion rate is 3% — she thought it would be higher. She hasn't done a standup in 4 days.
-
-**Karnex notices.**
-
-The Accountability Agent sends an email:
-
-> *"Hey Sarah — you've been quiet for 4 days. Your streak was at 58 days. Your Momentum Score dropped to 48.*
->
-> *Here's a quick restart: your Sprint has one 15-minute task available — 'Fix the invoice PDF alignment bug.' The Builder Agent can handle this. Want to run it?*
->
-> *No pressure. We're here when you're ready."*
-
-Sarah clicks the link. She runs the Builder Agent to fix the bug. It takes 90 seconds. She does her standup:
-
-> *"Feeling stuck. Conversion rate is low. Not sure what to do next."*
-
-The standup response identifies the blocker and suggests:
-
-> 🎯 Today: Run the Analytics Agent on your landing page data. Let's see what's actually happening before guessing.
-
-She runs the Analytics Agent. It tells her: visitors are dropping off at the pricing section. The pricing table is confusing — too many features listed, no clear "most popular" indicator.
-
-She runs the Builder Agent to redesign the pricing section. One run. 45 seconds. Deploy. Conversion rate jumps to 5.2% the next week.
-
-**Momentum Score: 61 → 69 → 74.** She's back.
+The next morning, she opens the Journey page.
+Karnex Says: *"Sarah, you've been quiet for 4 days. Let's start small: your invoicing PDF alignment has a small bug. Ready to let Karnex fix it?"*
+She clicks `[Let Karnex]` on the card. Studio opens, fixes the layout file, and redeploys in 60 seconds. Her standup logs the change. The momentum score climbs back up to 61.
 
 ---
 
 ## Day 90: First Paying Customer 🎉
 
-**Saturday, 2:47 PM.**
-
-Sarah is reviewing her Weekly Debrief when she gets a Stripe [v2 - deferred] notification:
+Sarah is checking her weekly momentum metrics on the Journey page when a notification pops up:
 
 **"You received a $19.00 payment from Mia Chen."**
 
-Mia — the freelance brand designer from Portland. The persona that the ICP Definer generated on Day 1. The real Mia. She was one of Sarah's first outreach contacts, became a beta tester, and just upgraded to a paid plan.
+Mia Chen — the brand designer persona generated on Day 1. The real Mia was reached via the automated outreach recipe set up in the **Integrations Hub** ("When outreach campaign drafted -> queue for 9am review"). She became a beta tester, and just upgraded.
 
-Sarah stares at her screen. Then she screenshots it and texts her partner:
-
-*"Someone just PAID ME for something I BUILT."*
-
-### What the full stack looks like at Day 90:
-
-| Dimension | Status |
-|-----------|--------|
-| **Product** | Live MVP: invoicing, revision tracking, client portal, auth, payments |
-| **Users** | 23 beta users, 3 paying customers, 240+ email list |
-| **Revenue** | $57 MRR ($19 × 3) |
-| **Content** | 5 blog posts, 2,100 monthly organic visitors |
-| **Outreach** | 3 campaigns, 150 contacts reached, 28% reply rate |
-| **Tech Stack** | Next.js on Vercel, Supabase, Stripe [v2 - deferred] — all deployed and working |
-| **Decisions Logged** | 14 decisions in Decision Journal (3 pivots, 2 pricing changes) |
-| **Karnex Stats** | 247 agent runs, 82 daily standups (91% consistency), 12 weekly debriefs |
-| **Momentum Score** | 78 — "strong momentum" |
+Sarah screenshots the payment and shares the link. She has a live, validated MVP with real paying customers, built entirely from the spine of her 90-day roadmap.
 
 ---
 
@@ -267,64 +141,38 @@ Frustration ──┐
 (Day 0)       │ "I have an idea but I can't execute alone"
               │
               ├──▶ Surprise & Excitement ──┐
-              │    (Day 1)                  │ "Wait — this thing actually works?"
+              │    (Day 1 - Onboarding)     │ "My product concept & personas are ready!"
               │                             │
               │                             ├──▶ Confidence ──┐
               │                             │    (Day 14-30)   │ "I have data. I have a plan."
               │                             │                  │
               │                             │                  ├──▶ Awe ──┐
-              │                             │                  │   (Day 45) │ "It BUILT my product??"
+              │                             │                  │   (Day 45) │ "Studio built my invoicing module!"
               │                             │                  │            │
               │                             │                  │            ├──▶ The Valley ──┐
-              │                             │                  │            │   (Day 70-80)   │ "Is this working?"
+              │                             │                  │            │   (Day 70-80)   │ "Stuck & lost momentum"
               │                             │                  │            │                  │
               │                             │                  │            │                  ├──▶ Comeback ──┐
-              │                             │                  │            │                  │   (Day 80-85) │ "I fixed it. I'm back."
+              │                             │                  │            │                  │   (Day 80-85) │ "One-click fix. I'm back."
               │                             │                  │            │                  │                │
               │                             │                  │            │                  │                ├──▶ TRIUMPH
               │                             │                  │            │                  │                │   (Day 90)
-              │                             │                  │            │                  │                │   "Someone PAID me."
+              │                             │                  │            │                  │                │   "Mia paid me!"
 ```
 
 ---
 
-## Key Karnex Touchpoints That Made the Difference
+## Key Redesign Outcomes (Karnex 2.0 vs 1.0)
 
-| Touchpoint | Day | Impact |
-|-----------|-----|--------|
-| **Pain-to-Product Transformer** | Day 1 | Turned 18 months of vague frustration into 3 concrete product concepts in 12 seconds |
-| **ICP Definer personas** | Day 1 | Made the target user feel real — Sarah could picture Mia when making every decision |
-| **90-Day War Room** | Day 1 | Gave Sarah a plan that matched her 12 hours/week capacity — no overwhelm |
-| **Daily Standup** | Daily | 82 standups in 90 days. The rhythm became a habit. "My co-founder checks in every morning." |
-| **Outreach Agent** | Day 7 | Turned "I should talk to customers" into "I've talked to 10 customers" in 3 days |
-| **Builder Agent** | Day 45 | The moment Sarah went from "I can't build this" to "I BUILT this" |
-| **Accountability Mode** | Day 75 | Re-engaged Sarah during her lowest moment with a specific, small restart task |
-| **Analytics Agent** | Day 76 | Identified the pricing page as the conversion bottleneck — data over guessing |
-| **Sprint Planner** | Weekly | Never more than 7 tasks. Never more than she could handle. Ruthless prioritization |
-| **Momentum Score** | Daily | Visible progress. Even on bad days, the score showed she was moving forward |
+| Feature | 1.0 Approach | 2.0 Approach |
+|---|---|---|
+| **Navigation** | 8 sidebar items (Ideas, War Room, Forge, Hub...) | 5 sidebar items (**Home, Studio, Integrations, Vault, Settings**) |
+| **Dream Engine** | Separate page | Runs contextually in onboarding & "+ New Idea" modal |
+| **Agent Hub** | Destination registry | Agents run invisibly via **"Let Karnex"** task buttons |
+| **Forge** | Heavy file tree, full web IDE | **Studio** (CTO-over-shoulder chat + live preview + toggle Advanced Mode) |
+| **Compass** | Standup dashboard & graphs | morning standup widget + insights on Home page |
+| **Monetization** | Gated by feature access | Gated by **quantity of tasks** and **autonomy levels** |
 
 ---
 
-## What This Story Teaches Us
-
-1. **The first 5 minutes matter most.** Sarah's "aha moment" was at minute 5, when the Pain-to-Product Transformer produced 3 hypotheses. If that had been mediocre, she'd have closed the tab.
-
-2. **Agents must produce, not advise.** The Outreach Agent didn't tell Sarah to "consider reaching out to potential customers." It wrote the emails. That's the difference.
-
-3. **The valley is inevitable.** Every founder hits it. Karnex needs to detect it (Momentum Score drop) and respond (Accountability Mode) without being annoying.
-
-4. **Data breaks paralysis.** Sarah's Day 76 turnaround happened because the Analytics Agent gave her data, not opinions. "Visitors drop off at pricing" is actionable. "Maybe try different marketing" is not.
-
-5. **Consistency beats intensity.** Sarah's 82 standups in 90 days mattered more than any single agent run. The daily rhythm is what keeps founders going.
-
-6. **Revenue is the finish line.** Not "launch." Not "users." Revenue. Everything in Karnex's design should drive toward someone paying.
-
----
-
-*This narrative is used for:*
-- *Onboarding design: replicate Sarah's Day 1 experience*
-- *Marketing copy: "From idea to first paying customer in 90 days"*
-- *Investor storytelling: concrete, data-rich founder outcome*
-- *Team alignment: everyone knows who Sarah is and what she needs*
-
-*Last updated: 2026-05-28 | Version: 1.0.0*
+*Last updated: June 2026 | Version: 2.0.0*

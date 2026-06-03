@@ -338,3 +338,12 @@ select.dash-input {
 .forge-dot-red { background: #ef4444; }
 .forge-dot-yellow { background: #eab308; }
 .forge-dot-green { background: #22c55e; }
+
+/* Fullscreen Studio mode styling */
+.studio-fullscreen aside {
+  display: none !important;
+}
+.studio-fullscreen .pl-64 {
+  padding-left: 0 !important;
+}
+

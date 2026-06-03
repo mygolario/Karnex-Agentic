@@ -205,7 +205,7 @@ function OutreachContent() {
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!startupId) {
-      alert('Please configure a startup profile first in dashboard.')
+      alert('Please configure a startup profile first on the Home page.')
       return
     }
 

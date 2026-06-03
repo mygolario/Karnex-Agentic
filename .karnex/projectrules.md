@@ -31,11 +31,9 @@ karnex/
 │       │   ├── app/                # Next.js App Router pages
 │       │   │   ├── (auth)/         # Auth route group (login, signup, callback)
 │       │   │   ├── (dashboard)/    # Dashboard route group
-│       │   │   │   ├── dashboard/  # Main dashboard page
-│       │   │   │   ├── ideas/      # Idea Studio (Dream Engine UI)
-│       │   │   │   ├── warroom/    # War Room (Architect UI)
-│       │   │   │   ├── agents/     # Agent Hub (Executor UI)
-│       │   │   │   ├── compass/    # Compass (Coaching UI)
+│       │   │   │   ├── home/       # Home page (The Journey page, daily HQ)
+│       │   │   │   ├── studio/     # Studio (Simplified Forge, CTO over shoulder)
+│       │   │   │   ├── integrations/ # Integrations Hub
 │       │   │   │   ├── vault/      # Founder Vault
 │       │   │   │   ├── settings/   # User settings & integrations
 │       │   │   │   └── billing/    # Subscription & billing
@@ -183,7 +181,7 @@ karnex/
 | Type | Convention | Example |
 |------|-----------|---------|
 | React components | PascalCase | `AgentCard.tsx`, `SprintPlannerView.tsx` |
-| React pages (App Router) | lowercase with `page.tsx` | `app/(dashboard)/agents/page.tsx` |
+| React pages (App Router) | lowercase with `page.tsx` | `app/(dashboard)/home/page.tsx` |
 | Route groups | Parenthesized | `(auth)`, `(dashboard)` |
 | React hooks | camelCase, `use-` prefix, kebab-case file | `use-agent.ts` → `useAgent()` |
 | Utility modules | camelCase or kebab-case | `utils.ts`, `api-client.ts` |

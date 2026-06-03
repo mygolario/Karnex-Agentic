@@ -149,21 +149,21 @@ export default async function DashboardLayout({
     fullName: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Founder',
   }
 
-  // Detect if we're on the Forge route for full-bleed layout
+  // Detect if we're on the Studio/Forge route for full-bleed layout
   const headersList = await headers()
   const pathname = headersList.get('x-pathname') || headersList.get('x-invoke-path') || ''
-  const isForge = pathname.startsWith('/forge')
+  const isStudio = pathname.startsWith('/studio') || pathname.startsWith('/forge')
 
   return (
-    <div className="flex min-h-screen bg-[#050505] font-sans antialiased text-[#e5e5e5]">
+    <div className={`flex min-h-screen bg-[#050505] font-sans antialiased text-[#e5e5e5] ${pathname.startsWith('/studio') ? 'studio-fullscreen' : ''}`}>
       {/* Sidebar Navigation */}
       <SidebarNav user={userProps} />
 
       {/* Main content area */}
       <div className="flex-1 pl-64 flex flex-col min-h-screen">
         
-        {/* Top Header — hidden on Forge for full-bleed IDE */}
-        {!isForge && (
+        {/* Top Header — hidden on Studio for full-bleed IDE */}
+        {!isStudio && (
           <header className="sticky top-0 z-30 h-14 border-b border-[#1a1a1a] flex items-center justify-between px-8 bg-[#050505]/90 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <span className="text-[13px] text-[#525252]">Workspace</span>
@@ -185,7 +185,7 @@ export default async function DashboardLayout({
 
               {/* Quick Action Button */}
               <a
-                href="/agents"
+                href="/home"
                 className="dash-btn dash-btn-primary text-[13px] px-4 py-2"
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -197,8 +197,8 @@ export default async function DashboardLayout({
           </header>
         )}
 
-        {/* Content view — no padding on Forge */}
-        <main className={isForge ? 'flex-1 bg-[#050505] overflow-hidden' : 'flex-1 px-8 py-8 bg-[#050505]'}>
+        {/* Content view — no padding on Studio */}
+        <main className={isStudio ? 'flex-1 bg-[#050505] overflow-hidden' : 'flex-1 px-8 py-8 bg-[#050505]'}>
           {children}
         </main>
       </div>

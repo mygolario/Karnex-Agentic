@@ -12,6 +12,12 @@ class Phase(BaseModel):
     theme: str = Field(..., description="Phase theme.")
     weekly_goals: List[WeeklyGoal] = Field(..., description="Weekly goals list for the phase.")
 
+class TaskAgentConfig(BaseModel):
+    agent_id: str = Field(..., description="ID of the agent to execute (e.g., 'builder-v1')")
+    pre_populated_input: dict = Field(default={}, description="Input arguments and settings pre-configured for the agent run.")
+    context_summary: str = Field(..., description="Short explanation of what the agent will do.")
+    estimated_duration_seconds: int = Field(..., description="Estimated runtime in seconds.")
+
 class SprintTask(BaseModel):
     title: str = Field(..., description="Short title of the task.")
     description: str = Field(..., description="Detailed description of what needs to be done.")
@@ -21,6 +27,8 @@ class SprintTask(BaseModel):
     definition_of_done: str = Field(..., description="Clear completion criteria for this task.")
     can_delegate_to_agent: Optional[str] = Field(None, description="Optional agent ID if this task can be automated.")
     dependencies: Optional[List[str]] = Field(None, description="List of task titles this task depends on.")
+    agent_config: Optional[TaskAgentConfig] = Field(None, description="Configuration details for agent automated run.")
+    execute_label: Optional[str] = Field(None, description="Label for execution button (e.g. 'Let Karnex pitch outreach').")
 
 class Sprint(BaseModel):
     week_number: int = Field(..., description="Week number.")

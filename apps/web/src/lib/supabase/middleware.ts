@@ -29,8 +29,27 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Redirect unauthenticated to login or check onboarding for authenticated users
+  if (user) {
+    const { data: founder } = await supabase
+      .from('founders')
+      .select('onboarding_step, onboarding_completed')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const onboardingStep = founder?.onboarding_step ?? 0
+    const isHome = request.nextUrl.pathname.startsWith('/home')
+
+    if (isHome && onboardingStep < 4 && !founder?.onboarding_completed) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Protected dashboard paths — redirect to /login if unauthenticated
   const protectedPaths = [
+    '/home',
     '/dashboard',
     '/ideas',
     '/warroom',
@@ -39,6 +58,8 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     '/vault',
     '/settings',
     '/billing',
+    '/studio',
+    '/integrations',
   ]
   const isProtected = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
