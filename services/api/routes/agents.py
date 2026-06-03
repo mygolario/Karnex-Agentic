@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from pydantic import BaseModel, Field
 import uuid
+import asyncio
 from datetime import datetime, timezone
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
