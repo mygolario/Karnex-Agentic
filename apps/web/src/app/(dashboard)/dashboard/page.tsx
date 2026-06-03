@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   // 1. Fetch founder profile
   const { data: founder } = await supabase
     .from('founders')
-    .select('id, full_name, display_name, momentum_score, streak_days, last_standup_at, onboarding_step')
+    .select('id, full_name, display_name, momentum_score, streak_days, last_standup_at')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -158,7 +158,7 @@ export default async function DashboardPage() {
         momentum_score: founder.momentum_score ?? 50,
         streak_days: founder.streak_days ?? 0,
         last_standup_at: founder.last_standup_at,
-        onboarding_step: founder.onboarding_step ?? 0
+        onboarding_step: 0
       }}
       initialSubscription={subscription || defaultSubscription}
       initialTasks={tasks}

@@ -46,7 +46,7 @@ export default async function HomePage() {
   const { data: founder } = await supabase
     .from('founders')
     .select(
-      'id, full_name, display_name, momentum_score, streak_days, last_standup_at, onboarding_step'
+      'id, full_name, display_name, momentum_score, streak_days, last_standup_at'
     )
     .eq('id', user.id)
     .maybeSingle()
@@ -235,12 +235,6 @@ export default async function HomePage() {
     contact_name: r.first_name || 'Someone',
     campaign_id: r.campaign_id,
   }))
-
-  // ── 7. Update last_journey_view ───────────────────────────────────
-  await supabase
-    .from('founders')
-    .update({ last_journey_view: new Date().toISOString() })
-    .eq('id', user.id)
 
   // ── Render ────────────────────────────────────────────────────────
   return (

@@ -31,19 +31,20 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   // Redirect unauthenticated to login or check onboarding for authenticated users
   if (user) {
-    const { data: founder } = await supabase
-      .from('founders')
-      .select('onboarding_step, onboarding_completed')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    const onboardingStep = founder?.onboarding_step ?? 0
     const isHome = request.nextUrl.pathname.startsWith('/home')
 
-    if (isHome && onboardingStep < 4 && !founder?.onboarding_completed) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/onboarding'
-      return NextResponse.redirect(url)
+    if (isHome) {
+      const { data: founder, error: founderError } = await supabase
+        .from('founders')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!founderError && founder && !founder.onboarding_completed) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/onboarding'
+        return NextResponse.redirect(url)
+      }
     }
   }
 

@@ -389,7 +389,7 @@ export default function OnboardingWizard({ initialName, savedStep, savedContext 
 
       setCompleteLogs((prev) => [...prev, 'Workspace provisioned! Redirecting to Journey HQ...'])
       setTimeout(() => {
-        router.push('/dashboard')
+        router.push('/home')
         setCompleting(false)
       }, 1500)
     } catch (err) {

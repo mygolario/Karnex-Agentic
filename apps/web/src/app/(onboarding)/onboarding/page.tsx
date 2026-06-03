@@ -25,7 +25,7 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
     .maybeSingle()
 
   if (founder?.onboarding_completed) {
-    redirect('/dashboard')
+    redirect('/home')
   }
 
   // Fetch saved onboarding step from founder_memory
