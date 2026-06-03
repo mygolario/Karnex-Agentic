@@ -837,7 +837,7 @@ export default function ProductBriefStep({
                           )}
                         </div>
                         <ul className="space-y-1.5 mt-3 border-t border-[#1a1a1a] pt-3">
-                          {tier.features.slice(0, 4).map((f, fIdx) => (
+                          {(tier.features || []).slice(0, 4).map((f, fIdx) => (
                             <li key={fIdx} className="flex items-center gap-1.5 text-[#a1a1a1] text-[10.5px]">
                               <Check className="w-3.5 h-3.5 text-[#6366f1] flex-shrink-0" />
                               <span className="truncate">{f}</span>
@@ -1264,7 +1264,7 @@ export default function ProductBriefStep({
                               </label>
                               <input 
                                 type="text" 
-                                value={tier.features.join(', ')}
+                                value={(tier.features || []).join(', ')}
                                 onChange={(e) => {
                                   const split = e.target.value.split(',').map((f) => f.trim()).filter(Boolean)
                                   updatePricingTier(idx, 'features', split)
