@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse, after } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import * as NextServer from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -139,13 +140,21 @@ export async function POST(
     const runId = run.id
 
     // Start background processing without blocking the HTTP response
-    after(async () => {
-      try {
-        await runAgentInBackground(runId, agentId, user.id, input, request.headers.get('authorization'))
-      } catch (err) {
-        console.error(`Error executing background agent ${agentId} (run ${runId}):`, err)
-      }
-    })
+    const afterFn = (NextServer as any).after || (NextServer as any).unstable_after
+    if (afterFn) {
+      afterFn(async () => {
+        try {
+          await runAgentInBackground(runId, agentId, user.id, input, request.headers.get('authorization'))
+        } catch (err) {
+          console.error(`Error executing background agent ${agentId} (run ${runId}):`, err)
+        }
+      })
+    } else {
+      console.warn('Next.js after() API is not supported in this runtime. Running background execution directly.')
+      runAgentInBackground(runId, agentId, user.id, input, request.headers.get('authorization')).catch(err => {
+        console.error(`Error executing background agent ${agentId} (run ${runId}) fallback:`, err)
+      })
+    }
 
     return NextResponse.json({ run_id: runId, status: 'running' }, { status: 202 })
   } catch (error) {
