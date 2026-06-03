@@ -39,8 +39,8 @@ class Settings(BaseSettings):
     KARNEX_WEB_ORIGIN: str = "https://arioai.site"
     GEMINI_MODEL: str = "google/gemini-2.5-pro"
     GEMINI_MODEL_FLASH: str = "google/gemini-2.5-flash"
-    # Cap OpenRouter max_tokens (default 65536 can exceed credit balance)
-    OPENROUTER_MAX_TOKENS: int = 8192
+    # Cap OpenRouter max_tokens (increased to 32768 to support reasoning models)
+    OPENROUTER_MAX_TOKENS: int = 32768
 
     GMAIL_CLIENT_ID: str = ""
     GMAIL_CLIENT_SECRET: str = ""
