@@ -150,7 +150,37 @@ function ForgeWorkspace() {
     return () => clearInterval(interval)
   }, [loading, buildStartTime])
 
-  // Load past builds
+  // Fetch build output
+  const fetchRunOutput = useCallback(async (runId: string) => {
+    try {
+      const { data: out, error } = await supabase
+        .from('agent_outputs')
+        .select('output')
+        .eq('agent_run_id', runId)
+        .maybeSingle()
+
+      if (error) throw error
+
+      if (out?.output?.files) {
+        setBuilderOutput(out.output)
+        setSelectedFileIdx(0)
+
+        // Update fileCount in versions timeline
+        setVersions((prev) => {
+          return prev.map((v) => {
+            if (v.id === runId) {
+              return { ...v, fileCount: out.output.files.length }
+            }
+            return v
+          })
+        })
+      }
+    } catch (err) {
+      console.error('Error retrieving build output:', err)
+    }
+  }, [supabase])
+
+  // Load past builds and restore workspace
   const loadHistory = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -171,11 +201,50 @@ function ForgeWorkspace() {
           created_at: r.created_at,
         }))
         setPastBuilds(formatted)
+
+        // Populate versions list for timeline
+        const historyVersions = runs.map((r: any) => ({
+          id: r.id,
+          prompt: r.input?.specification || 'Code Build',
+          fileCount: 0, // Will be updated when files load
+          timestamp: new Date(r.created_at),
+        }))
+        setVersions(historyVersions)
+
+        // Auto-restore workspace on refresh if no build is active or loaded
+        if (runs.length > 0 && !currentRunId && !builderOutput) {
+          const latestRun = runs[0]
+          setProjectName(latestRun.input?.specification?.slice(0, 40) || 'Code Build')
+          
+          setChatMessages([
+            {
+              id: 'welcome',
+              sender: 'system',
+              message: 'Welcome to Karnex Forge. Describe your idea below to begin.',
+              timestamp: new Date(latestRun.created_at),
+            },
+            {
+              id: 'restored-user',
+              sender: 'user',
+              message: latestRun.input?.specification || 'Create a build',
+              timestamp: new Date(latestRun.created_at),
+            },
+            {
+              id: 'restored-success',
+              sender: 'system',
+              message: 'Workspace restored from last successful build.',
+              timestamp: new Date(),
+            }
+          ])
+
+          // Load the output files
+          fetchRunOutput(latestRun.id)
+        }
       }
     } catch (err) {
       console.error('Error fetching history:', err)
     }
-  }, [supabase])
+  }, [supabase, currentRunId, builderOutput, fetchRunOutput])
 
   useEffect(() => {
     loadHistory()
@@ -233,38 +302,7 @@ function ForgeWorkspace() {
     }, 2000)
 
     return () => clearInterval(interval)
-  }, [currentRunId, currentRunStatus, supabase, appendChat, loadHistory, buildStartTime])
-
-  // Fetch build output
-  const fetchRunOutput = async (runId: string) => {
-    try {
-      const { data: out, error } = await supabase
-        .from('agent_outputs')
-        .select('output')
-        .eq('agent_run_id', runId)
-        .maybeSingle()
-
-      if (error) throw error
-
-      if (out?.output?.files) {
-        setBuilderOutput(out.output)
-        setSelectedFileIdx(0)
-
-        // Add to version timeline
-        setVersions((prev) => {
-          if (prev.some((v) => v.id === runId)) return prev
-          return [{
-            id: runId,
-            prompt: projectName || 'Build',
-            fileCount: out.output.files.length,
-            timestamp: new Date(),
-          }, ...prev]
-        })
-      }
-    } catch (err) {
-      console.error('Error retrieving build output:', err)
-    }
-  }
+  }, [currentRunId, currentRunStatus, supabase, appendChat, loadHistory, fetchRunOutput, buildStartTime])
 
   // Trigger build
   const handleBuild = async (promptText: string) => {
