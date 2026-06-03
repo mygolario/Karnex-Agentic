@@ -7,15 +7,15 @@
 
 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
   Creating an optimized production build ...
-✓ Compiled successfully in 4.6s
+✓ Compiled successfully in 7.4s
   Running TypeScript ...
-  Finished TypeScript in 5.5s ...
+  Finished TypeScript in 9.0s ...
   Collecting page data using 15 workers ...
-  Generating static pages using 15 workers (0/26) ...
-  Generating static pages using 15 workers (6/26) 
-  Generating static pages using 15 workers (12/26) 
-  Generating static pages using 15 workers (19/26) 
-✓ Generating static pages using 15 workers (26/26) in 541ms
+  Generating static pages using 15 workers (0/31) ...
+  Generating static pages using 15 workers (7/31) 
+  Generating static pages using 15 workers (15/31) 
+  Generating static pages using 15 workers (23/31) 
+✓ Generating static pages using 15 workers (31/31) in 477ms
   Finalizing page optimization ...
 
 Route (app)
@@ -26,19 +26,34 @@ Route (app)
 ├ ƒ /agents/outreach
 ├ ƒ /agents/research
 ├ ƒ /api/agent/[...path]
+├ ƒ /api/agents/[agentId]/run
+├ ƒ /api/agents/pain-transformer/run
+├ ƒ /api/agents/runs/[runId]
+├ ƒ /api/agents/war-room/run
 ├ ƒ /api/auth/callback
 ├ ƒ /api/auth/callback/gmail
 ├ ƒ /api/auth/gmail/connect
+├ ƒ /api/automations/trigger
 ├ ƒ /api/checkout
+├ ƒ /api/integrations/[provider]/callback
+├ ƒ /api/integrations/[provider]/connect
+├ ƒ /api/integrations/[provider]/disconnect
+├ ƒ /api/integrations/resend/status
+├ ƒ /api/integrations/vercel/deploy
 ├ ƒ /api/onboarding/analyze
 ├ ƒ /api/onboarding/complete
+├ ƒ /api/tasks/[taskId]/complete
+├ ƒ /api/tasks/[taskId]/execute
 ├ ƒ /api/webhooks/oxapay
 ├ ƒ /billing
 ├ ƒ /compass
 ├ ƒ /dashboard
 ├ ƒ /forge
+├ ƒ /home
 ├ ƒ /ideas
 ├ ƒ /integrations
+├ ƒ /integrations/automate
+├ ƒ /integrations/status
 ├ ƒ /login
 ├ ƒ /onboarding
 ├ ƒ /settings
