@@ -340,10 +340,30 @@ select.dash-input {
 .forge-dot-green { background: #22c55e; }
 
 /* Fullscreen Studio mode styling */
+html.studio-fullscreen aside,
 .studio-fullscreen aside {
   display: none !important;
 }
+html.studio-fullscreen .pl-64,
 .studio-fullscreen .pl-64 {
   padding-left: 0 !important;
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.checklist-check-done {
+  animation: checkPop 0.35s ease-out forwards;
 }
 

@@ -1,8 +1,10 @@
 import base64
-import os
 import hashlib
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+import os
+
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
 
 class TokenEncryption:
     """
@@ -29,11 +31,11 @@ class TokenEncryption:
         # Apply PKCS7 padding
         pad_len = 16 - (len(plaintext) % 16)
         padded = plaintext.encode("utf-8") + bytes([pad_len] * pad_len)
-        
+
         cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv), backend=default_backend())
         encryptor = cipher.encryptor()
         ciphertext = encryptor.update(padded) + encryptor.finalize()
-        
+
         # Prepend IV and base64url encode
         raw = iv + ciphertext
         return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
@@ -47,17 +49,17 @@ class TokenEncryption:
             padded_b64 = ciphertext_b64
             if rem > 0:
                 padded_b64 += "=" * (4 - rem)
-            
+
             raw = base64.urlsafe_b64decode(padded_b64.encode("utf-8"))
             if len(raw) < 16:
                 raise ValueError("Ciphertext too short")
             iv = raw[:16]
             ciphertext = raw[16:]
-            
+
             cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv), backend=default_backend())
             decryptor = cipher.decryptor()
             padded = decryptor.update(ciphertext) + decryptor.finalize()
-            
+
             # Strip PKCS7 padding
             pad_len = padded[-1]
             if pad_len < 1 or pad_len > 16:

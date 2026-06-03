@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
-import { createHmac } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
+
+function verifyHmac(computed: string, received: string): boolean {
+  if (computed.length !== received.length) {
+    return false
+  }
+  return timingSafeEqual(Buffer.from(computed, 'utf8'), Buffer.from(received, 'utf8'))
+}
 
 export async function POST(req: Request) {
   const supabase = createClient(
@@ -15,7 +22,7 @@ export async function POST(req: Request) {
     .update(rawBody)
     .digest('hex')
 
-  if (computedHmac !== hmacHeader) {
+  if (!verifyHmac(computedHmac, hmacHeader)) {
     return new Response('Invalid HMAC signature', { status: 400 })
   }
 

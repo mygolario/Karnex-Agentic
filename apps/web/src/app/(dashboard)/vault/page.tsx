@@ -1,15 +1,18 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-
-interface MemoryItem {
-  id: string
-  memory_type: string
-  content: any
-  created_at: string
-}
+import { Skeleton } from '@/components/Skeleton'
+import VaultItem from '@/components/vault/VaultItem'
+import NewIdeaModal from '@/components/vault/NewIdeaModal'
+import {
+  VAULT_CATEGORIES,
+  countByCategory,
+  filterByCategory,
+} from '@/lib/vault/categories'
+import { getSearchableText, mapAgentOutputRows } from '@/lib/vault/presenters'
+import type { AgentOutputRow, VaultCategory, VaultRecord } from '@/lib/vault/types'
 
 export default function VaultPage() {
   return (
@@ -21,274 +24,192 @@ export default function VaultPage() {
 
 function VaultContent() {
   const supabase = createSupabaseBrowserClient()
-
   const [loading, setLoading] = useState(true)
-  const [items, setItems] = useState<MemoryItem[]>([])
-  const [selectedItem, setSelectedItem] = useState<MemoryItem | null>(null)
-  const [activeCategory, setActiveCategory] = useState<'all' | 'brief' | 'persona' | 'code' | 'research'>('all')
+  const [records, setRecords] = useState<VaultRecord[]>([])
+  const [category, setCategory] = useState<VaultCategory>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true)
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
+  const loadVault = useCallback(async () => {
+    try {
+      setLoading(true)
+      setLoadError(null)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
 
-        const { data: list } = await supabase
-          .from('founder_memory')
-          .select('*')
-          .eq('founder_id', session.user.id)
-          .order('created_at', { ascending: false })
+      const { data, error } = await supabase
+        .from('agent_outputs')
+        .select(`
+          id,
+          agent_run_id,
+          output_type,
+          output,
+          created_at,
+          agent_runs (
+            agent_id,
+            agent_version,
+            status,
+            duration_ms
+          )
+        `)
+        .eq('founder_id', session.user.id)
+        .order('created_at', { ascending: false })
 
-        if (list) {
-          setItems(list as MemoryItem[])
-        }
-      } catch (err) {
-        console.error('Error fetching vault data:', err)
-      } finally {
-        setLoading(false)
-      }
+      if (error) throw error
+
+      setRecords(mapAgentOutputRows((data ?? []) as AgentOutputRow[]))
+    } catch (err) {
+      console.error('Error fetching vault data:', err)
+      setLoadError(err instanceof Error ? err.message : 'Failed to load vault.')
+      setRecords([])
+    } finally {
+      setLoading(false)
     }
-    loadData()
   }, [supabase])
 
-  // Fallback default assets if vault memory is empty (ensures high-fidelity demo)
-  const displayItems = items.length > 0 ? items : [
-    {
-      id: 'default-brief',
-      memory_type: 'product_brief',
-      created_at: new Date(Date.now() - 30 * 24 * 3600000).toISOString(),
-      content: {
-        name: 'Folio',
-        tagline: 'Client management designed for designers',
-        elevator_pitch: 'Folio replaces the mess of Notion, Slack, and spreadsheets for creative freelancers by combining project scoping, revision tracking, and invoicing in one beautiful dashboard.',
-        features: [
-          { name: 'Invoicing', priority: 'must-have' },
-          { name: 'Revision tracker', priority: 'must-have' },
-          { name: 'Client portal', priority: 'must-have' }
-        ],
-        target_audience: 'Freelance designers and boutique agencies'
-      }
-    },
-    {
-      id: 'default-personas',
-      memory_type: 'personas',
-      created_at: new Date(Date.now() - 29 * 24 * 3600000).toISOString(),
-      content: {
-        personas: [
-          { name: 'Mia Chen', age: 28, role: 'Freelance Brand Designer', location: 'Portland, OR', pain: 'Chasing clients for payment, manual scoping.' },
-          { name: 'David Miller', age: 34, role: 'Agency Director', location: 'Denver, CO', pain: 'Feedback leakage on revisions, tracking hours.' }
-        ]
-      }
-    },
-    {
-      id: 'default-research',
-      memory_type: 'research',
-      created_at: new Date(Date.now() - 25 * 24 * 3600000).toISOString(),
-      content: {
-        topic: 'Invoicing SaaS Competitor Analysis',
-        findings: 'Mapped FreshBooks and HoneyBook. wedges: HoneyBook pricing table is convoluted; FreshBooks interface feels outdated for creatives.',
-        competitors: ['FreshBooks', 'HoneyBook', 'Bonsai']
-      }
-    }
-  ]
+  useEffect(() => {
+    loadVault()
+  }, [loadVault])
 
-  const filteredItems = displayItems.filter((item) => {
-    if (activeCategory === 'all') return true
-    if (activeCategory === 'brief') return item.memory_type === 'product_brief'
-    if (activeCategory === 'persona') return item.memory_type === 'personas'
-    if (activeCategory === 'research') return item.memory_type === 'research' || item.memory_type === 'agent_output'
-    return false
-  })
+  const counts = useMemo(() => countByCategory(records), [records])
 
-  const getMemoryTypeLabel = (type: string) => {
-    switch (type) {
-      case 'product_brief': return 'Product Brief'
-      case 'personas': return 'ICP Personas'
-      case 'research': return 'Research'
-      case 'agent_output': return 'Agent Output'
-      default: return 'Asset'
+  const filteredItems = useMemo(() => {
+    let items = filterByCategory(records, category)
+    const q = searchQuery.trim().toLowerCase()
+    if (q) {
+      items = items.filter((record) =>
+        getSearchableText(record).toLowerCase().includes(q)
+      )
     }
-  }
+    return items
+  }, [records, category, searchQuery])
 
-  const getMemoryTypeIcon = (type: string) => {
-    switch (type) {
-      case 'product_brief': return '📄'
-      case 'personas': return '👥'
-      case 'research': return '🔍'
-      case 'agent_output': return '⚙️'
-      default: return '📦'
-    }
+  const handleToggle = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id))
   }
 
   return (
-    <div className="mx-auto max-w-[1000px] space-y-10 pb-16 dash-reveal relative">
-      
-      {/* Header */}
-      <div className="border-b border-[#1a1a1a] pb-6 flex justify-between items-end">
+    <div className="mx-auto max-w-[1200px] space-y-8 pb-16 dash-reveal">
+      <div className="border-b border-[#1a1a1a] pb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
+          <p className="section-label mb-2">Archive</p>
           <h1 className="font-display font-bold text-[28px] text-white tracking-[-0.025em]">
-            Founder Vault
+            Karnex Vault
           </h1>
-          <p className="text-[13px] text-[#737373] mt-1">
-            Browse and download product briefs, customer insights, and agent artifacts
+          <p className="text-[13px] text-[#737373] mt-1 max-w-[520px]">
+            Every output your agents produce — searchable, categorized, and ready to export.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="dash-btn dash-btn-primary shrink-0"
+        >
+          + New Idea
+        </button>
       </div>
 
-      {/* Categories Toolbar */}
-      <div className="flex gap-4 border-b border-[#1a1a1a] pb-4">
-        {[
-          { id: 'all', label: 'All Assets' },
-          { id: 'brief', label: 'Product Briefs' },
-          { id: 'persona', label: 'ICP Personas' },
-          { id: 'research', label: 'Agent Deliverables' }
-        ].map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id as any)}
-            className={`text-[13px] font-semibold transition-colors cursor-pointer ${
-              activeCategory === cat.id ? 'text-white border-b-2 border-[#6366f1] pb-4 -mb-[18px]' : 'text-[#525252] hover:text-[#a1a1a1]'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Main split: File browser / preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        
-        {/* Left browser grid */}
-        <div className="lg:col-span-2 space-y-3">
-          {filteredItems.map((item) => (
-            <div 
-              key={item.id}
-              onClick={() => setSelectedItem(item)}
-              className={`border p-4.5 rounded-2xl flex items-center justify-between gap-4 cursor-pointer transition-all hover:border-[#262626] ${
-                selectedItem?.id === item.id 
-                  ? 'border-[#6366f1] bg-[#6366f1]/5' 
-                  : 'border-[#1a1a1a] bg-[#050505]'
-              }`}
-            >
-              <div className="flex items-center gap-4 min-w-0">
-                <span className="text-[20px]">{getMemoryTypeIcon(item.memory_type)}</span>
-                <div className="min-w-0">
-                  <h4 className="text-[14px] font-semibold text-white truncate">
-                    {item.content.name || item.content.topic || getMemoryTypeLabel(item.memory_type)}
-                  </h4>
-                  <p className="text-[12px] text-[#525252] font-mono mt-0.5">
-                    Created: {new Date(item.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-
-              <span className="text-[13px] text-[#525252] hover:text-[#6366f1] transition-colors">
-                View →
-              </span>
-            </div>
-          ))}
-
-          {filteredItems.length === 0 && (
-            <div className="border border-[#1a1a1a] border-dashed p-16 text-center rounded-2xl text-[#525252]">
-              <p className="text-[14px]">No files matching category found in the Vault.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Right preview panel */}
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6 rounded-2xl space-y-5 min-h-[350px] sticky top-6">
-          {selectedItem ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-3">
-                <h3 className="text-[14px] font-bold tracking-[0.06em] uppercase text-[#6366f1] flex items-center gap-2">
-                  <span>{getMemoryTypeIcon(selectedItem.memory_type)}</span>
-                  {getMemoryTypeLabel(selectedItem.memory_type)}
-                </h3>
+      <div className="flex flex-col lg:flex-row gap-8">
+        <aside className="lg:w-48 shrink-0">
+          <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+            {VAULT_CATEGORIES.map((cat) => {
+              const active = category === cat.id
+              const count = counts[cat.id]
+              return (
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(JSON.stringify(selectedItem.content, null, 2))
-                    alert('✓ Output payload copied to clipboard!')
-                  }}
-                  className="text-[12px] font-semibold text-[#a1a1a1] hover:text-white transition-colors cursor-pointer"
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setCategory(cat.id)}
+                  className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                    active
+                      ? 'bg-[#6366f1]/10 text-white border border-[#6366f1]/30'
+                      : 'text-[#525252] hover:text-[#a1a1a1] border border-transparent'
+                  }`}
                 >
-                  Copy JSON
+                  <span>{cat.label}</span>
+                  <span className={`text-[11px] font-mono ${active ? 'text-[#6366f1]' : 'text-[#404040]'}`}>
+                    {count}
+                  </span>
                 </button>
-              </div>
+              )
+            })}
+          </nav>
+        </aside>
 
-              <div className="space-y-3.5">
-                {selectedItem.memory_type === 'product_brief' && (
-                  <>
-                    <div>
-                      <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#525252]">Startup Name</p>
-                      <p className="text-[15px] font-semibold text-white">{selectedItem.content.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#525252]">Tagline</p>
-                      <p className="text-[14px] text-[#e5e5e5]">{selectedItem.content.tagline}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#525252]">Features</p>
-                      <div className="space-y-1 mt-1">
-                        {selectedItem.content.features?.map((f: any, i: number) => (
-                          <div key={i} className="text-[13px] text-[#737373] flex justify-between">
-                            <span>{f.name}</span>
-                            <span className="text-[11px] text-[#6366f1] font-semibold uppercase">{f.priority}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
+        <div className="flex-1 min-w-0 space-y-6">
+          <div className="relative">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search titles and content…"
+              className="dash-input w-full pl-10"
+              aria-label="Search vault"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#525252] pointer-events-none" aria-hidden>
+              ⌕
+            </span>
+          </div>
 
-                {selectedItem.memory_type === 'personas' && (
-                  <div className="space-y-3">
-                    {selectedItem.content.personas?.map((p: any, i: number) => (
-                      <div key={i} className="border border-[#1a1a1a] p-3.5 rounded-xl space-y-1">
-                        <p className="text-[13px] font-bold text-white">{p.name} ({p.age})</p>
-                        <p className="text-[11px] text-[#6366f1]">{p.role} · {p.location}</p>
-                        <p className="text-[12px] text-[#737373] leading-relaxed mt-1">{p.pain}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+          {loadError ? (
+            <div className="border border-red-500/30 bg-red-500/5 rounded-2xl p-4 text-[13px] text-red-400">
+              {loadError}
+            </div>
+          ) : null}
 
-                {selectedItem.memory_type === 'research' && (
-                  <>
-                    <div>
-                      <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#525252]">Research Question</p>
-                      <p className="text-[14px] font-semibold text-white leading-snug">{selectedItem.content.topic}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#525252]">Key Findings</p>
-                      <p className="text-[13px] text-[#e5e5e5] leading-relaxed mt-1">{selectedItem.content.findings}</p>
-                    </div>
-                  </>
-                )}
-
-                {selectedItem.memory_type === 'agent_output' && (
-                  <>
-                    <div>
-                      <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#525252]">Task Title</p>
-                      <p className="text-[14px] font-semibold text-white leading-snug">{selectedItem.content.task_title}</p>
-                    </div>
-                    <div className="bg-[#0a0a0a] rounded-lg p-3 max-h-40 overflow-y-auto text-[11px] font-mono text-[#737373] scrollbar-thin border border-[#1a1a1a]">
-                      {JSON.stringify(selectedItem.content.output, null, 2)}
-                    </div>
-                  </>
-                )}
-              </div>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-32 rounded-2xl" />
+              ))}
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="border border-[#1a1a1a] border-dashed rounded-2xl p-16 text-center space-y-4">
+              <p className="text-[14px] text-[#525252]">
+                {records.length === 0
+                  ? 'No agent outputs yet. Run agents from Home or Studio — they appear here automatically.'
+                  : 'No items match your filter.'}
+              </p>
+              {records.length === 0 ? (
+                <div className="flex flex-wrap justify-center gap-3">
+                  <a href="/home" className="dash-btn dash-btn-secondary text-[13px]">
+                    Go to Journey
+                  </a>
+                  <a href="/studio" className="dash-btn dash-btn-secondary text-[13px]">
+                    Open Studio
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(true)}
+                    className="dash-btn dash-btn-primary text-[13px]"
+                  >
+                    + New Idea
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#525252] py-20">
-              <span className="text-[32px] mb-2">📁</span>
-              <p className="text-[14px]">Select an asset card from the browser to inspect its detailed specifications.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+              {filteredItems.map((record) => (
+                <VaultItem
+                  key={record.id}
+                  record={record}
+                  expanded={expandedId === record.id}
+                  onToggle={() => handleToggle(record.id)}
+                />
+              ))}
             </div>
           )}
         </div>
-
       </div>
 
+      <NewIdeaModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={loadVault}
+      />
     </div>
   )
 }

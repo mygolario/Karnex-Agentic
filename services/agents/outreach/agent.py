@@ -1,85 +1,26 @@
 """Core implementation of the Outreach agent."""
 
 import time
-import uuid
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+
+from agents.outreach.prompts import OUTREACH_SYSTEM_PROMPT
+from agents.outreach.schemas import OutreachInput, OutreachLLMOutput, OutreachOutput
+from agents.pain_transformer.tools import karnex_memory_write, web_search
+from shared.agent_run_logging import (
+    advance_step,
+    complete_agent_run,
+    fail_agent_run,
+    start_agent_run,
+)
+from shared.agent_step_catalog import get_step_labels
 from shared.config import settings
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
-from agents.outreach.schemas import OutreachInput, OutreachOutput
-from agents.outreach.prompts import OUTREACH_SYSTEM_PROMPT
-from agents.pain_transformer.tools import karnex_memory_write, web_search
 
-
-def _log_agent_run_start(founder_id: str, input_data: OutreachInput) -> str:
-    """Inserts an execution log row in agent_runs with status='running'.
-
-    Returns the run ID.
-    """
-    run_id = str(uuid.uuid4())
-    try:
-        supabase = get_supabase_admin()
-        # Clean input dict of nested complex types for logging
-        logged_input = input_data.model_dump()
-        supabase.table("agent_runs").insert({
-            "id": run_id,
-            "founder_id": founder_id,
-            "agent_id": "outreach-v1",
-            "agent_version": "v1.0.0",
-            "status": "running",
-            "input": logged_input,
-            "triggered_by": "user",
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "llm_model": settings.GEMINI_MODEL
-        }).execute()
-    except Exception as e:
-        logger.warning(f"Could not log agent run start to database: {str(e)}")
-    return run_id
-
-
-def _log_agent_run_success(run_id: str, founder_id: str, output: OutreachOutput, duration_ms: int):
-    """Updates agent_runs with success state and inserts the output into agent_outputs."""
-    try:
-        supabase = get_supabase_admin()
-        now = datetime.now(timezone.utc).isoformat()
-        
-        # Update run status
-        supabase.table("agent_runs").update({
-            "status": "success",
-            "completed_at": now,
-            "duration_ms": duration_ms
-        }).eq("id", run_id).execute()
-
-        # Insert output
-        supabase.table("agent_outputs").insert({
-            "agent_run_id": run_id,
-            "founder_id": founder_id,
-            "output_type": "outreach_campaign",
-            "output": output.model_dump()
-        }).execute()
-        
-    except Exception as e:
-        logger.warning(f"Could not log agent run success to database: {str(e)}")
-
-
-def _log_agent_run_failure(run_id: str, error_message: str, duration_ms: int):
-    """Updates agent_runs with error state."""
-    try:
-        supabase = get_supabase_admin()
-        now = datetime.now(timezone.utc).isoformat()
-        supabase.table("agent_runs").update({
-            "status": "error",
-            "completed_at": now,
-            "duration_ms": duration_ms,
-            "error_message": error_message,
-            "error_type": "agent_failure"
-        }).eq("id", run_id).execute()
-    except Exception as e:
-        logger.warning(f"Could not log agent run failure to database: {str(e)}")
+AGENT_ID = "outreach-v1"
 
 
 def save_campaign_to_db(
@@ -92,7 +33,7 @@ def save_campaign_to_db(
     """Saves the generated campaign and its contacts to the database as draft."""
     try:
         supabase = get_supabase_admin()
-        
+
         # 1. Map messages and ab_variants into message_templates list
         message_templates = []
         for msg in output.campaign.messages:
@@ -117,9 +58,9 @@ def save_campaign_to_db(
         campaign_res = supabase.table("outreach_campaigns").insert(campaign_payload).execute()
         if not campaign_res.data:
             raise Exception("Failed to insert campaign into database")
-        
+
         campaign_id = campaign_res.data[0]["id"]
-        
+
         # 3. Insert contacts
         contacts_payloads = []
         for c in input_data.contacts:
@@ -139,10 +80,10 @@ def save_campaign_to_db(
                     "schedule_recommendation": output.campaign.send_schedule.model_dump()
                 }
             })
-            
+
         if contacts_payloads:
             supabase.table("outreach_contacts").insert(contacts_payloads).execute()
-            
+
         logger.info(f"Successfully saved campaign {campaign_id} with {len(contacts_payloads)} contacts")
         return campaign_id
     except Exception as e:
@@ -150,7 +91,11 @@ def save_campaign_to_db(
         return ""
 
 
-async def run_outreach(input_data: OutreachInput) -> OutreachOutput:
+async def run_outreach(
+    input_data: OutreachInput,
+    run_id: Optional[str] = None,
+    supabase: Any = None,
+) -> OutreachOutput:
     """Executes the Outreach agent pipeline.
 
     Takes contact details, campaign goal, target audience context and invokes Gemini 2.5 Pro
@@ -160,12 +105,16 @@ async def run_outreach(input_data: OutreachInput) -> OutreachOutput:
     founder_id = input_data.founder_id
     startup_id = input_data.startup_id
     logger.info(f"Running outreach-v1 for founder={founder_id}, startup={startup_id}")
-    
+
+    steps = get_step_labels(AGENT_ID)
     start_time = time.time()
-    run_id = _log_agent_run_start(founder_id, input_data)
-    
+    if not run_id:
+        run_id = start_agent_run(AGENT_ID, founder_id, input_data.model_dump(), llm_model=settings.GEMINI_MODEL)
+    elif supabase is None:
+        supabase = get_supabase_admin()
+
     try:
-        # Step 1: Pre-search contacts/market if needed (grounding query)
+        advance_step(run_id, 0, steps[0], tool_name="web_search")
         grounding_context = ""
         if input_data.contacts:
             sample_contact = input_data.contacts[0]
@@ -173,7 +122,7 @@ async def run_outreach(input_data: OutreachInput) -> OutreachOutput:
             if query:
                 grounding_context = web_search(query)
 
-        # Step 2: Initialize OpenRouter LLM with structured output mapping to our schema
+        advance_step(run_id, 1, steps[1], tool_name="llm_compose")
         llm = ChatOpenAI(
             model=settings.GEMINI_MODEL,
             openai_api_key=settings.OPENROUTER_API_KEY,
@@ -185,7 +134,7 @@ async def run_outreach(input_data: OutreachInput) -> OutreachOutput:
             },
             temperature=0.7
         )
-        structured_llm = llm.with_structured_output(OutreachOutput)
+        structured_llm = llm.with_structured_output(OutreachLLMOutput)
 
         # Step 3: Setup prompt templates
         prompt = ChatPromptTemplate.from_messages([
@@ -209,7 +158,7 @@ async def run_outreach(input_data: OutreachInput) -> OutreachOutput:
         # Step 4: Execute chain
         sample_contact = input_data.contacts[0] if input_data.contacts else None
         chain = prompt | structured_llm
-        output: OutreachOutput = chain.invoke({
+        raw_output: OutreachLLMOutput = chain.invoke({
             "campaign_goal": input_data.campaign_goal,
             "target_audience": input_data.target_audience,
             "tone": input_data.tone or "direct",
@@ -223,9 +172,22 @@ async def run_outreach(input_data: OutreachInput) -> OutreachOutput:
             "grounding_context": grounding_context or "No search context necessary"
         })
 
-        # Step 5: Save campaign to database
+        output = OutreachOutput(
+            campaign=raw_output.campaign,
+            requires_approval=raw_output.requires_approval,
+            context_summary=(
+                f"I drafted outreach \"{raw_output.campaign.name}\" with "
+                f"{len(raw_output.campaign.messages)} messages — awaiting your approval."
+            ),
+            step_labels=steps,
+            confidence="medium",
+            suggested_next_agent=None,
+            pre_populated=bool(getattr(input_data, "pre_populated", False)),
+        )
+
+        advance_step(run_id, 2, steps[2], tool_name="save_campaign")
         campaign_id = save_campaign_to_db(founder_id, startup_id, run_id, input_data, output)
-        
+
         # Step 6: Save output to Karnex Memory
         karnex_memory_write(
             founder_id=founder_id,
@@ -235,13 +197,13 @@ async def run_outreach(input_data: OutreachInput) -> OutreachOutput:
             tags=["campaign", "outreach", "executor", "email"]
         )
 
-        # Log success and return
-        duration_ms = int((time.time() - start_time) * 1000)
-        _log_agent_run_success(run_id, founder_id, output, duration_ms)
+        complete_agent_run(
+            run_id, founder_id, output, "outreach_campaign",
+            duration_ms=int((time.time() - start_time) * 1000),
+        )
         return output
 
     except Exception as e:
         logger.exception("Error executing Outreach agent")
-        duration_ms = int((time.time() - start_time) * 1000)
-        _log_agent_run_failure(run_id, str(e), duration_ms)
-        raise e
+        fail_agent_run(run_id, str(e), duration_ms=int((time.time() - start_time) * 1000))
+        raise

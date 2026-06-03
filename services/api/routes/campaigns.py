@@ -1,17 +1,19 @@
 """API endpoints for managing outreach campaigns and contacts."""
 
 from datetime import datetime, timezone
-from typing import Dict, Any, List
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from api.dependencies import get_current_user
-from shared.supabase_client import get_supabase_admin
-from shared.config import settings
-from shared.logger import logger
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+
 from agents.outreach.gmail_helpers import (
-    sync_campaign_drafts,
     GmailNotConnectedError,
     GmailTokenExpiredError,
+    sync_campaign_drafts,
 )
+from api.dependencies import get_current_user
+from shared.config import settings
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
 
 router = APIRouter(prefix="/v1/campaigns", tags=["Campaigns"])
 
@@ -33,7 +35,7 @@ async def _sync_drafts_background(
             supabase_client=supabase,
             logger=logger,
         )
-        
+
         # Log outcome to agent_runs for tracking if there is an associated run
         # Find latest Outreach agent run for this campaign
         run_res = (
@@ -52,11 +54,11 @@ async def _sync_drafts_background(
                 "completed_at": datetime.now(timezone.utc).isoformat(),
                 "metadata": summary
             }).eq("id", run_id).execute()
-        
+
         logger.info(
             f"Gmail draft sync complete for campaign {campaign_id}: drafted={summary['drafted']}, skipped={summary['skipped']}"
         )
-        
+
     except GmailNotConnectedError:
         logger.warning(f"Gmail not connected for founder {founder_id}. Skipping draft sync.")
     except GmailTokenExpiredError:

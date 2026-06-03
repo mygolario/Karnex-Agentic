@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import AgentExecutePanel from './AgentExecutePanel'
 import type { AgentTask } from './AgentExecutePanel'
@@ -26,12 +27,14 @@ function getStatusDot(status: string): string {
     case 'todo': return 'bg-neutral-500'
     case 'in_progress': return 'bg-[#6366f1] animate-pulse'
     case 'done': return 'bg-emerald-400'
+    case 'pending_approval': return 'bg-amber-400'
     case 'blocked': return 'bg-red-500'
     default: return 'bg-neutral-500'
   }
 }
 
 export default function TodaysTasks({ tasks: initialTasks, founderId }: TodaysTasksProps) {
+  const router = useRouter()
   const supabase = createSupabaseBrowserClient()
   const [tasks, setTasks] = useState<AgentTask[]>(initialTasks)
   const [selectedTask, setSelectedTask] = useState<AgentTask | null>(null)
@@ -60,7 +63,11 @@ export default function TodaysTasks({ tasks: initialTasks, founderId }: TodaysTa
           setTasks((prev) =>
             prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
           )
-          if (updated.status === 'done') {
+          if (
+            updated.status === 'done' ||
+            updated.status === 'pending_approval' ||
+            updated.status === 'blocked'
+          ) {
             setRunningTaskIds((prev) => {
               const next = new Set(prev)
               next.delete(updated.id)
@@ -116,9 +123,13 @@ export default function TodaysTasks({ tasks: initialTasks, founderId }: TodaysTa
   }, [tasks, founderId, supabase])
 
   const handleOpenPanel = useCallback((task: AgentTask) => {
+    if (task.auto_executable && task.category === 'build') {
+      router.push(`/studio?taskId=${task.id}&fullscreen=true`)
+      return
+    }
     setSelectedTask(task)
     setIsPanelOpen(true)
-  }, [])
+  }, [router])
 
   const handleClosePanel = useCallback(() => {
     setIsPanelOpen(false)
@@ -166,6 +177,7 @@ export default function TodaysTasks({ tasks: initialTasks, founderId }: TodaysTa
         <div className="space-y-3">
           {visibleTasks.map((task) => {
             const isDone = task.status === 'done'
+            const needsApproval = task.status === 'pending_approval'
             const isRunning = runningTaskIds.has(task.id) || task.status === 'in_progress'
 
             return (
@@ -189,6 +201,11 @@ export default function TodaysTasks({ tasks: initialTasks, founderId }: TodaysTa
                         ✓ Done
                       </span>
                     )}
+                    {needsApproval && (
+                      <span className="text-amber-400 text-[12px] font-semibold">
+                        Review draft
+                      </span>
+                    )}
                   </div>
 
                   {/* Title */}
@@ -208,13 +225,13 @@ export default function TodaysTasks({ tasks: initialTasks, founderId }: TodaysTa
 
                 {/* Action area */}
                 <div className="shrink-0">
-                  {isDone ? (
+                  {isDone || needsApproval ? (
                     task.agent_output ? (
                       <a
-                        href="/vault"
+                        href={needsApproval ? '/agents/outreach' : '/vault'}
                         className="text-[13px] text-[#6366f1] hover:text-[#818cf8] font-medium transition-colors"
                       >
-                        View output →
+                        {needsApproval ? 'Review draft →' : 'View output →'}
                       </a>
                     ) : null
                   ) : isRunning ? (

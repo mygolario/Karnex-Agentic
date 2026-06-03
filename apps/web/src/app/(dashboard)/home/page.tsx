@@ -99,7 +99,7 @@ export default async function HomePage() {
     description: string | null
     priority: number
     category: 'build' | 'research' | 'outreach' | 'content' | 'design' | 'finance' | 'legal' | 'other'
-    status: 'todo' | 'in_progress' | 'done' | 'blocked' | 'deferred'
+    status: 'todo' | 'in_progress' | 'done' | 'blocked' | 'deferred' | 'pending_approval'
     agent_config: Record<string, unknown> | null
     agent_output: Record<string, unknown> | null
     execute_label: string | null
@@ -156,7 +156,7 @@ export default async function HomePage() {
         execute_label: 'Let Karnex build invoicing',
         auto_executable: true,
         agent_config: {
-          agent_id: 'builder',
+          agent_id: 'builder-v1',
           context_summary:
             'Scaffold the invoicing module: Supabase table, API routes, React totals calculator, and PDF generation.',
           estimated_duration_seconds: 90,
@@ -180,7 +180,7 @@ export default async function HomePage() {
         execute_label: 'Let Karnex pitch outreach',
         auto_executable: true,
         agent_config: {
-          agent_id: 'outreach',
+          agent_id: 'outreach-v1',
           context_summary:
             'Write a 3-stage customer discovery sequence and prepare a list of 10 Portland brand designers.',
           estimated_duration_seconds: 45,
@@ -203,7 +203,7 @@ export default async function HomePage() {
         execute_label: 'Let Karnex search competitors',
         auto_executable: true,
         agent_config: {
-          agent_id: 'research',
+          agent_id: 'research-v1',
           context_summary:
             'Research and map the top 5 invoicing/billing competitors in the creative freelancer space.',
           estimated_duration_seconds: 60,

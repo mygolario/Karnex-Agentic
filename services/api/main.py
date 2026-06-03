@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-from pydantic import BaseModel
 import os
 import sys
+
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 # Ensure the workspace root is in sys.path
 sys.path.insert(
@@ -13,11 +14,11 @@ sys.path.insert(
 import traceback
 
 try:
-    from shared.config import settings
-    from api.routes.agents import router as agents_router
-    from api.routes.founders import router as founders_router
-    from api.routes.campaigns import router as campaigns_router
     from api.middleware.rate_limit import RateLimitMiddleware
+    from api.routes.agents import router as agents_router
+    from api.routes.campaigns import router as campaigns_router
+    from api.routes.founders import router as founders_router
+    from shared.config import settings
 except Exception as e:
     print(f"FATAL: Import failed during startup: {e}", flush=True)
     traceback.print_exc()

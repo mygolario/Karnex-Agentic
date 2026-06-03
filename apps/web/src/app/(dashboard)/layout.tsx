@@ -155,7 +155,7 @@ export default async function DashboardLayout({
   const isStudio = pathname.startsWith('/studio') || pathname.startsWith('/forge')
 
   return (
-    <div className={`flex min-h-screen bg-[#050505] font-sans antialiased text-[#e5e5e5] ${pathname.startsWith('/studio') ? 'studio-fullscreen' : ''}`}>
+    <div className="flex min-h-screen bg-[#050505] font-sans antialiased text-[#e5e5e5]">
       {/* Sidebar Navigation */}
       <SidebarNav user={userProps} />
 

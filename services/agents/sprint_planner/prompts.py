@@ -5,7 +5,7 @@ Follow these strict rules:
 2. Maintain a strict task capacity limit: the sum of task estimated hours MUST be <= the founder's capacity hours for this week (include a 10-20% safety buffer; do not allocate all hours).
 3. Limit the total number of tasks in the sprint to a maximum of 7.
 4. Each task must include a clear, measurable "definition_of_done" that states exactly when the task is complete.
-5. Identify which tasks can be delegated to Karnex agents (e.g. 'builder-v1', 'research-v1', 'outreach-v1').
+5. For automatable work, set can_delegate_to_agent to exactly one of: 'builder-v1' (build), 'research-v1' (research), 'outreach-v1' (outreach). Use matching category values.
 6. Provide exactly one stretch goal that the founder can tackle if they finish the sprint early.
 
 Respond with a JSON object matching the required Pydantic schema structure perfectly.

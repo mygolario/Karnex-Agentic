@@ -10,23 +10,28 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/dashboard',
+        destination: '/home',
+        permanent: false,
+      },
+      {
         source: '/ideas',
-        destination: '/dashboard',
+        destination: '/vault',
         permanent: false,
       },
       {
         source: '/warroom',
-        destination: '/dashboard',
+        destination: '/home',
         permanent: false,
       },
       {
         source: '/agents',
-        destination: '/dashboard',
+        destination: '/home',
         permanent: false,
       },
       {
         source: '/compass',
-        destination: '/dashboard',
+        destination: '/home',
         permanent: false,
       },
       {

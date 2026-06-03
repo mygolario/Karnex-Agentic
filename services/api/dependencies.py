@@ -1,8 +1,10 @@
 """FastAPI dependencies for route protection and authentication."""
 
-from typing import Dict, Any, Optional
-from fastapi import Depends, HTTPException, Header, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Any, Dict, Optional
+
+from fastapi import Depends, Header, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from api.middleware.auth import verify_supabase_jwt
 from shared.config import settings
 
@@ -69,11 +71,12 @@ async def check_premium_subscription(
 
     try:
         import asyncio
-        from shared.supabase_client import get_supabase_admin
+
         from shared.logger import logger
+        from shared.supabase_client import get_supabase_admin
 
         supabase = get_supabase_admin()
-        
+
         # Check active subscriptions
         res = await asyncio.to_thread(
             lambda: supabase.table("subscriptions")
@@ -82,7 +85,7 @@ async def check_premium_subscription(
             .in_("status", ["trialing", "active", "expiring_soon"])
             .execute()
         )
-        
+
         if not res.data:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
@@ -99,6 +102,6 @@ async def check_premium_subscription(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Subscription check failed. Please try again."
             )
-            
+
     return current_user
 

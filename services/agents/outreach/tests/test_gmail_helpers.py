@@ -1,17 +1,18 @@
-import pytest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone, timedelta
-from shared.config import settings
-from shared.encryption import TokenEncryption
+
+import pytest
+
 from agents.outreach.gmail_helpers import (
-    get_valid_gmail_credentials,
+    GmailAPIError,
+    GmailNotConnectedError,
     create_gmail_draft,
+    get_valid_gmail_credentials,
     personalize_template,
     sync_campaign_drafts,
-    GmailNotConnectedError,
-    GmailTokenExpiredError,
-    GmailAPIError
 )
+from shared.config import settings
+from shared.encryption import TokenEncryption
 
 # Set encryption key settings for the test
 settings.ENCRYPTION_KEY = "abcdefghijklmnopqrstuvwxyz123456"
@@ -60,7 +61,7 @@ async def test_get_valid_gmail_credentials_fresh():
     encryptor = TokenEncryption(settings.ENCRYPTION_KEY)
     enc_access = encryptor.encrypt("fresh_access_token_123")
     enc_refresh = encryptor.encrypt("fresh_refresh_token_456")
-    
+
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     mock_data = {
         "status": "active",
@@ -69,9 +70,9 @@ async def test_get_valid_gmail_credentials_fresh():
         "token_expires_at": expires_at.isoformat(),
         "metadata": {"gmail_email": "test@gmail.com", "gmail_name": "Test Founder"}
     }
-    
+
     client = MockSupabaseClient({"integrations": mock_data})
-    
+
     creds = await get_valid_gmail_credentials("founder_1", client)
     assert creds["access_token"] == "fresh_access_token_123"
     assert creds["refresh_token"] == "fresh_refresh_token_456"
@@ -83,7 +84,7 @@ async def test_get_valid_gmail_credentials_expired_refresh():
     encryptor = TokenEncryption(settings.ENCRYPTION_KEY)
     enc_access = encryptor.encrypt("expired_access_token_123")
     enc_refresh = encryptor.encrypt("refresh_token_456")
-    
+
     expires_at = datetime.now(timezone.utc) - timedelta(minutes=10)
     mock_data = {
         "id": "integration_id_1",
@@ -93,9 +94,9 @@ async def test_get_valid_gmail_credentials_expired_refresh():
         "token_expires_at": expires_at.isoformat(),
         "metadata": {"gmail_email": "test@gmail.com", "gmail_name": "Test Founder"}
     }
-    
+
     client = MockSupabaseClient({"integrations": mock_data})
-    
+
     # Mock Google Token Refresh Endpoint response
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -103,11 +104,11 @@ async def test_get_valid_gmail_credentials_expired_refresh():
         "access_token": "newly_refreshed_access_token_789",
         "expires_in": 3600
     }
-    
+
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_post.return_value = mock_response
         creds = await get_valid_gmail_credentials("founder_1", client)
-        
+
         assert creds["access_token"] == "newly_refreshed_access_token_789"
         mock_post.assert_called_once()
         assert mock_post.call_args[0][0] == "https://oauth2.googleapis.com/token"
@@ -125,7 +126,7 @@ async def test_create_gmail_draft_success():
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {"id": "draft_id_abc123"}
-    
+
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_post.return_value = mock_response
         draft_id = await create_gmail_draft(
@@ -143,7 +144,7 @@ async def test_create_gmail_draft_error():
     mock_response = MagicMock()
     mock_response.status_code = 401
     mock_response.text = "Unauthorized access token"
-    
+
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_post.return_value = mock_response
         with pytest.raises(GmailAPIError):
@@ -160,7 +161,7 @@ async def test_create_gmail_draft_error():
 async def test_create_gmail_draft_rate_limit():
     mock_response = MagicMock()
     mock_response.status_code = 429
-    
+
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_post.return_value = mock_response
         draft_id = await create_gmail_draft(
@@ -182,7 +183,7 @@ async def test_personalize_template_success():
         "company": "Karnex Tech",
         "gmail_name": "Ario"
     }
-    
+
     result = await personalize_template(template, contact)
     assert result == "Hi Aris Kiani, how is Karnex Tech? I am Ario."
 
@@ -203,9 +204,9 @@ async def test_sync_campaign_drafts_mock_mode():
             {"id": "contact_1", "email": "aris@example.com", "first_name": "Aris", "last_name": "Kiani", "company": "Karnex Tech"}
         ]
     })
-    
+
     logger = MagicMock()
-    
+
     summary = await sync_campaign_drafts("campaign_1", "founder_1", client, logger)
     assert summary["drafted"] == 1
     assert summary["mock"] is True

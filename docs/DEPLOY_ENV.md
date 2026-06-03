@@ -16,7 +16,13 @@ Run once after clone:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | — |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes (server routes only) | Yes |
 | `SUPABASE_URL` | — | Yes (or auto from `NEXT_PUBLIC_*` in root `.env`) |
-| `OPENROUTER_API_KEY` | — | Yes |
+| `OPENROUTER_API_KEY` | Yes (onboarding + agent proxy routes) | Yes |
+| `RESEND_API_KEY` | Yes (transactional email, automations) | Optional |
+| `KARNEX_INTERNAL_WEBHOOK_SECRET` | Yes (task complete + automation triggers) | Yes (cron automations) |
+| `KARNEX_APP_URL` | Optional fallback for internal webhooks | — |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | Yes (GitHub OAuth) | — |
+| `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` | Yes (Gmail OAuth) | — |
+| `ENCRYPTION_KEY` | Yes (32-char token encryption) | — |
 | `GOOGLE_GEMINI_API_KEY` | — | Yes |
 | `OXAPAY_MERCHANT_API_KEY` | Yes | Optional |
 | `NEXT_PUBLIC_OXAPAY_CALLBACK_URL` | Yes | — |
@@ -34,10 +40,12 @@ Run once after clone:
 
 | Service | URL |
 |---------|-----|
-| Frontend | https://arioai.site |
+| Frontend | https://arioai.site (alias: https://www.arioai.site) |
 | Agent API | https://web-production-7ea9c.up.railway.app |
 | OxaPay webhook | `https://arioai.site/api/webhooks/oxapay` |
 | Supabase project | `vwvolsmukrfwrnbmxatc` |
+| Karnex version | **2.0.0** (deployed 2026-06-03) |
+| OxaPay mode (production) | Sandbox (`NEXT_PUBLIC_OXAPAY_SANDBOX=true`) |
 
 ## Vercel CLI (non-secret values)
 
@@ -56,7 +64,7 @@ Redeploy after changing env vars.
 
 ## Railway
 
-Set the Python column in the matrix on the service that builds `services/Dockerfile`. Health check: `GET /health`.
+Set the Python column in the matrix on the service that builds `services/Dockerfile`. Health check: `GET /v1/health` (also `/health` for legacy probes).
 
 ## Local vs production
 

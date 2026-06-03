@@ -1,6 +1,7 @@
 """Deterministic momentum score calculator."""
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
 
@@ -15,10 +16,10 @@ async def calculate_momentum_score(founder_id: str) -> int:
     4. Progress (0-25 pts): Based on completed milestones and active sprint progress.
     """
     logger.info(f"Calculating momentum score for founder: {founder_id}")
-    
+
     supabase = get_supabase_admin()
     seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-    
+
     # --- Bucket 1: Task Completion (0-25 pts) ---
     # Tasks completed in the last 7 days
     task_pts = 0
@@ -100,7 +101,7 @@ async def calculate_momentum_score(founder_id: str) -> int:
             .execute()
         )
         completed_milestones = len(milestones_res.data) if milestones_res.data else 0
-        
+
         if completed_milestones >= 2:
             progress_pts = 25
         elif completed_milestones == 1:

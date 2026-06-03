@@ -1,5 +1,9 @@
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
+
+from shared.schemas.agent_envelope import AgentInputBase, AgentOutputBase
+
 
 class Finding(BaseModel):
     title: str = Field(..., description="Title of the research finding.")
@@ -27,13 +31,16 @@ class ResearchBrief(BaseModel):
     sources: List[Source] = Field(..., description="List of all sources referenced in this brief.")
     gaps: List[str] = Field(..., description="Unresolved questions or details that could not be found.")
 
-class ResearchInput(BaseModel):
-    founder_id: str = Field(..., description="Unique ID of the founder triggering the agent.")
+class ResearchInput(AgentInputBase):
     research_question: str = Field(..., description="The main question/topic to research.")
     scope: str = Field("general", description="Scope of research: 'market' | 'competitor' | 'technology' | 'audience' | 'general'")
     depth: str = Field("standard", description="Depth of research: 'quick' | 'standard' | 'deep'")
     preferred_sources: Optional[List[str]] = Field(None, description="Optional list of domains/sources to prioritize.")
     constraints: Optional[str] = Field(None, description="Constraints or context guidelines.")
 
-class ResearchOutput(BaseModel):
+class ResearchLLMOutput(BaseModel):
+    research_brief: ResearchBrief = Field(..., description="The generated research brief.")
+
+
+class ResearchOutput(AgentOutputBase):
     research_brief: ResearchBrief = Field(..., description="The generated research brief.")

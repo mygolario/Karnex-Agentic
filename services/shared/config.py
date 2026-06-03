@@ -1,8 +1,7 @@
 """Application settings loaded from environment variables."""
 
-from pathlib import Path
-
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from pydantic import model_validator
@@ -47,6 +46,10 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str = ""
     GMAIL_MOCK_MODE: bool = False
     RESEND_API_KEY: str = ""
+
+    KARNEX_INTERNAL_WEBHOOK_SECRET: str = ""
+    KARNEX_APP_URL: str = "http://localhost:3000"
+    NEXT_PUBLIC_APP_URL: str = ""
 
     class Config:
         env_file = str(_ENV_FILE) if _ENV_FILE.is_file() else ".env"

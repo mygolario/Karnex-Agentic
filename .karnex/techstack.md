@@ -446,7 +446,16 @@ OAuth integrations (Gmail, GitHub) utilize token encryption using Supabase Vault
 
 - **local**: Local dev servers + local Supabase CLI + OxaPay Sandbox mode active + mock email services.
 - **staging**: Railway backend + Vercel edge deployment + separate staging Supabase database + OxaPay Sandbox.
-- **production**: Production Railway + Vercel + production Supabase database + OxaPay Live Merchant Key.
+- **production**: Production Railway + Vercel + production Supabase database + OxaPay Sandbox (v2.0.0 launch; live merchant key when billing goes live).
+
+### Production URLs (v2.0.0 — 2026-06-03)
+
+| Service | URL |
+|---------|-----|
+| Frontend | https://arioai.site |
+| Agent API (Railway) | https://web-production-7ea9c.up.railway.app |
+| Supabase project ref | `vwvolsmukrfwrnbmxatc` |
+| OxaPay webhook | https://arioai.site/api/webhooks/oxapay |
 
 ### Railway Configuration
 
@@ -472,6 +481,17 @@ To execute the daily subscription renewal checker at `services/cron/renewal_chec
    ```
 3. **Schedule**: Set the cron schedule expression to `0 9 * * *` (runs every day at 09:00 UTC).
 4. **Environment Variables**: Inject the same env vars (especially `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) as the main API service.
+
+#### Railway Scheduled Cron Job (Integrations Automations)
+
+To evaluate automation recipes every 15 minutes via `services/cron/automations.py`:
+1. **Service Type**: Add a Cron service in the Railway project (or a second cron on the same pattern as renewals).
+2. **Start Command**:
+   ```bash
+   python services/cron/automations.py
+   ```
+3. **Schedule**: `*/15 * * * *` (every 15 minutes UTC).
+4. **Environment Variables**: Same as the API service, plus `KARNEX_INTERNAL_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL`, and `RESEND_API_KEY` for recipe actions.
 
 ---
 
@@ -506,5 +526,6 @@ settings = Settings()
 
 ---
 
-*Last updated: 2026-05-28 | Version: 1.1.0*
-*Primary payments: OxaPay. Stripe [v2 - deferred] references marked [v2 - deferred]. Webhook signature verification HMAC-SHA512 documented.*
+*Last updated: 2026-06-03 | Version: 2.0.0*
+*Production: https://arioai.site · Agent API: https://web-production-7ea9c.up.railway.app · Supabase: vwvolsmukrfwrnbmxatc*
+*Primary payments: OxaPay (sandbox in production until live billing). Stripe [v2 - deferred] references marked [v2 - deferred]. Webhook signature verification HMAC-SHA512 documented.*

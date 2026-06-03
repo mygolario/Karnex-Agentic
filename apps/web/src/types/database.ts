@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -6,1095 +6,1702 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
-      automation_logs: {
+      agent_outputs: {
         Row: {
-          id: string
-          founder_id: string
-          integration_id: string | null
-          rule_name: string
-          trigger_event: string
-          action_taken: string
-          status: "triggered" | "success" | "failed"
-          metadata: Json
+          agent_run_id: string
+          confidence: Database["public"]["Enums"]["confidence_level"] | null
+          confidence_rationale: string | null
           created_at: string
+          flags: Json | null
+          founder_id: string
+          handoff_context: Json | null
+          has_flags: boolean | null
+          id: string
+          memory_updates: Json | null
+          output: Json
+          output_type: string
+          suggested_next_agent: string | null
         }
         Insert: {
-          id?: string
-          founder_id: string
-          integration_id?: string | null
-          rule_name: string
-          trigger_event: string
-          action_taken: string
-          status?: "triggered" | "success" | "failed"
-          metadata?: Json
+          agent_run_id: string
+          confidence?: Database["public"]["Enums"]["confidence_level"] | null
+          confidence_rationale?: string | null
           created_at?: string
+          flags?: Json | null
+          founder_id: string
+          handoff_context?: Json | null
+          has_flags?: boolean | null
+          id?: string
+          memory_updates?: Json | null
+          output: Json
+          output_type: string
+          suggested_next_agent?: string | null
         }
         Update: {
-          id?: string
+          agent_run_id?: string
+          confidence?: Database["public"]["Enums"]["confidence_level"] | null
+          confidence_rationale?: string | null
+          created_at?: string
+          flags?: Json | null
           founder_id?: string
-          integration_id?: string | null
-          rule_name?: string
-          trigger_event?: string
-          action_taken?: string
-          status?: "triggered" | "success" | "failed"
-          metadata?: Json
-          created_at?: string
-        }
-      }
-      founders: {
-        Row: {
-          id: string
-          full_name: string
-          display_name: string | null
-          avatar_url: string | null
-          timezone: string
-          technical_level: "beginner" | "intermediate" | "advanced"
-          weekly_hours_available: number
-          primary_goal: string | null
-          onboarding_completed: boolean
-          current_startup_id: string | null
-          momentum_score: number
-          last_standup_at: string | null
-          streak_days: number
-          communication_tone: "formal" | "casual" | "direct"
-          preferred_agent_speed: "fast" | "thorough"
-          created_at: string
-          updated_at: string
-          last_journey_view: string | null
-          onboarding_step: number
-          onboarding_completed_at: string | null
-        }
-        Insert: {
-          id: string
-          full_name: string
-          display_name?: string | null
-          avatar_url?: string | null
-          timezone?: string
-          technical_level?: "beginner" | "intermediate" | "advanced"
-          weekly_hours_available?: number
-          primary_goal?: string | null
-          onboarding_completed?: boolean
-          current_startup_id?: string | null
-          momentum_score?: number
-          last_standup_at?: string | null
-          streak_days?: number
-          communication_tone?: "formal" | "casual" | "direct"
-          preferred_agent_speed?: "fast" | "thorough"
-          created_at?: string
-          updated_at?: string
-          last_journey_view?: string | null
-          onboarding_step?: number
-          onboarding_completed_at?: string | null
-        }
-        Update: {
+          handoff_context?: Json | null
+          has_flags?: boolean | null
           id?: string
-          full_name?: string
-          display_name?: string | null
-          avatar_url?: string | null
-          timezone?: string
-          technical_level?: "beginner" | "intermediate" | "advanced"
-          weekly_hours_available?: number
-          primary_goal?: string | null
-          onboarding_completed?: boolean
-          current_startup_id?: string | null
-          momentum_score?: number
-          last_standup_at?: string | null
-          streak_days?: number
-          communication_tone?: "formal" | "casual" | "direct"
-          preferred_agent_speed?: "fast" | "thorough"
-          created_at?: string
-          updated_at?: string
-          last_journey_view?: string | null
-          onboarding_step?: number
-          onboarding_completed_at?: string | null
+          memory_updates?: Json | null
+          output?: Json
+          output_type?: string
+          suggested_next_agent?: string | null
         }
-      }
-      startups: {
-        Row: {
-          id: string
-          founder_id: string
-          name: string
-          tagline: string | null
-          description: string | null
-          industry: string | null
-          target_audience: string | null
-          stage: "ideation" | "validation" | "building" | "launching" | "growing"
-          is_active: boolean
-          website_url: string | null
-          github_repo_url: string | null
-          landing_page_url: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          founder_id: string
-          name: string
-          tagline?: string | null
-          description?: string | null
-          industry?: string | null
-          target_audience?: string | null
-          stage?: "ideation" | "validation" | "building" | "launching" | "growing"
-          is_active?: boolean
-          website_url?: string | null
-          github_repo_url?: string | null
-          landing_page_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          founder_id?: string
-          name?: string
-          tagline?: string | null
-          description?: string | null
-          industry?: string | null
-          target_audience?: string | null
-          stage?: "ideation" | "validation" | "building" | "launching" | "growing"
-          is_active?: boolean
-          website_url?: string | null
-          github_repo_url?: string | null
-          landing_page_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      ideas: {
-        Row: {
-          id: string
-          startup_id: string
-          founder_id: string
-          title: string
-          pain_description: string
-          problem_statement: string | null
-          proposed_solution: string | null
-          pain_intensity_score: number | null
-          market_size_score: number | null
-          buildability_score: number | null
-          overall_score: number | null
-          product_brief: Json
-          icp_document: Json
-          competitive_landscape: Json
-          status: Database["public"]["Enums"]["idea_status"]
-          selected_at: string | null
-          rejected_reason: string | null
-          generated_by: string | null
-          agent_run_id: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          startup_id: string
-          founder_id: string
-          title: string
-          pain_description: string
-          problem_statement?: string | null
-          proposed_solution?: string | null
-          pain_intensity_score?: number | null
-          market_size_score?: number | null
-          buildability_score?: number | null
-          overall_score?: number | null
-          product_brief?: Json
-          icp_document?: Json
-          competitive_landscape?: Json
-          status?: Database["public"]["Enums"]["idea_status"]
-          selected_at?: string | null
-          rejected_reason?: string | null
-          generated_by?: string | null
-          agent_run_id?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          startup_id?: string
-          founder_id?: string
-          title?: string
-          pain_description?: string
-          problem_statement?: string | null
-          proposed_solution?: string | null
-          pain_intensity_score?: number | null
-          market_size_score?: number | null
-          buildability_score?: number | null
-          overall_score?: number | null
-          product_brief?: Json
-          icp_document?: Json
-          competitive_landscape?: Json
-          status?: Database["public"]["Enums"]["idea_status"]
-          selected_at?: string | null
-          rejected_reason?: string | null
-          generated_by?: string | null
-          agent_run_id?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      roadmaps: {
-        Row: {
-          id: string
-          startup_id: string
-          founder_id: string
-          title: string
-          version: number
-          is_active: boolean
-          phases: Json
-          current_phase: Database["public"]["Enums"]["roadmap_phase"]
-          founder_capacity_hours: number | null
-          technical_level: string | null
-          budget_monthly: number | null
-          generated_by: string | null
-          agent_run_id: string | null
-          start_date: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          startup_id: string
-          founder_id: string
-          title?: string
-          version?: number
-          is_active?: boolean
-          phases: Json
-          current_phase?: Database["public"]["Enums"]["roadmap_phase"]
-          founder_capacity_hours?: number | null
-          technical_level?: string | null
-          budget_monthly?: number | null
-          generated_by?: string | null
-          agent_run_id?: string | null
-          start_date?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          startup_id?: string
-          founder_id?: string
-          title?: string
-          version?: number
-          is_active?: boolean
-          phases?: Json
-          current_phase?: Database["public"]["Enums"]["roadmap_phase"]
-          founder_capacity_hours?: number | null
-          technical_level?: string | null
-          budget_monthly?: number | null
-          generated_by?: string | null
-          agent_run_id?: string | null
-          start_date?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      sprints: {
-        Row: {
-          id: string
-          roadmap_id: string
-          founder_id: string
-          sprint_number: number
-          title: string
-          week_start: string
-          week_end: string
-          goals: Json
-          focus_area: string | null
-          capacity_hours: number | null
-          status: Database["public"]["Enums"]["sprint_status"]
-          completion_percentage: number
-          retro_notes: string | null
-          lessons_learned: Json
-          generated_by: string | null
-          agent_run_id: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          roadmap_id: string
-          founder_id: string
-          sprint_number: number
-          title: string
-          week_start: string
-          week_end: string
-          goals?: Json
-          focus_area?: string | null
-          capacity_hours?: number | null
-          status?: Database["public"]["Enums"]["sprint_status"]
-          completion_percentage?: number
-          retro_notes?: string | null
-          lessons_learned?: Json
-          generated_by?: string | null
-          agent_run_id?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          roadmap_id?: string
-          founder_id?: string
-          sprint_number?: number
-          title?: string
-          week_start?: string
-          week_end?: string
-          goals?: Json
-          focus_area?: string | null
-          capacity_hours?: number | null
-          status?: Database["public"]["Enums"]["sprint_status"]
-          completion_percentage?: number
-          retro_notes?: string | null
-          lessons_learned?: Json
-          generated_by?: string | null
-          agent_run_id?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      tasks: {
-        Row: {
-          id: string
-          sprint_id: string
-          founder_id: string
-          title: string
-          description: string | null
-          priority: number
-          estimated_hours: number | null
-          actual_hours: number | null
-          category: "build" | "research" | "outreach" | "content" | "design" | "finance" | "legal" | "other"
-          delegated_to_agent: string | null
-          agent_run_id: string | null
-          status: Database["public"]["Enums"]["task_status"]
-          completed_at: string | null
-          blocked_reason: string | null
-          definition_of_done: string | null
-          created_at: string
-          updated_at: string
-          agent_config: Json
-          agent_output: Json
-          execute_label: string | null
-          auto_executable: boolean
-          execution_started_at: string | null
-          execution_completed_at: string | null
-        }
-        Insert: {
-          id?: string
-          sprint_id: string
-          founder_id: string
-          title: string
-          description?: string | null
-          priority?: number
-          estimated_hours?: number | null
-          actual_hours?: number | null
-          category?: "build" | "research" | "outreach" | "content" | "design" | "finance" | "legal" | "other"
-          delegated_to_agent?: string | null
-          agent_run_id?: string | null
-          status?: Database["public"]["Enums"]["task_status"]
-          completed_at?: string | null
-          blocked_reason?: string | null
-          definition_of_done?: string | null
-          created_at?: string
-          updated_at?: string
-          agent_config?: Json
-          agent_output?: Json
-          execute_label?: string | null
-          auto_executable?: boolean
-          execution_started_at?: string | null
-          execution_completed_at?: string | null
-        }
-        Update: {
-          id?: string
-          sprint_id?: string
-          founder_id?: string
-          title?: string
-          description?: string | null
-          priority?: number
-          estimated_hours?: number | null
-          actual_hours?: number | null
-          category?: "build" | "research" | "outreach" | "content" | "design" | "finance" | "legal" | "other"
-          delegated_to_agent?: string | null
-          agent_run_id?: string | null
-          status?: Database["public"]["Enums"]["task_status"]
-          completed_at?: string | null
-          blocked_reason?: string | null
-          definition_of_done?: string | null
-          created_at?: string
-          updated_at?: string
-          agent_config?: Json
-          agent_output?: Json
-          execute_label?: string | null
-          auto_executable?: boolean
-          execution_started_at?: string | null
-          execution_completed_at?: string | null
-        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_outputs_agent_run_id_fkey"
+            columns: ["agent_run_id"]
+            isOneToOne: true
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_outputs_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agent_runs: {
         Row: {
-          id: string
-          founder_id: string
           agent_id: string
           agent_version: string
-          status: Database["public"]["Enums"]["agent_status"]
-          input: Json
-          triggered_by: string
-          parent_run_id: string | null
           chain_id: string | null
-          started_at: string | null
           completed_at: string | null
+          created_at: string
+          credits_consumed: number | null
           duration_ms: number | null
-          tokens_input: number
-          tokens_output: number
-          tokens_total: number
-          llm_model: string | null
-          tools_called: string[]
-          integrations_called: string[]
           error_message: string | null
           error_type: string | null
-          retry_count: number
-          credits_consumed: number
-          created_at: string
+          founder_id: string
+          id: string
+          input: Json
+          integrations_called: string[] | null
+          llm_model: string | null
+          logs: Json | null
+          parent_run_id: string | null
+          retry_count: number | null
+          started_at: string | null
+          status: string | null
+          tokens_input: number | null
+          tokens_output: number | null
+          tokens_total: number | null
+          tools_called: string[] | null
+          triggered_by: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          founder_id: string
           agent_id: string
           agent_version?: string
-          status?: Database["public"]["Enums"]["agent_status"]
-          input?: Json
-          triggered_by?: string
-          parent_run_id?: string | null
           chain_id?: string | null
-          started_at?: string | null
           completed_at?: string | null
+          created_at?: string
+          credits_consumed?: number | null
           duration_ms?: number | null
-          tokens_input?: number
-          tokens_output?: number
-          tokens_total?: number
-          llm_model?: string | null
-          tools_called?: string[]
-          integrations_called?: string[]
           error_message?: string | null
           error_type?: string | null
-          retry_count?: number
-          credits_consumed?: number
-          created_at?: string
+          founder_id: string
+          id?: string
+          input?: Json
+          integrations_called?: string[] | null
+          llm_model?: string | null
+          logs?: Json | null
+          parent_run_id?: string | null
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          tokens_total?: number | null
+          tools_called?: string[] | null
+          triggered_by?: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          founder_id?: string
           agent_id?: string
           agent_version?: string
-          status?: Database["public"]["Enums"]["agent_status"]
-          input?: Json
-          triggered_by?: string
-          parent_run_id?: string | null
           chain_id?: string | null
-          started_at?: string | null
           completed_at?: string | null
+          created_at?: string
+          credits_consumed?: number | null
           duration_ms?: number | null
-          tokens_input?: number
-          tokens_output?: number
-          tokens_total?: number
-          llm_model?: string | null
-          tools_called?: string[]
-          integrations_called?: string[]
           error_message?: string | null
           error_type?: string | null
-          retry_count?: number
-          credits_consumed?: number
-          created_at?: string
+          founder_id?: string
+          id?: string
+          input?: Json
+          integrations_called?: string[] | null
+          llm_model?: string | null
+          logs?: Json | null
+          parent_run_id?: string | null
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          tokens_total?: number | null
+          tools_called?: string[] | null
+          triggered_by?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "agent_runs_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_runs_parent_run_id_fkey"
+            columns: ["parent_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      agent_outputs: {
+      automation_logs: {
         Row: {
-          id: string
-          agent_run_id: string
-          founder_id: string
-          output_type: string
-          output: Json
-          confidence: Database["public"]["Enums"]["confidence_level"]
-          confidence_rationale: string | null
-          suggested_next_agent: string | null
-          handoff_context: Json | null
-          memory_updates: Json
-          has_flags: boolean
-          flags: Json
+          action_taken: string
           created_at: string
+          founder_id: string
+          id: string
+          integration_id: string | null
+          metadata: Json | null
+          rule_name: string
+          status: string | null
+          trigger_event: string
         }
         Insert: {
-          id?: string
-          agent_run_id: string
-          founder_id: string
-          output_type: string
-          output: Json
-          confidence?: Database["public"]["Enums"]["confidence_level"]
-          confidence_rationale?: string | null
-          suggested_next_agent?: string | null
-          handoff_context?: Json | null
-          memory_updates?: Json
-          has_flags?: boolean
-          flags?: Json
+          action_taken: string
           created_at?: string
+          founder_id: string
+          id?: string
+          integration_id?: string | null
+          metadata?: Json | null
+          rule_name: string
+          status?: string | null
+          trigger_event: string
         }
         Update: {
-          id?: string
-          agent_run_id?: string
-          founder_id?: string
-          output_type?: string
-          output?: Json
-          confidence?: Database["public"]["Enums"]["confidence_level"]
-          confidence_rationale?: string | null
-          suggested_next_agent?: string | null
-          handoff_context?: Json | null
-          memory_updates?: Json
-          has_flags?: boolean
-          flags?: Json
+          action_taken?: string
           created_at?: string
+          founder_id?: string
+          id?: string
+          integration_id?: string | null
+          metadata?: Json | null
+          rule_name?: string
+          status?: string | null
+          trigger_event?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "automation_logs_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      integrations: {
+      automation_recipe_catalog: {
         Row: {
-          id: string
-          founder_id: string
-          provider: Database["public"]["Enums"]["integration_provider"]
-          status: Database["public"]["Enums"]["integration_status"]
-          access_token_encrypted: string | null
-          refresh_token_encrypted: string | null
-          token_expires_at: string | null
-          scopes: string[]
-          metadata: Json
-          connected_at: string | null
-          last_used_at: string | null
+          action_description: string
           created_at: string
-          updated_at: string
-          automation_rules: Json
-          display_name: string | null
-          description: string | null
-          icon_url: string | null
-          is_featured: boolean | null
+          id: string
+          required_providers: string[]
+          sort_order: number
+          title: string
+          trigger_config: Json
+          trigger_description: string
+          trigger_type: string
         }
         Insert: {
-          id?: string
-          founder_id: string
-          provider: Database["public"]["Enums"]["integration_provider"]
-          status?: Database["public"]["Enums"]["integration_status"]
-          access_token_encrypted?: string | null
-          refresh_token_encrypted?: string | null
-          token_expires_at?: string | null
-          scopes?: string[]
-          metadata?: Json
-          connected_at?: string | null
-          last_used_at?: string | null
+          action_description: string
           created_at?: string
-          updated_at?: string
-          automation_rules?: Json
-          display_name?: string | null
-          description?: string | null
-          icon_url?: string | null
-          is_featured?: boolean | null
-        }
-        Update: {
-          id?: string
-          founder_id?: string
-          provider?: Database["public"]["Enums"]["integration_provider"]
-          status?: Database["public"]["Enums"]["integration_status"]
-          access_token_encrypted?: string | null
-          refresh_token_encrypted?: string | null
-          token_expires_at?: string | null
-          scopes?: string[]
-          metadata?: Json
-          connected_at?: string | null
-          last_used_at?: string | null
-          created_at?: string
-          updated_at?: string
-          automation_rules?: Json
-          display_name?: string | null
-          description?: string | null
-          icon_url?: string | null
-          is_featured?: boolean | null
-        }
-      }
-      subscriptions: {
-        Row: {
           id: string
-          founder_id: string
-          plan: Database["public"]["Enums"]["subscription_plan"]
-          status: Database["public"]["Enums"]["subscription_status"]
-          started_at: string
-          expires_at: string
-          renewed_at: string | null
-          cancelled_at: string | null
-          tasks_used_this_cycle: number
-          tasks_limit: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          founder_id: string
-          plan?: Database["public"]["Enums"]["subscription_plan"]
-          status?: Database["public"]["Enums"]["subscription_status"]
-          started_at?: string
-          expires_at: string
-          renewed_at?: string | null
-          cancelled_at?: string | null
-          tasks_used_this_cycle?: number
-          tasks_limit?: number
-          created_at?: string
-          updated_at?: string
+          required_providers?: string[]
+          sort_order?: number
+          title: string
+          trigger_config?: Json
+          trigger_description: string
+          trigger_type: string
         }
         Update: {
-          id?: string
-          founder_id?: string
-          plan?: Database["public"]["Enums"]["subscription_plan"]
-          status?: Database["public"]["Enums"]["subscription_status"]
-          started_at?: string
-          expires_at?: string
-          renewed_at?: string | null
-          cancelled_at?: string | null
-          tasks_used_this_cycle?: number
-          tasks_limit?: number
+          action_description?: string
           created_at?: string
-          updated_at?: string
-        }
-      }
-      payments: {
-        Row: {
-          id: string
-          founder_id: string
-          subscription_id: string | null
-          oxapay_track_id: string
-          oxapay_order_id: string
-          amount_usd: number
-          currency: Database["public"]["Enums"]["stablecoin_currency"]
-          amount_crypto: number | null
-          status: Database["public"]["Enums"]["payment_status"]
-          plan: Database["public"]["Enums"]["subscription_plan"]
-          period_start: string | null
-          period_end: string | null
-          webhook_received_at: string | null
-          raw_webhook_payload: Json
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
           id?: string
-          founder_id: string
-          subscription_id?: string | null
-          oxapay_track_id: string
-          oxapay_order_id: string
-          amount_usd: number
-          currency: Database["public"]["Enums"]["stablecoin_currency"]
-          amount_crypto?: number | null
-          status?: Database["public"]["Enums"]["payment_status"]
-          plan: Database["public"]["Enums"]["subscription_plan"]
-          period_start?: string | null
-          period_end?: string | null
-          webhook_received_at?: string | null
-          raw_webhook_payload?: Json
-          created_at?: string
-          updated_at?: string
+          required_providers?: string[]
+          sort_order?: number
+          title?: string
+          trigger_config?: Json
+          trigger_description?: string
+          trigger_type?: string
         }
-        Update: {
-          id?: string
-          founder_id?: string
-          subscription_id?: string | null
-          oxapay_track_id?: string
-          oxapay_order_id?: string
-          amount_usd?: number
-          currency?: Database["public"]["Enums"]["stablecoin_currency"]
-          amount_crypto?: number | null
-          status?: Database["public"]["Enums"]["payment_status"]
-          plan?: Database["public"]["Enums"]["subscription_plan"]
-          period_start?: string | null
-          period_end?: string | null
-          webhook_received_at?: string | null
-          raw_webhook_payload?: Json
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      renewal_reminders: {
-        Row: {
-          id: string
-          founder_id: string
-          subscription_id: string
-          reminder_type: Database["public"]["Enums"]["reminder_type"]
-          sent_at: string
-          payment_link: string
-          payment_link_expires: string
-          opened: boolean
-          converted: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          founder_id: string
-          subscription_id: string
-          reminder_type: Database["public"]["Enums"]["reminder_type"]
-          sent_at?: string
-          payment_link: string
-          payment_link_expires: string
-          opened?: boolean
-          converted?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          founder_id?: string
-          subscription_id?: string
-          reminder_type?: Database["public"]["Enums"]["reminder_type"]
-          sent_at?: string
-          payment_link?: string
-          payment_link_expires?: string
-          opened?: boolean
-          converted?: boolean
-          created_at?: string
-        }
-      }
-      founder_memory: {
-        Row: {
-          id: string
-          founder_id: string
-          namespace: string
-          key: string
-          value: Json
-          tags: string[]
-          ttl: string | null
-          access_count: number
-          last_accessed_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          founder_id: string
-          namespace: string
-          key: string
-          value: Json
-          tags?: string[]
-          ttl?: string | null
-          access_count?: number
-          last_accessed_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          founder_id?: string
-          namespace?: string
-          key?: string
-          value?: Json
-          tags?: string[]
-          ttl?: string | null
-          access_count?: number
-          last_accessed_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
+        Relationships: []
       }
       decisions: {
         Row: {
-          id: string
-          startup_id: string
-          founder_id: string
-          title: string
-          description: string
-          rationale: string | null
-          alternatives_considered: Json
-          category: "product" | "technical" | "market" | "financial" | "team" | "strategy" | "pivot" | null
-          reversibility: Database["public"]["Enums"]["decision_reversibility"]
-          confidence: Database["public"]["Enums"]["confidence_level"]
-          expected_outcome: string | null
           actual_outcome: string | null
-          outcome_reviewed_at: string | null
+          alternatives_considered: Json | null
+          category: string | null
+          confidence: Database["public"]["Enums"]["confidence_level"] | null
+          created_at: string
+          decided_at: string | null
+          description: string
+          expected_outcome: string | null
+          founder_id: string
+          id: string
           outcome_matched: boolean | null
+          outcome_reviewed_at: string | null
+          rationale: string | null
           related_agent_run_id: string | null
           related_milestone_id: string | null
-          tags: string[]
-          decided_at: string | null
+          reversibility:
+            | Database["public"]["Enums"]["decision_reversibility"]
+            | null
           review_by: string | null
-          created_at: string
+          startup_id: string
+          tags: string[] | null
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          startup_id: string
-          founder_id: string
-          title: string
-          description: string
-          rationale?: string | null
-          alternatives_considered?: Json
-          category?: "product" | "technical" | "market" | "financial" | "team" | "strategy" | "pivot" | null
-          reversibility?: Database["public"]["Enums"]["decision_reversibility"]
-          confidence?: Database["public"]["Enums"]["confidence_level"]
-          expected_outcome?: string | null
           actual_outcome?: string | null
-          outcome_reviewed_at?: string | null
+          alternatives_considered?: Json | null
+          category?: string | null
+          confidence?: Database["public"]["Enums"]["confidence_level"] | null
+          created_at?: string
+          decided_at?: string | null
+          description: string
+          expected_outcome?: string | null
+          founder_id: string
+          id?: string
           outcome_matched?: boolean | null
+          outcome_reviewed_at?: string | null
+          rationale?: string | null
           related_agent_run_id?: string | null
           related_milestone_id?: string | null
-          tags?: string[]
-          decided_at?: string | null
+          reversibility?:
+            | Database["public"]["Enums"]["decision_reversibility"]
+            | null
           review_by?: string | null
-          created_at?: string
+          startup_id: string
+          tags?: string[] | null
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          startup_id?: string
-          founder_id?: string
-          title?: string
-          description?: string
-          rationale?: string | null
-          alternatives_considered?: Json
-          category?: "product" | "technical" | "market" | "financial" | "team" | "strategy" | "pivot" | null
-          reversibility?: Database["public"]["Enums"]["decision_reversibility"]
-          confidence?: Database["public"]["Enums"]["confidence_level"]
-          expected_outcome?: string | null
           actual_outcome?: string | null
-          outcome_reviewed_at?: string | null
+          alternatives_considered?: Json | null
+          category?: string | null
+          confidence?: Database["public"]["Enums"]["confidence_level"] | null
+          created_at?: string
+          decided_at?: string | null
+          description?: string
+          expected_outcome?: string | null
+          founder_id?: string
+          id?: string
           outcome_matched?: boolean | null
+          outcome_reviewed_at?: string | null
+          rationale?: string | null
           related_agent_run_id?: string | null
           related_milestone_id?: string | null
-          tags?: string[]
-          decided_at?: string | null
+          reversibility?:
+            | Database["public"]["Enums"]["decision_reversibility"]
+            | null
           review_by?: string | null
-          created_at?: string
+          startup_id?: string
+          tags?: string[] | null
+          title?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "decisions_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decisions_related_agent_run_id_fkey"
+            columns: ["related_agent_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decisions_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "startups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_decisions_milestone"
+            columns: ["related_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      founder_memory: {
+        Row: {
+          access_count: number | null
+          created_at: string
+          founder_id: string
+          id: string
+          key: string
+          last_accessed_at: string | null
+          namespace: string
+          tags: string[] | null
+          ttl: string | null
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          access_count?: number | null
+          created_at?: string
+          founder_id: string
+          id?: string
+          key: string
+          last_accessed_at?: string | null
+          namespace: string
+          tags?: string[] | null
+          ttl?: string | null
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          access_count?: number | null
+          created_at?: string
+          founder_id?: string
+          id?: string
+          key?: string
+          last_accessed_at?: string | null
+          namespace?: string
+          tags?: string[] | null
+          ttl?: string | null
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "founder_memory_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      founders: {
+        Row: {
+          avatar_url: string | null
+          communication_tone: string | null
+          created_at: string
+          current_startup_id: string | null
+          display_name: string | null
+          full_name: string
+          id: string
+          last_journey_view: string | null
+          last_standup_at: string | null
+          momentum_score: number | null
+          onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
+          onboarding_step: number | null
+          preferred_agent_speed: string | null
+          primary_goal: string | null
+          streak_days: number | null
+          technical_level: string | null
+          timezone: string | null
+          updated_at: string
+          weekly_hours_available: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          communication_tone?: string | null
+          created_at?: string
+          current_startup_id?: string | null
+          display_name?: string | null
+          full_name: string
+          id: string
+          last_journey_view?: string | null
+          last_standup_at?: string | null
+          momentum_score?: number | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
+          onboarding_step?: number | null
+          preferred_agent_speed?: string | null
+          primary_goal?: string | null
+          streak_days?: number | null
+          technical_level?: string | null
+          timezone?: string | null
+          updated_at?: string
+          weekly_hours_available?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          communication_tone?: string | null
+          created_at?: string
+          current_startup_id?: string | null
+          display_name?: string | null
+          full_name?: string
+          id?: string
+          last_journey_view?: string | null
+          last_standup_at?: string | null
+          momentum_score?: number | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
+          onboarding_step?: number | null
+          preferred_agent_speed?: string | null
+          primary_goal?: string | null
+          streak_days?: number | null
+          technical_level?: string | null
+          timezone?: string | null
+          updated_at?: string
+          weekly_hours_available?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_founders_current_startup"
+            columns: ["current_startup_id"]
+            isOneToOne: false
+            referencedRelation: "startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ideas: {
+        Row: {
+          agent_run_id: string | null
+          buildability_score: number | null
+          competitive_landscape: Json | null
+          created_at: string
+          founder_id: string
+          generated_by: string | null
+          icp_document: Json | null
+          id: string
+          market_size_score: number | null
+          overall_score: number | null
+          pain_description: string
+          pain_intensity_score: number | null
+          problem_statement: string | null
+          product_brief: Json | null
+          proposed_solution: string | null
+          rejected_reason: string | null
+          selected_at: string | null
+          startup_id: string
+          status: Database["public"]["Enums"]["idea_status"] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agent_run_id?: string | null
+          buildability_score?: number | null
+          competitive_landscape?: Json | null
+          created_at?: string
+          founder_id: string
+          generated_by?: string | null
+          icp_document?: Json | null
+          id?: string
+          market_size_score?: number | null
+          overall_score?: number | null
+          pain_description: string
+          pain_intensity_score?: number | null
+          problem_statement?: string | null
+          product_brief?: Json | null
+          proposed_solution?: string | null
+          rejected_reason?: string | null
+          selected_at?: string | null
+          startup_id: string
+          status?: Database["public"]["Enums"]["idea_status"] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agent_run_id?: string | null
+          buildability_score?: number | null
+          competitive_landscape?: Json | null
+          created_at?: string
+          founder_id?: string
+          generated_by?: string | null
+          icp_document?: Json | null
+          id?: string
+          market_size_score?: number | null
+          overall_score?: number | null
+          pain_description?: string
+          pain_intensity_score?: number | null
+          problem_statement?: string | null
+          product_brief?: Json | null
+          proposed_solution?: string | null
+          rejected_reason?: string | null
+          selected_at?: string | null
+          startup_id?: string
+          status?: Database["public"]["Enums"]["idea_status"] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ideas_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ideas_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          access_token_encrypted: string | null
+          automation_rules: Json | null
+          connected_at: string | null
+          created_at: string
+          description: string | null
+          display_name: string | null
+          founder_id: string
+          icon_url: string | null
+          id: string
+          is_featured: boolean | null
+          last_used_at: string | null
+          metadata: Json | null
+          provider: Database["public"]["Enums"]["integration_provider"]
+          refresh_token_encrypted: string | null
+          scopes: string[] | null
+          status: Database["public"]["Enums"]["integration_status"] | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          automation_rules?: Json | null
+          connected_at?: string | null
+          created_at?: string
+          description?: string | null
+          display_name?: string | null
+          founder_id: string
+          icon_url?: string | null
+          id?: string
+          is_featured?: boolean | null
+          last_used_at?: string | null
+          metadata?: Json | null
+          provider: Database["public"]["Enums"]["integration_provider"]
+          refresh_token_encrypted?: string | null
+          scopes?: string[] | null
+          status?: Database["public"]["Enums"]["integration_status"] | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          automation_rules?: Json | null
+          connected_at?: string | null
+          created_at?: string
+          description?: string | null
+          display_name?: string | null
+          founder_id?: string
+          icon_url?: string | null
+          id?: string
+          is_featured?: boolean | null
+          last_used_at?: string | null
+          metadata?: Json | null
+          provider?: Database["public"]["Enums"]["integration_provider"]
+          refresh_token_encrypted?: string | null
+          scopes?: string[] | null
+          status?: Database["public"]["Enums"]["integration_status"] | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       milestones: {
         Row: {
-          id: string
-          roadmap_id: string
-          founder_id: string
-          title: string
+          completed_at: string | null
+          created_at: string
+          current_value: number | null
           description: string | null
+          founder_id: string
+          id: string
           phase: Database["public"]["Enums"]["roadmap_phase"]
+          roadmap_id: string
+          status: Database["public"]["Enums"]["milestone_status"] | null
           target_date: string | null
           target_metric: string | null
           target_value: number | null
-          current_value: number | null
-          status: Database["public"]["Enums"]["milestone_status"]
-          completed_at: string | null
-          created_at: string
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          roadmap_id: string
-          founder_id: string
-          title: string
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number | null
           description?: string | null
+          founder_id: string
+          id?: string
           phase: Database["public"]["Enums"]["roadmap_phase"]
+          roadmap_id: string
+          status?: Database["public"]["Enums"]["milestone_status"] | null
           target_date?: string | null
           target_metric?: string | null
           target_value?: number | null
-          current_value?: number | null
-          status?: Database["public"]["Enums"]["milestone_status"]
-          completed_at?: string | null
-          created_at?: string
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          roadmap_id?: string
-          founder_id?: string
-          title?: string
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number | null
           description?: string | null
+          founder_id?: string
+          id?: string
           phase?: Database["public"]["Enums"]["roadmap_phase"]
+          roadmap_id?: string
+          status?: Database["public"]["Enums"]["milestone_status"] | null
           target_date?: string | null
           target_metric?: string | null
           target_value?: number | null
-          current_value?: number | null
-          status?: Database["public"]["Enums"]["milestone_status"]
-          completed_at?: string | null
-          created_at?: string
+          title?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestones_roadmap_id_fkey"
+            columns: ["roadmap_id"]
+            isOneToOne: false
+            referencedRelation: "roadmaps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       outreach_campaigns: {
         Row: {
-          id: string
-          startup_id: string
-          founder_id: string
-          name: string
-          goal: string
-          channel: "email" | "linkedin" | "both" | null
-          message_templates: Json
-          status: Database["public"]["Enums"]["campaign_status"]
-          approved_at: string | null
-          total_contacts: number
-          sent_count: number
-          opened_count: number
-          replied_count: number
-          bounced_count: number
-          generated_by: string | null
           agent_run_id: string | null
+          approved_at: string | null
+          bounced_count: number | null
+          channel: string | null
           created_at: string
+          founder_id: string
+          generated_by: string | null
+          goal: string
+          id: string
+          message_templates: Json
+          name: string
+          opened_count: number | null
+          replied_count: number | null
+          sent_count: number | null
+          startup_id: string
+          status: Database["public"]["Enums"]["campaign_status"] | null
+          total_contacts: number | null
           updated_at: string
         }
         Insert: {
-          id?: string
-          startup_id: string
-          founder_id: string
-          name: string
-          goal: string
-          channel?: "email" | "linkedin" | "both" | null
-          message_templates?: Json
-          status?: Database["public"]["Enums"]["campaign_status"]
-          approved_at?: string | null
-          total_contacts?: number
-          sent_count?: number
-          opened_count?: number
-          replied_count?: number
-          bounced_count?: number
-          generated_by?: string | null
           agent_run_id?: string | null
+          approved_at?: string | null
+          bounced_count?: number | null
+          channel?: string | null
           created_at?: string
+          founder_id: string
+          generated_by?: string | null
+          goal: string
+          id?: string
+          message_templates?: Json
+          name: string
+          opened_count?: number | null
+          replied_count?: number | null
+          sent_count?: number | null
+          startup_id: string
+          status?: Database["public"]["Enums"]["campaign_status"] | null
+          total_contacts?: number | null
           updated_at?: string
         }
         Update: {
-          id?: string
-          startup_id?: string
-          founder_id?: string
-          name?: string
-          goal?: string
-          channel?: "email" | "linkedin" | "both" | null
-          message_templates?: Json
-          status?: Database["public"]["Enums"]["campaign_status"]
-          approved_at?: string | null
-          total_contacts?: number
-          sent_count?: number
-          opened_count?: number
-          replied_count?: number
-          bounced_count?: number
-          generated_by?: string | null
           agent_run_id?: string | null
+          approved_at?: string | null
+          bounced_count?: number | null
+          channel?: string | null
           created_at?: string
+          founder_id?: string
+          generated_by?: string | null
+          goal?: string
+          id?: string
+          message_templates?: Json
+          name?: string
+          opened_count?: number | null
+          replied_count?: number | null
+          sent_count?: number | null
+          startup_id?: string
+          status?: Database["public"]["Enums"]["campaign_status"] | null
+          total_contacts?: number | null
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_campaigns_agent_run_id_fkey"
+            columns: ["agent_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_campaigns_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_campaigns_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "startups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       outreach_contacts: {
         Row: {
-          id: string
           campaign_id: string
-          founder_id: string
+          company: string | null
+          created_at: string
+          current_step: number | null
           email: string | null
           first_name: string | null
+          founder_id: string
+          id: string
           last_name: string | null
-          company: string | null
-          title: string | null
-          linkedin_url: string | null
-          personalization_data: Json
-          status: Database["public"]["Enums"]["contact_status"]
-          current_step: number
           last_sent_at: string | null
+          linkedin_url: string | null
           opened_at: string | null
+          personalization_data: Json | null
           replied_at: string | null
-          reply_sentiment: "positive" | "neutral" | "negative" | "unsubscribe" | null
-          created_at: string
+          reply_sentiment: string | null
+          status: Database["public"]["Enums"]["contact_status"] | null
+          title: string | null
           updated_at: string
         }
         Insert: {
-          id?: string
           campaign_id: string
-          founder_id: string
+          company?: string | null
+          created_at?: string
+          current_step?: number | null
           email?: string | null
           first_name?: string | null
+          founder_id: string
+          id?: string
           last_name?: string | null
-          company?: string | null
-          title?: string | null
-          linkedin_url?: string | null
-          personalization_data?: Json
-          status?: Database["public"]["Enums"]["contact_status"]
-          current_step?: number
           last_sent_at?: string | null
+          linkedin_url?: string | null
           opened_at?: string | null
+          personalization_data?: Json | null
           replied_at?: string | null
-          reply_sentiment?: "positive" | "neutral" | "negative" | "unsubscribe" | null
-          created_at?: string
+          reply_sentiment?: string | null
+          status?: Database["public"]["Enums"]["contact_status"] | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
-          id?: string
           campaign_id?: string
-          founder_id?: string
+          company?: string | null
+          created_at?: string
+          current_step?: number | null
           email?: string | null
           first_name?: string | null
+          founder_id?: string
+          id?: string
           last_name?: string | null
-          company?: string | null
-          title?: string | null
-          linkedin_url?: string | null
-          personalization_data?: Json
-          status?: Database["public"]["Enums"]["contact_status"]
-          current_step?: number
           last_sent_at?: string | null
+          linkedin_url?: string | null
           opened_at?: string | null
+          personalization_data?: Json | null
           replied_at?: string | null
-          reply_sentiment?: "positive" | "neutral" | "negative" | "unsubscribe" | null
-          created_at?: string
+          reply_sentiment?: string | null
+          status?: Database["public"]["Enums"]["contact_status"] | null
+          title?: string | null
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_contacts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_contacts_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount_crypto: number | null
+          amount_usd: number
+          created_at: string
+          currency: Database["public"]["Enums"]["stablecoin_currency"]
+          founder_id: string
+          id: string
+          oxapay_order_id: string
+          oxapay_track_id: string
+          period_end: string | null
+          period_start: string | null
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          raw_webhook_payload: Json | null
+          status: Database["public"]["Enums"]["payment_status"]
+          subscription_id: string | null
+          updated_at: string
+          webhook_received_at: string | null
+        }
+        Insert: {
+          amount_crypto?: number | null
+          amount_usd: number
+          created_at?: string
+          currency: Database["public"]["Enums"]["stablecoin_currency"]
+          founder_id: string
+          id?: string
+          oxapay_order_id: string
+          oxapay_track_id: string
+          period_end?: string | null
+          period_start?: string | null
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          raw_webhook_payload?: Json | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          webhook_received_at?: string | null
+        }
+        Update: {
+          amount_crypto?: number | null
+          amount_usd?: number
+          created_at?: string
+          currency?: Database["public"]["Enums"]["stablecoin_currency"]
+          founder_id?: string
+          id?: string
+          oxapay_order_id?: string
+          oxapay_track_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          raw_webhook_payload?: Json | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          webhook_received_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      renewal_reminders: {
+        Row: {
+          converted: boolean
+          created_at: string
+          founder_id: string
+          id: string
+          opened: boolean
+          payment_link: string
+          payment_link_expires: string
+          reminder_type: Database["public"]["Enums"]["reminder_type"]
+          sent_at: string
+          subscription_id: string
+        }
+        Insert: {
+          converted?: boolean
+          created_at?: string
+          founder_id: string
+          id?: string
+          opened?: boolean
+          payment_link: string
+          payment_link_expires: string
+          reminder_type: Database["public"]["Enums"]["reminder_type"]
+          sent_at?: string
+          subscription_id: string
+        }
+        Update: {
+          converted?: boolean
+          created_at?: string
+          founder_id?: string
+          id?: string
+          opened?: boolean
+          payment_link?: string
+          payment_link_expires?: string
+          reminder_type?: Database["public"]["Enums"]["reminder_type"]
+          sent_at?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_reminders_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_reminders_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roadmaps: {
+        Row: {
+          agent_run_id: string | null
+          budget_monthly: number | null
+          created_at: string
+          current_phase: Database["public"]["Enums"]["roadmap_phase"] | null
+          founder_capacity_hours: number | null
+          founder_id: string
+          generated_by: string | null
+          id: string
+          is_active: boolean | null
+          phases: Json
+          start_date: string | null
+          startup_id: string
+          technical_level: string | null
+          title: string
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          agent_run_id?: string | null
+          budget_monthly?: number | null
+          created_at?: string
+          current_phase?: Database["public"]["Enums"]["roadmap_phase"] | null
+          founder_capacity_hours?: number | null
+          founder_id: string
+          generated_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          phases: Json
+          start_date?: string | null
+          startup_id: string
+          technical_level?: string | null
+          title?: string
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          agent_run_id?: string | null
+          budget_monthly?: number | null
+          created_at?: string
+          current_phase?: Database["public"]["Enums"]["roadmap_phase"] | null
+          founder_capacity_hours?: number | null
+          founder_id?: string
+          generated_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          phases?: Json
+          start_date?: string | null
+          startup_id?: string
+          technical_level?: string | null
+          title?: string
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmaps_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roadmaps_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sprints: {
+        Row: {
+          agent_run_id: string | null
+          capacity_hours: number | null
+          completion_percentage: number | null
+          created_at: string
+          focus_area: string | null
+          founder_id: string
+          generated_by: string | null
+          goals: Json
+          id: string
+          lessons_learned: Json | null
+          retro_notes: string | null
+          roadmap_id: string
+          sprint_number: number
+          status: Database["public"]["Enums"]["sprint_status"] | null
+          title: string
+          updated_at: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          agent_run_id?: string | null
+          capacity_hours?: number | null
+          completion_percentage?: number | null
+          created_at?: string
+          focus_area?: string | null
+          founder_id: string
+          generated_by?: string | null
+          goals?: Json
+          id?: string
+          lessons_learned?: Json | null
+          retro_notes?: string | null
+          roadmap_id: string
+          sprint_number: number
+          status?: Database["public"]["Enums"]["sprint_status"] | null
+          title: string
+          updated_at?: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          agent_run_id?: string | null
+          capacity_hours?: number | null
+          completion_percentage?: number | null
+          created_at?: string
+          focus_area?: string | null
+          founder_id?: string
+          generated_by?: string | null
+          goals?: Json
+          id?: string
+          lessons_learned?: Json | null
+          retro_notes?: string | null
+          roadmap_id?: string
+          sprint_number?: number
+          status?: Database["public"]["Enums"]["sprint_status"] | null
+          title?: string
+          updated_at?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprints_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprints_roadmap_id_fkey"
+            columns: ["roadmap_id"]
+            isOneToOne: false
+            referencedRelation: "roadmaps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      startups: {
+        Row: {
+          created_at: string
+          description: string | null
+          founder_id: string
+          github_repo_url: string | null
+          id: string
+          industry: string | null
+          is_active: boolean | null
+          landing_page_url: string | null
+          name: string
+          stage: string | null
+          tagline: string | null
+          target_audience: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          founder_id: string
+          github_repo_url?: string | null
+          id?: string
+          industry?: string | null
+          is_active?: boolean | null
+          landing_page_url?: string | null
+          name: string
+          stage?: string | null
+          tagline?: string | null
+          target_audience?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          founder_id?: string
+          github_repo_url?: string | null
+          id?: string
+          industry?: string | null
+          is_active?: boolean | null
+          landing_page_url?: string | null
+          name?: string
+          stage?: string | null
+          tagline?: string | null
+          target_audience?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "startups_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          expires_at: string
+          founder_id: string
+          id: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          renewed_at: string | null
+          started_at: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          tasks_limit: number
+          tasks_used_this_cycle: number
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at: string
+          founder_id: string
+          id?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          renewed_at?: string | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tasks_limit?: number
+          tasks_used_this_cycle?: number
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string
+          founder_id?: string
+          id?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          renewed_at?: string | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tasks_limit?: number
+          tasks_used_this_cycle?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: true
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          actual_hours: number | null
+          agent_config: Json | null
+          agent_output: Json | null
+          agent_run_id: string | null
+          auto_executable: boolean | null
+          blocked_reason: string | null
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          definition_of_done: string | null
+          delegated_to_agent: string | null
+          description: string | null
+          estimated_hours: number | null
+          execute_label: string | null
+          execution_completed_at: string | null
+          execution_started_at: string | null
+          founder_id: string
+          id: string
+          priority: number | null
+          sprint_id: string
+          status: Database["public"]["Enums"]["task_status"] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          agent_config?: Json | null
+          agent_output?: Json | null
+          agent_run_id?: string | null
+          auto_executable?: boolean | null
+          blocked_reason?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          definition_of_done?: string | null
+          delegated_to_agent?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          execute_label?: string | null
+          execution_completed_at?: string | null
+          execution_started_at?: string | null
+          founder_id: string
+          id?: string
+          priority?: number | null
+          sprint_id: string
+          status?: Database["public"]["Enums"]["task_status"] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          agent_config?: Json | null
+          agent_output?: Json | null
+          agent_run_id?: string | null
+          auto_executable?: boolean | null
+          blocked_reason?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          definition_of_done?: string | null
+          delegated_to_agent?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          execute_label?: string | null
+          execution_completed_at?: string | null
+          execution_started_at?: string | null
+          founder_id?: string
+          id?: string
+          priority?: number | null
+          sprint_id?: string
+          status?: Database["public"]["Enums"]["task_status"] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      deduct_agent_credit: {
-        Args: {
-          p_founder_id: string
-        }
-        Returns: number
-      }
       acquire_integration_lock: {
-        Args: {
-          p_founder_id: string
-        }
+        Args: { p_founder_id: string }
         Returns: boolean
       }
+      deduct_agent_credit: { Args: { p_founder_id: string }; Returns: number }
     }
     Enums: {
-      agent_status: "queued" | "running" | "success" | "partial" | "error" | "cancelled" | "timeout"
-      subscription_plan: "starter" | "builder" | "founder" | "studio"
-      subscription_status: "trialing" | "pending_payment" | "active" | "expiring_soon" | "expired" | "cancelled"
-      stablecoin_currency: "USDT" | "USDC"
-      payment_status: "pending" | "confirming" | "confirmed" | "expired" | "failed"
-      reminder_type: "5_day" | "1_day" | "expired"
-      task_status: "todo" | "in_progress" | "done" | "blocked" | "deferred"
-      sprint_status: "planned" | "active" | "completed" | "cancelled"
-      contact_status: "pending" | "draft_created" | "sent" | "opened" | "replied" | "bounced" | "unsubscribed"
-      campaign_status: "draft" | "pending_approval" | "approved" | "sending" | "active" | "paused" | "completed"
-      integration_provider: "github" | "gmail" | "linkedin" | "stripe [v2 - deferred]" | "notion" | "airtable" | "posthog" | "calcom"
-      integration_status: "active" | "expired" | "revoked" | "error"
-      milestone_status: "not_started" | "in_progress" | "at_risk" | "completed" | "missed"
-      idea_status: "hypothesis" | "exploring" | "validated" | "rejected" | "selected"
-      roadmap_phase: "phase_1" | "phase_2" | "phase_3"
-      decision_reversibility: "easily_reversible" | "hard_to_reverse" | "irreversible"
+      agent_status:
+        | "queued"
+        | "running"
+        | "success"
+        | "partial"
+        | "error"
+        | "cancelled"
+        | "timeout"
+      campaign_status:
+        | "draft"
+        | "pending_approval"
+        | "approved"
+        | "sending"
+        | "active"
+        | "paused"
+        | "completed"
       confidence_level: "low" | "medium" | "high"
+      contact_status:
+        | "pending"
+        | "draft_created"
+        | "sent"
+        | "opened"
+        | "replied"
+        | "bounced"
+        | "unsubscribed"
+      decision_reversibility:
+        | "easily_reversible"
+        | "hard_to_reverse"
+        | "irreversible"
+      idea_status:
+        | "hypothesis"
+        | "exploring"
+        | "validated"
+        | "rejected"
+        | "selected"
+      integration_provider:
+        | "github"
+        | "gmail"
+        | "linkedin"
+        | "stripe [v2 - deferred]"
+        | "notion"
+        | "airtable"
+        | "posthog"
+        | "calcom"
+        | "vercel"
+        | "resend"
+        | "zapier"
+        | "karnex_hub"
+      integration_status: "active" | "expired" | "revoked" | "error"
+      milestone_status:
+        | "not_started"
+        | "in_progress"
+        | "at_risk"
+        | "completed"
+        | "missed"
+      payment_status:
+        | "pending"
+        | "confirming"
+        | "confirmed"
+        | "expired"
+        | "failed"
+      reminder_type: "5_day" | "1_day" | "expired"
+      roadmap_phase: "phase_1" | "phase_2" | "phase_3"
+      sprint_status: "planned" | "active" | "completed" | "cancelled"
+      stablecoin_currency: "USDT" | "USDC"
+      subscription_plan: "starter" | "builder" | "founder" | "studio"
+      subscription_status:
+        | "trialing"
+        | "pending_payment"
+        | "active"
+        | "expiring_soon"
+        | "expired"
+        | "cancelled"
+      task_status:
+        | "todo"
+        | "in_progress"
+        | "done"
+        | "blocked"
+        | "deferred"
+        | "pending_approval"
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
 
-// Custom defined interfaces for application use
-export interface TaskAgentConfig {
-  agent_id: string;
-  pre_populated_input: Record<string, unknown>;
-  context_summary: string;
-  estimated_duration_seconds: number;
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      agent_status: [
+        "queued",
+        "running",
+        "success",
+        "partial",
+        "error",
+        "cancelled",
+        "timeout",
+      ],
+      campaign_status: [
+        "draft",
+        "pending_approval",
+        "approved",
+        "sending",
+        "active",
+        "paused",
+        "completed",
+      ],
+      confidence_level: ["low", "medium", "high"],
+      contact_status: [
+        "pending",
+        "draft_created",
+        "sent",
+        "opened",
+        "replied",
+        "bounced",
+        "unsubscribed",
+      ],
+      decision_reversibility: [
+        "easily_reversible",
+        "hard_to_reverse",
+        "irreversible",
+      ],
+      idea_status: [
+        "hypothesis",
+        "exploring",
+        "validated",
+        "rejected",
+        "selected",
+      ],
+      integration_provider: [
+        "github",
+        "gmail",
+        "linkedin",
+        "stripe [v2 - deferred]",
+        "notion",
+        "airtable",
+        "posthog",
+        "calcom",
+        "vercel",
+        "resend",
+        "zapier",
+        "karnex_hub",
+      ],
+      integration_status: ["active", "expired", "revoked", "error"],
+      milestone_status: [
+        "not_started",
+        "in_progress",
+        "at_risk",
+        "completed",
+        "missed",
+      ],
+      payment_status: [
+        "pending",
+        "confirming",
+        "confirmed",
+        "expired",
+        "failed",
+      ],
+      reminder_type: ["5_day", "1_day", "expired"],
+      roadmap_phase: ["phase_1", "phase_2", "phase_3"],
+      sprint_status: ["planned", "active", "completed", "cancelled"],
+      stablecoin_currency: ["USDT", "USDC"],
+      subscription_plan: ["starter", "builder", "founder", "studio"],
+      subscription_status: [
+        "trialing",
+        "pending_payment",
+        "active",
+        "expiring_soon",
+        "expired",
+        "cancelled",
+      ],
+      task_status: [
+        "todo",
+        "in_progress",
+        "done",
+        "blocked",
+        "deferred",
+        "pending_approval",
+      ],
+    },
+  },
+} as const
+
+export interface AutomationRecipeCatalog {
+  id: string
+  title: string
+  trigger_description: string
+  action_description: string
+  required_providers: string[]
+  trigger_type: string
+  trigger_config: Json
+  sort_order: number
+  created_at?: string
 }
 
 export interface AutomationRule {
-  id: string;
-  name: string;
-  trigger: string;
-  action: string;
-  enabled: boolean;
+  recipe_id: string
+  enabled: boolean
+  updated_at?: string
 }
 
-export type OnboardingStep = 0 | 1 | 2 | 3 | 4;
+export interface TaskAgentConfig {
+  agent_id: string
+  pre_populated_input: Record<string, unknown>
+  context_summary: string
+  estimated_duration_seconds: number
+  step_labels?: string[]
+}
+
+export type OnboardingStep = 0 | 1 | 2 | 3 | 4

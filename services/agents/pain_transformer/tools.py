@@ -1,9 +1,11 @@
 """Tools for the Pain-to-Product Transformer agent."""
 
 import re
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote
+
 import httpx
+
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
 
@@ -78,7 +80,7 @@ def web_search(query: str) -> str:
         return f"No direct search results found for: '{query}'. Proceeding with default market insights."
     except Exception as e:
         logger.warning(f"Web search failed for query '{query}': {str(e)}")
-        return f"Web search currently unavailable. Fallback: proceed using core product heuristics."
+        return "Web search currently unavailable. Fallback: proceed using core product heuristics."
 
 
 def karnex_memory_read(founder_id: str, namespace: str, key: str) -> Optional[Dict[str, Any]]:

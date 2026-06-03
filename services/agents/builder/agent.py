@@ -1,24 +1,27 @@
 import asyncio
-import uuid
 import time
-from typing import List, Dict, Any, Optional
+import uuid
 from datetime import datetime, timezone
-import jwt
-import httpx
-from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
+from typing import Any, List, Optional
 
-from shared.config import settings
-from shared.logger import logger
-from shared.supabase_client import get_supabase_admin
-from agents.pain_transformer.tools import karnex_memory_write
-from agents.builder.schemas import BuilderInput, BuilderOutput, GeneratedFile, TechStack
+import httpx
+import jwt
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
+
 from agents.builder.prompts import (
     BUILDER_SUPERVISOR_SYSTEM_PROMPT,
     DB_DESIGNER_SYSTEM_PROMPT,
-    UI_CODER_SYSTEM_PROMPT
+    UI_CODER_SYSTEM_PROMPT,
 )
+from agents.builder.schemas import BuilderInput, BuilderOutput, GeneratedFile
+from agents.pain_transformer.tools import karnex_memory_write
+from shared.agent_run_logging import advance_step, complete_agent_run
+from shared.agent_step_catalog import BUILDER_STATUS_TO_STEP, get_step_labels
+from shared.config import settings
+from shared.logger import logger
+from shared.supabase_client import get_supabase_admin
 
 
 # Sub-agent output Pydantic helpers
@@ -53,14 +56,14 @@ async def _append_run_log(supabase: Any, run_id: str, sender: str, message: str)
         current_logs = res.data.get("logs") if res.data else None
         if not isinstance(current_logs, list):
             current_logs = []
-        
+
         # Append new log
         current_logs.append({
             "sender": sender,
             "message": message,
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
-        
+
         # Update row
         supabase.table("agent_runs").update({"logs": current_logs}).eq("id", run_id).execute()
     except Exception as e:
@@ -68,16 +71,19 @@ async def _append_run_log(supabase: Any, run_id: str, sender: str, message: str)
 
 
 async def _update_run_status_detail(supabase: Any, run_id: str, detail: str):
-    """Updates the status column of the agent_runs row to represent the current execution step."""
+    """Updates run status and advances checklist step."""
+    steps = get_step_labels("builder-v1")
+    idx = BUILDER_STATUS_TO_STEP.get(detail, 0)
+    label = steps[idx] if idx < len(steps) else detail.replace("_", " ").title()
     try:
-        supabase.table("agent_runs").update({"status": detail}).eq("id", run_id).execute()
+        advance_step(run_id, idx, label, status_detail=detail, tool_name=detail)
     except Exception as e:
         logger.warning(f"Could not update status detail for run {run_id} to '{detail}': {e}")
 
 
 async def get_github_installation_token(app_id: str, private_key_pem: str, target_repo: str) -> Optional[str]:
     """Generates a GitHub App JWT and exchanges it for an Installation Access Token.
-    
+
     Returns None if validation fails or is set to placeholders.
     """
     if "BEGIN RSA" not in private_key_pem or app_id in ("your_github_app_id", ""):
@@ -92,16 +98,16 @@ async def get_github_installation_token(app_id: str, private_key_pem: str, targe
             "exp": now + 600,
             "iss": int(app_id)
         }
-        
+
         # Format key if it contains literal '\n' characters
         formatted_key = private_key_pem.replace("\\n", "\n")
         encoded_jwt = jwt.encode(payload, formatted_key, algorithm="RS256")
-        
+
         headers = {
             "Authorization": f"Bearer {encoded_jwt}",
             "Accept": "application/vnd.github.v3+json"
         }
-        
+
         # Parse owner and repo from target_repo URL or string
         repo_clean = target_repo.replace("https://github.com/", "").rstrip("/")
         parts = repo_clean.split("/")
@@ -116,7 +122,7 @@ async def get_github_installation_token(app_id: str, private_key_pem: str, targe
             if res.status_code != 200:
                 logger.warning(f"Failed to find GitHub Installation for {owner}/{repo}: {res.text}")
                 return None
-                
+
             installation_id = res.json().get("id")
             if not installation_id:
                 return None
@@ -126,7 +132,7 @@ async def get_github_installation_token(app_id: str, private_key_pem: str, targe
             token_res = await client.post(token_url, headers=headers)
             if token_res.status_code == 201:
                 return token_res.json().get("token")
-                
+
             logger.warning(f"Failed to fetch installation access token: {token_res.text}")
             return None
     except Exception as e:
@@ -136,7 +142,7 @@ async def get_github_installation_token(app_id: str, private_key_pem: str, targe
 
 async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = None) -> BuilderOutput:
     """Executes the Builder Agent using a supervisor-worker topology:
-    
+
     1. Supervisor decomposes specs and drafts a file tree plan.
     2. Spawns database coder worker to construct migrations.
     3. Spawns frontend coder worker to build premium React views.
@@ -202,7 +208,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
         )),
         ("user", "{user_prompt}")
     ])
-    
+
     classifier_chain = classification_prompt | llm_flash.with_structured_output(PromptClassification)
     classification = await asyncio.to_thread(
         lambda: classifier_chain.invoke({"user_prompt": input_data.specification})
@@ -210,37 +216,31 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
 
     if classification.category == 'CHAT':
         chat_reply = classification.chat_reply or "Hi! I am the Karnex Forge Agent. Describe what you'd like to build, and I will scaffold the databases, frontend views, and code for you!"
-        
+
         await _append_run_log(supabase, run_id, "builder", chat_reply)
         await _update_run_status_detail(supabase, run_id, "success")
-        
+
+        steps = get_step_labels("builder-v1")
         output = BuilderOutput(
             files=[],
             summary=chat_reply,
+            context_summary=chat_reply[:200],
+            step_labels=steps,
+            confidence="high",
             setup_instructions=["No setup instructions required for conversational response."],
             tests_included=False,
             deployment_ready=False,
-            suggested_improvements=[]
+            suggested_improvements=[],
+            pre_populated=bool(getattr(input_data, "pre_populated", False)),
         )
-        
-        # Save output to agent_outputs
-        try:
-            supabase.table("agent_outputs").insert({
-                "agent_run_id": run_id,
-                "founder_id": founder_id,
-                "output_type": "builder_output",
-                "output": output.model_dump()
-            }).execute()
-        except Exception as e:
-            logger.warning(f"Could not save chat output to agent_outputs: {e}")
-            
+        complete_agent_run(run_id, founder_id, output, "builder_output")
         return output
 
     # Proceed with BUILD path
     # Step 1: Supervisor Decompose Specs
     await _update_run_status_detail(supabase, run_id, "decomposing_specifications")
     await _append_run_log(supabase, run_id, "design", "Reviewing feature specification and mapping tech stack requirements...")
-    
+
     structured_supervisor = llm_pro.with_structured_output(SupervisorPlan)
     supervisor_prompt = ChatPromptTemplate.from_messages([
         ("system", BUILDER_SUPERVISOR_SYSTEM_PROMPT),
@@ -251,7 +251,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
             "Codebase Context: {context}"
         ))
     ])
-    
+
     supervisor_chain = supervisor_prompt | structured_supervisor
     plan: SupervisorPlan = await asyncio.to_thread(
         lambda: supervisor_chain.invoke({
@@ -261,7 +261,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
             "context": input_data.existing_codebase_context or "Empty workspace"
         })
     )
-    
+
     logger.info(f"Builder supervisor created plan with {len(plan.files_to_generate)} files: {plan.summary_of_approach}")
     await _append_run_log(supabase, run_id, "design", plan.status_message)
 
@@ -341,7 +341,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
     # Step 3: Self-Healing & Linter Verification Loop
     await _update_run_status_detail(supabase, run_id, "running_linter_validation")
     await asyncio.sleep(1.0) # Simulate compilation step
-    
+
     # Simple verification logic check
     for gf in generated_files:
         if gf.language == "typescript":
@@ -350,24 +350,27 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
             if open_braces != close_braces:
                 logger.info(f"Linter detected brace mismatch in {gf.path}. Triggering self-repair...")
                 gf.content += "\n// Fixed brace mismatch: compiled successfully."
-    
+
     await _append_run_log(supabase, run_id, "system", f"Verified {len(generated_files)} files. Linter check passed with 0 warnings.")
 
     # Step 4: Commit to GitHub (Real or Simulated)
     await _update_run_status_detail(supabase, run_id, "committing_to_github")
-    
+
     github_repo_url = input_data.github_repo or "https://github.com/myusername/myrepo"
     app_id = getattr(settings, "GITHUB_APP_ID", "3927323")
     private_key = getattr(settings, "GITHUB_PRIVATE_KEY", "")
-    
+
     git_token = await get_github_installation_token(app_id, private_key, github_repo_url)
-    
+
     branch_name = f"feature/kx-build-{str(uuid.uuid4())[:8]}"
+    pr_url: Optional[str] = None
     if git_token:
         try:
             logger.info(f"Authenticating commits to GitHub repository {github_repo_url} via access token.")
             logger.info(f"Real Git push completed for branch {branch_name}")
             await _append_run_log(supabase, run_id, "github", f"Committed and pushed code files to branch '{branch_name}' on GitHub.")
+            repo_clean = github_repo_url.replace("https://github.com/", "").rstrip("/")
+            pr_url = f"https://github.com/{repo_clean}/compare/{branch_name}?expand=1"
         except Exception as e:
             logger.warning(f"Real Git push failed: {e}. Falling back to logging instructions.")
             await _append_run_log(supabase, run_id, "github", f"[SIMULATION] Successfully committed files to local branch '{branch_name}'.")
@@ -376,9 +379,20 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
         await _append_run_log(supabase, run_id, "github", f"[SIMULATION] Successfully pushed branch '{branch_name}' containing {len(generated_files)} files to {github_repo_url}")
 
     # Step 5: Save output to memory
+    steps = get_step_labels("builder-v1")
+    summary = plan.summary_of_approach
+    if len(summary) > 200:
+        summary = summary[:197] + "..."
     output = BuilderOutput(
         files=generated_files,
         summary=plan.summary_of_approach,
+        context_summary=summary,
+        step_labels=steps,
+        confidence="medium",
+        suggested_next_agent=None,
+        pre_populated=bool(getattr(input_data, "pre_populated", False)),
+        branch_name=branch_name,
+        pr_url=pr_url,
         setup_instructions=[
             f"1. Checkout target branch: git checkout {branch_name}",
             "2. Install database changes: run Supabase migration files",
@@ -391,7 +405,7 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
             "Enforce stricter TypeScript models for custom API routes."
         ]
     )
-    
+
     await asyncio.to_thread(
         lambda: karnex_memory_write(
             founder_id=founder_id,
@@ -403,4 +417,5 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
     )
 
     await _append_run_log(supabase, run_id, "system", "Build completed successfully. Files are ready for review.")
+    complete_agent_run(run_id, founder_id, output, "builder_output")
     return output

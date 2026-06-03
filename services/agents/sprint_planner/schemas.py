@@ -1,5 +1,9 @@
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
+
+from shared.schemas.agent_envelope import AgentOutputBase
+
 
 class WeeklyGoal(BaseModel):
     week_number: int = Field(..., description="Week number.")
@@ -17,6 +21,7 @@ class TaskAgentConfig(BaseModel):
     pre_populated_input: dict = Field(default={}, description="Input arguments and settings pre-configured for the agent run.")
     context_summary: str = Field(..., description="Short explanation of what the agent will do.")
     estimated_duration_seconds: int = Field(..., description="Estimated runtime in seconds.")
+    step_labels: List[str] = Field(default_factory=list, description="Live checklist labels for one-click execution.")
 
 class SprintTask(BaseModel):
     title: str = Field(..., description="Short title of the task.")
@@ -47,5 +52,11 @@ class SprintPlannerInput(BaseModel):
     completed_last_week: Optional[List[str]] = Field(default=[], description="Tasks completed in the previous sprint.")
     deferred_tasks: Optional[List[str]] = Field(default=[], description="Unresolved tasks to roll over.")
 
-class SprintPlannerOutput(BaseModel):
+class SprintPlannerLLMOutput(BaseModel):
+    """Structured LLM payload (envelope fields added in agent)."""
+
+    sprint: Sprint = Field(..., description="The generated weekly sprint plan.")
+
+
+class SprintPlannerOutput(AgentOutputBase):
     sprint: Sprint = Field(..., description="The generated weekly sprint plan.")

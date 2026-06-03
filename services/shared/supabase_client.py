@@ -1,6 +1,7 @@
 """Service-role Supabase client for server-side operations (bypasses RLS)."""
 
-from supabase import create_client, Client
+from supabase import Client, create_client
+
 from shared.config import settings
 
 

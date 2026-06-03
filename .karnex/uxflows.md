@@ -7,7 +7,11 @@
 ## Karnex 2.0 Navigation Model
 
 - New 5-item sidebar: Home  Studio  Integrations  Vault  Settings
-- Deprecated pages: /ideas, /warroom, /agents, /compass (all folded into Home or Studio)
+- Deprecated pages (removed — redirect in middleware + next.config):
+  - `/dashboard`, `/warroom`, `/agents`, `/compass` → `/home`
+  - `/ideas` → `/vault`
+  - `/forge` → `/studio`
+  - `/billing` → `/settings?tab=billing`
 - New page: /home (The Journey page  daily HQ)
 - New page: /studio (Simplified Forge  CTO over shoulder)
 - New page: /integrations (Connect  Automate  Status)
@@ -108,7 +112,7 @@ Step 4: Roadmap Generation & Sprints (30s)
 Sidebar Navigation:
    Home (HQ)       /home          The Journey page (daily HQ, standups, 3 tasks)
    Studio          /studio        Simplified Forge (CTO-over-shoulder chat + live preview)
-   Integrations    /integrations  Connect integrations, automation recipes, and status
+   Integrations    /integrations  Hub: Connect (/integrations), Automate (/integrations/automate), Status (/integrations/status)
    Vault           /vault         Browse outputs, briefs, documents, code assets
    Settings        /settings      Manage Profile, Billing (pricing tiers), and Advanced (agents)
 ```

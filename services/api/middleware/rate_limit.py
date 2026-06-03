@@ -3,7 +3,8 @@
 import time
 from collections import defaultdict
 from typing import Dict, List
-from fastapi import Request, HTTPException, status
+
+from fastapi import HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
@@ -26,13 +27,13 @@ class MemorySlidingWindowRateLimiter:
         """
         now = time.time()
         cutoff = now - self.window_seconds
-        
+
         # Prune old timestamps
         self.history[client_id] = [t for t in self.history[client_id] if t > cutoff]
-        
+
         if len(self.history[client_id]) >= self.limit:
             return False
-            
+
         self.history[client_id].append(now)
         return True
 

@@ -18,6 +18,63 @@ function getAgentServiceBaseUrl(): string {
   return raw.replace(/\/$/, '')
 }
 
+const ENVELOPE_BY_AGENT: Record<
+  string,
+  { step_labels: string[]; suggested_next_agent: string | null }
+> = {
+  'pain-transformer': {
+    step_labels: ['Searching market context', 'Generating hypotheses', 'Saving to memory'],
+    suggested_next_agent: 'idea-crystallizer-v1',
+  },
+  'idea-crystallizer': {
+    step_labels: ['Reading product context', 'Crystallizing brief', 'Saving brief'],
+    suggested_next_agent: 'competitive-landscape-v1',
+  },
+  'icp-definer': {
+    step_labels: ['Reading brief', 'Defining ICP and personas', 'Saving ICP'],
+    suggested_next_agent: 'war-room-v1',
+  },
+  'war-room': {
+    step_labels: ['Reading founder context', 'Planning 90-day roadmap', 'Saving roadmap'],
+    suggested_next_agent: 'sprint-planner-v1',
+  },
+}
+
+function withEnvelope(agentId: string, payload: Record<string, unknown>, contextSummary: string) {
+  const meta = ENVELOPE_BY_AGENT[agentId] ?? {
+    step_labels: ['Running agent pipeline'],
+    suggested_next_agent: null,
+  }
+  return {
+    ...payload,
+    context_summary: contextSummary,
+    step_labels: meta.step_labels,
+    confidence: (payload.confidence as string) ?? 'medium',
+    suggested_next_agent: meta.suggested_next_agent,
+    pre_populated: false,
+  }
+}
+
+async function tryBackendPost(
+  path: string,
+  body: unknown,
+  authHeader: string | null
+): Promise<Record<string, unknown> | null> {
+  if (!authHeader) return null
+  try {
+    const res = await fetch(`${getAgentServiceBaseUrl()}/v1/agents/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+      body: JSON.stringify(body),
+    })
+    if (res.ok) return (await res.json()) as Record<string, unknown>
+    console.warn(`Backend ${path} returned status:`, res.status)
+  } catch (err) {
+    console.warn(`Failed to call backend ${path}:`, err)
+  }
+  return null
+}
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ agentId: string }> }
@@ -106,24 +163,60 @@ async function runAgentInBackground(
 
       // Fallback to high-quality mock if backend fails or keys missing
       if (!backendSuccess) {
-        // Wait ~6 seconds to simulate processing
         await new Promise((r) => setTimeout(r, 6000))
-        output = generateMockHypotheses(painDescription)
+        output = withEnvelope(
+          'pain-transformer',
+          generateMockHypotheses(painDescription) as Record<string, unknown>,
+          'I analyzed your pain and generated 3 product hypotheses.'
+        )
       }
 
     } else if (agentId === 'idea-crystallizer') {
       const selectedHyp = input.selected_hypothesis || {}
-      
-      // Wait ~8 seconds to simulate idea crystallizing
-      await new Promise((r) => setTimeout(r, 8000))
-      output = generateMockBrief(selectedHyp)
+      const backend = await tryBackendPost(
+        'idea-crystallizer',
+        {
+          selected_hypothesis: selectedHyp,
+          founder_preferences: input.founder_preferences,
+          additional_context: input.additional_context,
+        },
+        authHeader
+      )
+      if (backend) {
+        output = backend
+      } else {
+        await new Promise((r) => setTimeout(r, 8000))
+        const brief = generateMockBrief(selectedHyp)
+        const name = (brief as { product_brief?: { selected_name?: string } }).product_brief
+          ?.selected_name
+        output = withEnvelope(
+          'idea-crystallizer',
+          brief as Record<string, unknown>,
+          `I turned your hypothesis into a product brief for ${name ?? 'your product'}.`
+        )
+      }
 
     } else if (agentId === 'icp-definer') {
       const productBrief = input.product_brief || {}
-      
-      // Wait ~8 seconds to simulate customer definition
-      await new Promise((r) => setTimeout(r, 8000))
-      output = generateMockICP(productBrief)
+      const backend = await tryBackendPost(
+        'icp-definer',
+        {
+          product_brief: productBrief,
+          competitive_landscape: input.competitive_landscape,
+          founder_intuition: input.founder_intuition,
+        },
+        authHeader
+      )
+      if (backend) {
+        output = backend
+      } else {
+        await new Promise((r) => setTimeout(r, 8000))
+        output = withEnvelope(
+          'icp-definer',
+          generateMockICP(productBrief) as Record<string, unknown>,
+          'I defined your ICP and 3 personas for early outreach.'
+        )
+      }
 
     } else if (agentId === 'war-room') {
       // Try backend first
@@ -154,9 +247,12 @@ async function runAgentInBackground(
       }
 
       if (!backendSuccess) {
-        // Wait ~8 seconds to simulate roadmap generation
         await new Promise((r) => setTimeout(r, 8000))
-        output = generateMockRoadmap(input.product_brief?.selected_name || 'My Startup')
+        output = withEnvelope(
+          'war-room',
+          generateMockRoadmap(input.product_brief?.selected_name || 'My Startup') as Record<string, unknown>,
+          'I built your 90-day roadmap across 3 phases within your weekly capacity.'
+        )
       }
     } else {
       throw new Error(`Unsupported onboarding agent: ${agentId}`)
@@ -165,6 +261,7 @@ async function runAgentInBackground(
     const duration = Date.now() - startTime
 
     // Save outputs
+    const outRecord = output as Record<string, unknown>
     const { error: outErr } = await supabase
       .from('agent_outputs')
       .insert({
@@ -172,6 +269,8 @@ async function runAgentInBackground(
         founder_id: founderId,
         output_type: agentId,
         output: output,
+        confidence: (outRecord.confidence as string) ?? 'medium',
+        suggested_next_agent: (outRecord.suggested_next_agent as string) ?? null,
       })
 
     if (outErr) throw outErr

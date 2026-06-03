@@ -1,10 +1,10 @@
 """Database helper tools for the Daily Standup agent."""
 
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
-from agents.pain_transformer.tools import karnex_memory_read, karnex_memory_write
 
 
 def get_active_sprint_tasks(founder_id: str) -> List[Dict[str, Any]]:
@@ -29,7 +29,7 @@ def get_active_sprint_tasks(founder_id: str) -> List[Dict[str, Any]]:
         if not sprint_res.data:
             logger.info(f"No active sprint found for founder: {founder_id}")
             return []
-        
+
         sprint_id = sprint_res.data[0]["id"]
         # Find tasks in that sprint
         tasks_res = (
@@ -67,13 +67,13 @@ def update_task_status_by_name(
         # Try to find a match by title (case-insensitive)
         best_match = None
         task_name_clean = task_name.lower().strip()
-        
+
         # 1. Exact match
         for t in tasks:
             if t["title"].lower().strip() == task_name_clean:
                 best_match = t
                 break
-                
+
         # 2. Substring match
         if not best_match:
             for t in tasks:
@@ -88,16 +88,16 @@ def update_task_status_by_name(
                 payload["completed_at"] = datetime.now(timezone.utc).isoformat()
             else:
                 payload["completed_at"] = None
-                
+
             if status == "blocked" and blocked_reason:
                 payload["blocked_reason"] = blocked_reason
             else:
                 payload["blocked_reason"] = None
-                
+
             supabase.table("tasks").update(payload).eq("id", best_match["id"]).execute()
             logger.info(f"Updated task '{best_match['title']}' (id: {best_match['id']}) to '{status}' for founder {founder_id}")
             return True
-            
+
         logger.info(f"Could not find matching task for '{task_name}' in active sprint tasks.")
         return False
     except Exception as e:

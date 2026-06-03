@@ -1,7 +1,9 @@
 """API endpoints for founder profiles and metrics."""
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, HTTPException, status
+
 from api.dependencies import get_current_user
 from shared.supabase_client import get_supabase_admin
 

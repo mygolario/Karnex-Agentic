@@ -80,9 +80,10 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   )
   if (isAuthPage && user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/home'
     return NextResponse.redirect(url)
   }
 
+  supabaseResponse.headers.set('x-pathname', request.nextUrl.pathname)
   return supabaseResponse
 }

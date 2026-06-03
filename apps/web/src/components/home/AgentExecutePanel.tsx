@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { getAgentApiUrl, readAgentError } from '@/lib/agent-service'
+import React, { useEffect } from 'react'
+import { useAgent } from '@/hooks/use-agent'
 
 export interface AgentTask {
   id: string
@@ -10,7 +9,7 @@ export interface AgentTask {
   description: string | null
   priority: number
   category: 'build' | 'research' | 'outreach' | 'content' | 'design' | 'finance' | 'legal' | 'other'
-  status: 'todo' | 'in_progress' | 'done' | 'blocked' | 'deferred'
+  status: 'todo' | 'in_progress' | 'done' | 'blocked' | 'deferred' | 'pending_approval'
   agent_config: Record<string, unknown> | null
   agent_output: Record<string, unknown> | null
   execute_label: string | null
@@ -89,219 +88,37 @@ export default function AgentExecutePanel({
   task,
   isOpen,
   onClose,
-  founderId,
+  founderId: _founderId,
   onTaskComplete,
 }: AgentExecutePanelProps) {
-  const supabase = createSupabaseBrowserClient()
+  const {
+    progress: executionProgress,
+    logs: executionLogs,
+    output: executionOutput,
+    error,
+    isExecuting,
+    execute: handleExecute,
+    retry,
+    reset,
+    stepLabel,
+    checklistSteps,
+  } = useAgent({
+    task,
+    enabled: isOpen,
+    onTaskComplete,
+  })
 
-  const [isExecuting, setIsExecuting] = useState(false)
-  const [executionRunId, setExecutionRunId] = useState<string | null>(null)
-  const [executionStatus, setExecutionStatus] = useState<string>('idle')
-  const [executionProgress, setExecutionProgress] = useState(0)
-  const [executionLogs, setExecutionLogs] = useState<string[]>([])
-  const [executionOutput, setExecutionOutput] = useState<Record<string, unknown> | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  // Reset state when task changes or panel closes
   useEffect(() => {
     if (!isOpen) {
-      // Delay reset so close animation can play
-      const t = setTimeout(() => {
-        setIsExecuting(false)
-        setExecutionRunId(null)
-        setExecutionStatus('idle')
-        setExecutionProgress(0)
-        setExecutionLogs([])
-        setExecutionOutput(null)
-        setError(null)
-      }, 300)
+      const t = setTimeout(() => reset(), 300)
       return () => clearTimeout(t)
     }
-  }, [isOpen])
-
-  // Handle execution completion
-  const handleSuccess = useCallback(async (runId: string) => {
-    if (!task) return
-    try {
-      const { data: outRes } = await supabase
-        .from('agent_outputs')
-        .select('output')
-        .eq('agent_run_id', runId)
-        .maybeSingle()
-
-      const output = (outRes?.output as Record<string, unknown>) || { summary: 'Agent completed task successfully.' }
-      setExecutionOutput(output)
-      setIsExecuting(false)
-
-      // Update task in DB
-      await supabase
-        .from('tasks')
-        .update({
-          status: 'done',
-          completed_at: new Date().toISOString(),
-          agent_output: output,
-        })
-        .eq('id', task.id)
-
-      onTaskComplete?.(task.id)
-    } catch (err) {
-      console.error('Error handling execution success:', err)
-      setExecutionOutput({ summary: 'Task completed.' })
-      setIsExecuting(false)
-      onTaskComplete?.(task.id)
-    }
-  }, [task, supabase, onTaskComplete])
-
-  // Realtime subscription to agent_runs
-  useEffect(() => {
-    if (!executionRunId || executionStatus === 'success' || executionStatus === 'error') return
-
-    const channel = supabase
-      .channel(`agent-run-${executionRunId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'agent_runs',
-          filter: `id=eq.${executionRunId}`,
-        },
-        (payload: { new: Record<string, unknown> }) => {
-          const newStatus = payload.new.status as string
-          setExecutionStatus(newStatus)
-
-          // Map status to progress
-          if (newStatus === 'queued') setExecutionProgress(20)
-          else if (newStatus === 'running') setExecutionProgress(60)
-          else if (newStatus === 'success') {
-            setExecutionProgress(100)
-            handleSuccess(executionRunId)
-          } else if (newStatus === 'error') {
-            setExecutionProgress(100)
-            setIsExecuting(false)
-            const errMsg = (payload.new.error_message as string) || 'Agent failed to run.'
-            setExecutionLogs((prev) => [...prev, `❌ Error: ${errMsg}`])
-            setError(errMsg)
-          }
-        }
-      )
-      .subscribe()
-
-    // Also poll as a fallback (Realtime may not be enabled for all tables)
-    const interval = setInterval(async () => {
-      const { data: run } = await supabase
-        .from('agent_runs')
-        .select('status, error_message')
-        .eq('id', executionRunId)
-        .single()
-
-      if (run) {
-        setExecutionStatus(run.status)
-        if (run.status === 'queued') setExecutionProgress(20)
-        else if (run.status === 'running') setExecutionProgress(60)
-        else if (run.status === 'success') {
-          setExecutionProgress(100)
-          clearInterval(interval)
-          handleSuccess(executionRunId)
-        } else if (run.status === 'error') {
-          setExecutionProgress(100)
-          clearInterval(interval)
-          setIsExecuting(false)
-          setError(run.error_message || 'Agent failed.')
-        }
-      }
-    }, 3000)
-
-    return () => {
-      supabase.removeChannel(channel)
-      clearInterval(interval)
-    }
-  }, [executionRunId, executionStatus, supabase, handleSuccess])
-
-  // Trigger execution
-  const handleExecute = async () => {
-    if (!task) return
-    setIsExecuting(true)
-    setExecutionStatus('queued')
-    setExecutionProgress(10)
-    setExecutionOutput(null)
-    setError(null)
-    setExecutionLogs([
-      'Initializing agent pipeline...',
-      'Validating task configuration and quotas...',
-    ])
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        setError('Not authenticated. Please refresh.')
-        setIsExecuting(false)
-        return
-      }
-
-      const config = (task.agent_config || {}) as Record<string, unknown>
-      const endpoint = getCategoryEndpoint(task.category)
-      let payload: Record<string, unknown> = {}
-
-      // Use pre_populated_input if available, else build category-specific defaults
-      if (config.pre_populated_input) {
-        payload = config.pre_populated_input as Record<string, unknown>
-      } else if (task.category === 'build') {
-        payload = {
-          task_type: config.task_type || 'scaffold_feature',
-          specification: config.specification || task.title,
-          tech_stack: config.tech_stack || { framework: 'nextjs', styling: 'tailwind', database: 'supabase' },
-        }
-      } else if (task.category === 'outreach') {
-        payload = {
-          campaign_goal: config.campaign_goal || task.title,
-          target_audience: config.target_audience || 'Target ICP profiles',
-          channel: config.channel || 'email',
-          tone: config.tone || 'direct',
-          sequence_length: config.sequence_length || 3,
-        }
-      } else {
-        payload = {
-          research_question: config.research_question || task.title,
-          scope: config.scope || 'general',
-          depth: config.depth || 'standard',
-        }
-      }
-
-      setExecutionLogs((prev) => [...prev, `Triggering /v1/agents/${endpoint}...`])
-
-      const response = await fetch(getAgentApiUrl(`v1/agents/${endpoint}`), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error(await readAgentError(response))
-      }
-
-      const result = await response.json()
-      setExecutionRunId(result.run_id)
-      setExecutionStatus('running')
-      setExecutionProgress(30)
-      setExecutionLogs((prev) => [
-        ...prev,
-        `Agent queued. Run ID: ${result.run_id}`,
-        'Executing task pipeline...',
-      ])
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error'
-      console.error('Error triggering agent:', err)
-      setIsExecuting(false)
-      setError(msg)
-      setExecutionLogs((prev) => [...prev, `❌ Trigger failed: ${msg}`])
-    }
-  }
+  }, [isOpen, reset])
 
   if (!isOpen || !task) return null
+
+  const isPendingApproval = task.status === 'pending_approval'
+  const showSuccess = Boolean(executionOutput) || isPendingApproval
 
   const config = (task.agent_config || {}) as Record<string, unknown>
   const contextSummary = config.context_summary as string | undefined
@@ -343,7 +160,7 @@ export default function AgentExecutePanel({
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {!isExecuting && !executionOutput ? (
+            {!isExecuting && !showSuccess ? (
               <>
                 {/* Description */}
                 <div className="space-y-2">
@@ -377,21 +194,33 @@ export default function AgentExecutePanel({
                   <span>{formatDuration(estimatedSeconds)}</span>
                 </div>
               </>
-            ) : executionOutput ? (
-              /* Success state */
+            ) : showSuccess ? (
               <div className="space-y-4 border border-emerald-500/20 bg-emerald-950/10 p-5 rounded-2xl">
                 <h4 className="text-[13px] font-bold uppercase tracking-[0.06em] text-emerald-400">
-                  ✓ Task Completed
+                  {task.category === 'outreach' || isPendingApproval
+                    ? 'Campaign draft ready'
+                    : '✓ Task Completed'}
                 </h4>
                 <p className="text-[13px] text-[#a1a1a1] leading-relaxed">
-                  Output saved to your Vault.
+                  {task.category === 'outreach' || isPendingApproval
+                    ? 'Review your outreach draft before anything is sent. Output saved to Vault.'
+                    : 'Output saved to your Vault.'}
                 </p>
-                <div className="bg-[#0a0a0a] rounded-lg p-3 max-h-40 overflow-y-auto text-[12px] font-mono text-[#737373] border border-[#1a1a1a]">
-                  {JSON.stringify(executionOutput, null, 2)}
+                {executionOutput && (
+                  <div className="bg-[#0a0a0a] rounded-lg p-3 max-h-40 overflow-y-auto text-[12px] font-mono text-[#737373] border border-[#1a1a1a]">
+                    {JSON.stringify(executionOutput, null, 2)}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-3">
+                  <a href="/vault" className="inline-flex items-center gap-1 text-[13px] text-[#6366f1] hover:text-[#818cf8] font-medium transition-colors">
+                    View output →
+                  </a>
+                  {(task.category === 'outreach' || isPendingApproval) && (
+                    <a href="/agents/outreach" className="inline-flex items-center gap-1 text-[13px] text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                      Review campaign →
+                    </a>
+                  )}
                 </div>
-                <a href="/vault" className="inline-flex items-center gap-1 text-[13px] text-[#6366f1] hover:text-[#818cf8] font-medium transition-colors">
-                  View output →
-                </a>
               </div>
             ) : (
               /* Executing state */
@@ -401,7 +230,7 @@ export default function AgentExecutePanel({
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="font-semibold text-white flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-[#6366f1] animate-ping" />
-                      Running Agent Pipeline…
+                      {stepLabel || 'Running Agent Pipeline…'}
                     </span>
                     <span className="font-mono text-[#6366f1] font-bold">{executionProgress}%</span>
                   </div>
@@ -412,6 +241,37 @@ export default function AgentExecutePanel({
                     />
                   </div>
                 </div>
+
+                {checklistSteps.length > 0 && (
+                  <ul className="space-y-2">
+                    {checklistSteps.map((step) => (
+                      <li key={step.id} className="flex items-center gap-3 text-[13px]">
+                        <span
+                          className={`h-5 w-5 shrink-0 rounded-full border flex items-center justify-center text-[10px] font-bold ${
+                            step.state === 'done'
+                              ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                              : step.state === 'active'
+                                ? 'border-[#6366f1]/50 bg-[#6366f1]/10 text-[#818cf8]'
+                                : 'border-[#262626] text-zinc-600'
+                          }`}
+                        >
+                          {step.state === 'done' ? '✓' : step.state === 'active' ? '→' : '○'}
+                        </span>
+                        <span
+                          className={
+                            step.state === 'done'
+                              ? 'text-zinc-400'
+                              : step.state === 'active'
+                                ? 'text-zinc-100'
+                                : 'text-zinc-600'
+                          }
+                        >
+                          {step.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 {/* Console */}
                 <div className="space-y-2">
@@ -429,9 +289,18 @@ export default function AgentExecutePanel({
 
                 {/* Error */}
                 {error && (
-                  <p className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                    {error}
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                      {error}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={retry}
+                      className="text-[13px] font-semibold text-[#6366f1] hover:text-[#818cf8] cursor-pointer"
+                    >
+                      Try again →
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -439,9 +308,9 @@ export default function AgentExecutePanel({
 
           {/* Footer CTA */}
           <div className="border-t border-[#1a1a1a] px-6 py-4">
-            {!executionOutput ? (
+            {!showSuccess ? (
               <button
-                onClick={handleExecute}
+                onClick={() => void handleExecute()}
                 disabled={isExecuting}
                 className="w-full text-center text-[14px] font-bold text-white bg-[#6366f1] hover:bg-[#5558e6] disabled:bg-[#312e81] py-3.5 rounded-xl transition-all cursor-pointer shadow-lg hover:shadow-xl"
               >

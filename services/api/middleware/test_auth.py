@@ -1,6 +1,6 @@
 """Tests for Supabase JWT verification (HS256 legacy + JWKS)."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import jwt
 import pytest

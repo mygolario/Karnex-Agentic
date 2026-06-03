@@ -73,4 +73,4 @@ The upgrade trigger is always: *"I ran out of tasks"* or *"I want this to run au
 
 ---
 
-*Last updated: June 2026 | Version: 2.0.0*
+*Last updated: June 2026 | Version: 2.0.0 | Production: https://arioai.site*
