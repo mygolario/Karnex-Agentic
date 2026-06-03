@@ -78,10 +78,7 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
     maxAllowedStep = 2
   }
   if (hasSelectedHypothesis) {
-    maxAllowedStep = 3
-  }
-  if (hasRoadmap) {
-    maxAllowedStep = 4
+    maxAllowedStep = 4 // Allowed to access up to step 4 (roadmap execution) once hypothesis is selected
   }
 
   const urlStep = params.step ? parseInt(params.step, 10) : undefined
