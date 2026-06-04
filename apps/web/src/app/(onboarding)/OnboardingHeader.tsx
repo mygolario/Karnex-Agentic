@@ -26,9 +26,15 @@ function HeaderContent() {
     <header className="sticky top-0 z-50 w-full border-b border-[#1a1a1a] bg-[#050505]/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
         {/* Brand Logo */}
-        <div className="flex items-center gap-2.5">
-          <img src="/logo.jpeg" alt="Karnex Logo" className="h-8 w-8 rounded-md object-cover" />
-          <span className="font-display font-bold tracking-tight text-white text-lg">Karnex</span>
+        <div className="group flex items-center gap-2.5">
+          <img 
+            src="/logo.jpeg" 
+            alt="Karnex Logo" 
+            className="h-8 w-8 rounded-lg object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110" 
+          />
+          <span className="font-display font-semibold text-[17px] tracking-[-0.03em] text-white/95 group-hover:text-white transition-colors duration-300">
+            Karnex
+          </span>
         </div>
 
         {/* Progress Tracker */}

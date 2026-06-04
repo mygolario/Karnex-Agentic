@@ -90,9 +90,15 @@ export default function SignupPage({
             </svg>
             Back to home
           </Link>
-          <Link href="/" className="flex items-center gap-2 font-display font-bold text-[18px] tracking-[-0.02em] text-white">
-            <img src="/logo.jpeg" alt="Karnex Logo" className="h-7 w-7 rounded-md object-cover" />
-            Karnex
+          <Link href="/" className="group flex items-center gap-2.5">
+            <img 
+              src="/logo.jpeg" 
+              alt="Karnex Logo" 
+              className="h-7 w-7 rounded-lg object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110" 
+            />
+            <span className="font-display font-semibold text-[17px] tracking-[-0.03em] text-white/95 group-hover:text-white transition-colors duration-300">
+              Karnex
+            </span>
           </Link>
         </div>
 

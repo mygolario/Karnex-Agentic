@@ -154,9 +154,15 @@ export default function LandingPage() {
       {/* ═══════ NAV ═══════ */}
       <nav className={`fixed top-0 inset-x-0 z-50 transition-colors duration-300 ${navSolid ? 'bg-[#050505]/90 backdrop-blur-sm border-b border-[#1a1a1a]' : 'bg-transparent border-b border-transparent'}`}>
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2.5 font-display font-bold text-[18px] tracking-[-0.02em] text-white">
-            <img src="/logo.jpeg" alt="Karnex Logo" className="h-8 w-8 rounded-md object-cover" />
-            Karnex
+          <a href="#" className="group flex items-center gap-2.5">
+            <img 
+              src="/logo.jpeg" 
+              alt="Karnex Logo" 
+              className="h-8 w-8 rounded-lg object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110" 
+            />
+            <span className="font-display font-semibold text-[17px] tracking-[-0.03em] text-white/95 group-hover:text-white transition-colors duration-300">
+              Karnex
+            </span>
           </a>
 
           <div className="hidden md:flex items-center gap-10">
@@ -526,10 +532,16 @@ export default function LandingPage() {
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-16">
             <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2.5 mb-3">
-                <img src="/logo.jpeg" alt="Karnex Logo" className="h-8 w-8 rounded-md object-cover" />
-                <span className="font-display font-bold text-[16px] text-white">Karnex</span>
-              </div>
+              <a href="#" className="group flex items-center gap-2.5 mb-3 w-fit">
+                <img 
+                  src="/logo.jpeg" 
+                  alt="Karnex Logo" 
+                  className="h-8 w-8 rounded-lg object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110" 
+                />
+                <span className="font-display font-semibold text-[17px] tracking-[-0.03em] text-white/95 group-hover:text-white transition-colors duration-300">
+                  Karnex
+                </span>
+              </a>
               <p className="text-[13px] text-[#525252] mt-3 leading-[1.6] max-w-[220px]">
                 The AI co-founder for solo founders who refuse to quit.
               </p>
