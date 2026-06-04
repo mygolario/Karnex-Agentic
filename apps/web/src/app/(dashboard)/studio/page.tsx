@@ -104,16 +104,19 @@ function StudioWorkspace() {
   }, [greeting, task])
 
   const fetchRunOutput = useCallback(
-    async (runId: string) => {
+    async (runId: string): Promise<BuilderOutput | null> => {
       const { data: out } = await supabase
         .from('agent_outputs')
         .select('output')
         .eq('agent_run_id', runId)
         .maybeSingle()
 
-      if (out?.output?.files) {
-        setBuilderOutput(out.output as BuilderOutput)
+      if (out?.output) {
+        const output = out.output as BuilderOutput
+        setBuilderOutput(output)
+        return output
       }
+      return null
     },
     [supabase]
   )
@@ -122,17 +125,17 @@ function StudioWorkspace() {
     async (runId: string) => {
       setLoading(false)
       setBuildComplete(true)
-      await fetchRunOutput(runId)
+      const output = await fetchRunOutput(runId)
       await refreshPreviewUrl()
       setMessages((prev) => {
-        const msg = statusToCtoMessage('success')
-        if (!msg || prev.some((m) => m.message === msg.message)) return prev
+        const summary = output?.summary || statusToCtoMessage('success')?.message || 'Build completed successfully.'
+        if (prev.some((m) => m.message === summary)) return prev
         return [
           ...prev,
           {
             id: `success-${Date.now()}`,
-            sender: msg.sender,
-            message: msg.message,
+            sender: 'builder',
+            message: summary,
             timestamp: new Date(),
           },
         ]
@@ -161,7 +164,7 @@ function StudioWorkspace() {
   )
 
   useEffect(() => {
-    if (!runStatus || runStatus === lastStatusRef.current) return
+    if (!runStatus || runStatus === lastStatusRef.current || runStatus === 'success') return
     lastStatusRef.current = runStatus
     const cto = statusToCtoMessage(runStatus)
     if (!cto) return
