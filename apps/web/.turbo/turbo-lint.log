@@ -171,6 +171,20 @@ C:\Karnex-Agentic\apps\web\src\app\(dashboard)\forge\page.tsx:291:5
   329:51  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
   425:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
 
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\home\page.tsx
+  225:30  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\home\page.tsx:225:30
+  223 |
+  224 |   // ── 6. Recent outreach replies (last 24h) ─────────────────────────
+> 225 |   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      |                              ^^^^^^^^^^ Cannot call impure function
+  226 |   const { data: recentReplies } = await supabase
+  227 |     .from('outreach_contacts')
+  228 |     .select('first_name, campaign_id')  react-hooks/purity
+
 C:\Karnex-Agentic\apps\web\src\app\(dashboard)\ideas\page.tsx
   110:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
 
@@ -189,22 +203,75 @@ C:\Karnex-Agentic\apps\web\src\app\(dashboard)\ideas\page.tsx:110:5
   112 |
   113 |   const handleExtractWedge = async (e: React.FormEvent) => {  react-hooks/set-state-in-effect
 
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\integrations\automate\page.tsx
+  75:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\integrations\automate\page.tsx:75:5
+  73 |
+  74 |   useEffect(() => {
+> 75 |     load()
+     |     ^^^^ Avoid calling setState() directly within an effect
+  76 |   }, [load])
+  77 |
+  78 |   const handleToggle = async (recipeId: string, enabled: boolean) => {  react-hooks/set-state-in-effect
+
 C:\Karnex-Agentic\apps\web\src\app\(dashboard)\integrations\page.tsx
-   13:13  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
-   14:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
-  104:10  warning  'loading' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
-  146:13  error    Error: Cannot call impure function during render
+  71:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
 
-`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
 
-C:\Karnex-Agentic\apps\web\src\app\(dashboard)\integrations\page.tsx:146:13
-  144 |       // Mock successful integration update
-  145 |       const newIntegration: Integration = {
-> 146 |         id: Math.random().toString(),
-      |             ^^^^^^^^^^^^^ Cannot call impure function
-  147 |         provider: providerId,
-  148 |         status: 'active',
-  149 |         connected_at: new Date().toISOString(),  react-hooks/purity
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\integrations\page.tsx:71:5
+  69 |
+  70 |   useEffect(() => {
+> 71 |     loadData()
+     |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  72 |   }, [loadData])
+  73 |
+  74 |   useEffect(() => {                                                                                                                                                                                                        react-hooks/set-state-in-effect
+  78:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\integrations\page.tsx:78:7
+  76 |     const error = searchParams.get('error')
+  77 |     if (connected) {
+> 78 |       setBanner({ type: 'success', message: `${connected} connected successfully.` })
+     |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  79 |       loadData()
+  80 |     } else if (error) {
+  81 |       setBanner({ type: 'error', message: `Connection failed: ${error}` })  react-hooks/set-state-in-effect
+
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\integrations\status\page.tsx
+  105:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\integrations\status\page.tsx:105:5
+  103 |
+  104 |   useEffect(() => {
+> 105 |     load()
+      |     ^^^^ Avoid calling setState() directly within an effect
+  106 |   }, [load])
+  107 |
+  108 |   const handleReconnect = (provider: string) => {  react-hooks/set-state-in-effect
 
 C:\Karnex-Agentic\apps\web\src\app\(dashboard)\layout.tsx
   97:7  warning  'activeStartupId' is assigned a value but never used  @typescript-eslint/no-unused-vars
@@ -283,52 +350,57 @@ C:\Karnex-Agentic\apps\web\src\app\(dashboard)\settings\page.tsx:458:9
   659:68  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
 
 C:\Karnex-Agentic\apps\web\src\app\(dashboard)\studio\page.tsx
-    3:38  warning  'useCallback' is defined but never used                                                                            @typescript-eslint/no-unused-vars
-  134:6   warning  React Hook useEffect has a missing dependency: 'fetchRunOutput'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  219:19  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   57:22  warning  'setGithubRepo' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   90:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\studio\page.tsx:90:7
+  88 |   useEffect(() => {
+  89 |     if (greeting) {
+> 90 |       setMessages([
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  91 |         {
+  92 |           id: 'task-greeting',
+  93 |           sender: 'builder',                                                                        react-hooks/set-state-in-effect
+  168:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\studio\page.tsx:168:5
+  166 |     const cto = statusToCtoMessage(runStatus)
+  167 |     if (!cto) return
+> 168 |     setMessages((prev) => {
+      |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  169 |       if (prev.some((m) => m.message === cto.message)) return prev
+  170 |       return [
+  171 |         ...prev,  react-hooks/set-state-in-effect
 
 C:\Karnex-Agentic\apps\web\src\app\(dashboard)\vault\page.tsx
-   10:12  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
-   25:10  warning  'loading' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
-   60:28  error    Error: Cannot call impure function during render
+  73:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
 
-`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
 
-C:\Karnex-Agentic\apps\web\src\app\(dashboard)\vault\page.tsx:60:28
-  58 |       id: 'default-brief',
-  59 |       memory_type: 'product_brief',
-> 60 |       created_at: new Date(Date.now() - 30 * 24 * 3600000).toISOString(),
-     |                            ^^^^^^^^^^ Cannot call impure function
-  61 |       content: {
-  62 |         name: 'Folio',
-  63 |         tagline: 'Client management designed for designers',                                                                                                                         react-hooks/purity
-   76:28  error    Error: Cannot call impure function during render
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
 
-`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
-
-C:\Karnex-Agentic\apps\web\src\app\(dashboard)\vault\page.tsx:76:28
-  74 |       id: 'default-personas',
-  75 |       memory_type: 'personas',
-> 76 |       created_at: new Date(Date.now() - 29 * 24 * 3600000).toISOString(),
-     |                            ^^^^^^^^^^ Cannot call impure function
-  77 |       content: {
-  78 |         personas: [
-  79 |           { name: 'Mia Chen', age: 28, role: 'Freelance Brand Designer', location: 'Portland, OR', pain: 'Chasing clients for payment, manual scoping.' },                                react-hooks/purity
-   87:28  error    Error: Cannot call impure function during render
-
-`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
-
-C:\Karnex-Agentic\apps\web\src\app\(dashboard)\vault\page.tsx:87:28
-  85 |       id: 'default-research',
-  86 |       memory_type: 'research',
-> 87 |       created_at: new Date(Date.now() - 25 * 24 * 3600000).toISOString(),
-     |                            ^^^^^^^^^^ Cannot call impure function
-  88 |       content: {
-  89 |         topic: 'Invoicing SaaS Competitor Analysis',
-  90 |         findings: 'Mapped FreshBooks and HoneyBook. wedges: HoneyBook pricing table is convoluted; FreshBooks interface feels outdated for creatives.',  react-hooks/purity
-  149:56  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
-  233:65  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
-  246:61  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+C:\Karnex-Agentic\apps\web\src\app\(dashboard)\vault\page.tsx:73:5
+  71 |
+  72 |   useEffect(() => {
+> 73 |     loadVault()
+     |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  74 |   }, [loadVault])
+  75 |
+  76 |   const counts = useMemo(() => countByCategory(records), [records])  react-hooks/set-state-in-effect
 
 C:\Karnex-Agentic\apps\web\src\app\(dashboard)\warroom\page.tsx
    63:10  warning  'roadmapId' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
@@ -349,12 +421,60 @@ C:\Karnex-Agentic\apps\web\src\app\(dashboard)\warroom\page.tsx:147:5
   149 |
   150 |   const handleGenerateRoadmap = async () => {  react-hooks/set-state-in-effect
 
-C:\Karnex-Agentic\apps\web\src\app\api\auth\callback\gmail\route.ts
-   15:7   warning  'userInfoSchema' is assigned a value but never used  @typescript-eslint/no-unused-vars
-  135:23  error    Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+C:\Karnex-Agentic\apps\web\src\app\(onboarding)\onboarding\OnboardingWizard.tsx
+   88:10  warning  'loadingOutput' is assigned a value but never used                                                                             @typescript-eslint/no-unused-vars
+   89:10  warning  'errorOutput' is assigned a value but never used                                                                               @typescript-eslint/no-unused-vars
+   91:10  warning  'customizing' is assigned a value but never used                                                                               @typescript-eslint/no-unused-vars
+   91:23  warning  'setCustomizing' is assigned a value but never used                                                                            @typescript-eslint/no-unused-vars
+  106:10  warning  'generatingRoadmap' is assigned a value but never used                                                                         @typescript-eslint/no-unused-vars
+  107:10  warning  'roadmapLogs' is assigned a value but never used                                                                               @typescript-eslint/no-unused-vars
+  111:10  warning  'completing' is assigned a value but never used                                                                                @typescript-eslint/no-unused-vars
+  112:10  warning  'completeLogs' is assigned a value but never used                                                                              @typescript-eslint/no-unused-vars
+  149:6   warning  React Hook useEffect has missing dependencies: 'router' and 'supabase'. Either include them or remove the dependency array     react-hooks/exhaustive-deps
+  212:6   warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array                    react-hooks/exhaustive-deps
+  250:52  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  287:79  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  289:88  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  290:94  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  298:6   warning  React Hook useEffect has missing dependencies: 'painInput' and 'supabase'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  342:9   warning  'handleSelectHypothesis' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+  353:9   warning  'handleProceedToSettings' is assigned a value but never used                                                                   @typescript-eslint/no-unused-vars
+  380:9   warning  'handleGenerateRoadmap' is assigned a value but never used                                                                     @typescript-eslint/no-unused-vars
+  447:9   warning  'handleLaunchWorkspace' is assigned a value but never used                                                                     @typescript-eslint/no-unused-vars
+  660:36  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  662:54  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  664:60  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+  665:64  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+
+C:\Karnex-Agentic\apps\web\src\app\(onboarding)\onboarding\page.tsx
+  73:9  warning  'hasRoadmap' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  88:7  error    'targetStep' is never reassigned. Use 'const' instead   prefer-const
+  89:7  error    'targetRunId' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Karnex-Agentic\apps\web\src\app\api\agents\[agentId]\run\route.ts
+    8:10  warning  'hasOpenRouterKey' is defined but never used  @typescript-eslint/no-unused-vars
+  147:36  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  147:65  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  174:10  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  181:17  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  336:17  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  451:41  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  498:26  warning  'brief' is defined but never used             @typescript-eslint/no-unused-vars
+  498:33  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  567:30  warning  'name' is defined but never used              @typescript-eslint/no-unused-vars
+
+C:\Karnex-Agentic\apps\web\src\app\api\agents\war-room\run\route.ts
+  134:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  134:65  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  200:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 C:\Karnex-Agentic\apps\web\src\app\api\onboarding\analyze\route.ts
-  194:55  warning  'fullName' is defined but never used  @typescript-eslint/no-unused-vars
+  195:55  warning  'fullName' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Karnex-Agentic\apps\web\src\app\api\onboarding\complete\route.ts
+  60:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 C:\Karnex-Agentic\apps\web\src\components\agents\GmailConnectionBanner.tsx
   37:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
@@ -367,6 +487,100 @@ C:\Karnex-Agentic\apps\web\src\components\forge\PreviewPanel.tsx
 
 C:\Karnex-Agentic\apps\web\src\components\forge\VersionTimeline.tsx
   56:39  warning  'i' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Karnex-Agentic\apps\web\src\components\home\AgentExecutePanel.tsx
+  91:14  warning  '_founderId' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Karnex-Agentic\apps\web\src\components\home\JourneyHeader.tsx
+  73:19  warning  'isFuture' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Karnex-Agentic\apps\web\src\components\home\MorningStandup.tsx
+  30:20  warning  'setSlideOut' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Karnex-Agentic\apps\web\src\components\onboarding\HypothesisStep.tsx
+   13:3   warning  'Check' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   14:3   warning  'HelpCircle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   60:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\components\onboarding\HypothesisStep.tsx:60:5
+  58 |     if (!runId) return
+  59 |
+> 60 |     setStatus('loading')
+     |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  61 |     let interval: NodeJS.Timeout
+  62 |
+  63 |     const checkStatus = async () => {  react-hooks/set-state-in-effect
+   61:9   error    'interval' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       prefer-const
+   89:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-explicit-any
+  112:72  warning  'index' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  234:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-explicit-any
+  448:43  error    Comments inside children section of tag should be placed inside braces                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react/jsx-no-comment-textnodes
+  544:27  error    Comments inside children section of tag should be placed inside braces                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react/jsx-no-comment-textnodes
+
+C:\Karnex-Agentic\apps\web\src\components\onboarding\ProductBriefStep.tsx
+     6:3   warning  'CheckCircle' is defined but never used                                 @typescript-eslint/no-unused-vars
+     7:3   warning  'Circle' is defined but never used                                      @typescript-eslint/no-unused-vars
+    10:3   warning  'ShieldAlert' is defined but never used                                 @typescript-eslint/no-unused-vars
+    11:3   warning  'DollarSign' is defined but never used                                  @typescript-eslint/no-unused-vars
+    12:3   warning  'Target' is defined but never used                                      @typescript-eslint/no-unused-vars
+    20:3   warning  'TrendingUp' is defined but never used                                  @typescript-eslint/no-unused-vars
+    22:3   warning  'Briefcase' is defined but never used                                   @typescript-eslint/no-unused-vars
+    24:3   warning  'Lightbulb' is defined but never used                                   @typescript-eslint/no-unused-vars
+    25:3   warning  'FileText' is defined but never used                                    @typescript-eslint/no-unused-vars
+   101:20  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   184:66  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   190:72  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   193:77  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   268:42  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   296:42  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   334:9   warning  'getChecklistStep' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+   447:19  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   456:68  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   464:68  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   480:76  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   683:21  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`         react/no-unescaped-entities
+   683:37  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`         react/no-unescaped-entities
+   729:27  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`         react/no-unescaped-entities
+   729:43  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`         react/no-unescaped-entities
+   937:57  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+   998:45  error    Comments inside children section of tag should be placed inside braces  react/jsx-no-comment-textnodes
+  1302:84  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  1334:87  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  1348:89  error    Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+
+C:\Karnex-Agentic\apps\web\src\components\onboarding\RoadmapStep.tsx
+  296:9   error    'intervalId' is never reassigned. Use 'const' instead                                                      prefer-const
+  378:37  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  388:21  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  398:5   error    'timeoutId' is never reassigned. Use 'const' instead                                                       prefer-const
+  411:6   warning  React Hook useEffect has a missing dependency: 'status'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  449:19  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  655:39  error    Comments inside children section of tag should be placed inside braces                                     react/jsx-no-comment-textnodes
+  718:45  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                            react/no-unescaped-entities
+
+C:\Karnex-Agentic\apps\web\src\hooks\use-agent.ts
+  104:19  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\hooks\use-agent.ts:104:19
+  102 |
+  103 |   useEffect(() => {
+> 104 |     if (!enabled) reset()
+      |                   ^^^^^ Avoid calling setState() directly within an effect
+  105 |   }, [task?.id, enabled, reset])
+  106 |
+  107 |   const execute = useCallback(async () => {  react-hooks/set-state-in-effect
 
 C:\Karnex-Agentic\apps\web\src\hooks\use-gmail-integration.ts
   39:34  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-explicit-any
@@ -388,7 +602,44 @@ C:\Karnex-Agentic\apps\web\src\hooks\use-gmail-integration.ts:53:5
   56 |     return () => window.removeEventListener('focus', checkIntegration)  react-hooks/set-state-in-effect
   57:6   warning  React Hook useEffect has a missing dependency: 'checkIntegration'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
 
-✖ 70 problems (53 errors, 17 warnings)
+C:\Karnex-Agentic\apps\web\src\lib\studio\useAgentRunSubscription.ts
+  44:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\lib\studio\useAgentRunSubscription.ts:44:5
+  42 |     if (!runId) return
+  43 |
+> 44 |     setStatus('queued')
+     |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  45 |     setLogs([])
+  46 |     setErrorMessage(null)
+  47 |  react-hooks/set-state-in-effect
+
+C:\Karnex-Agentic\apps\web\src\lib\studio\usePreviewUrl.ts
+  31:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Karnex-Agentic\apps\web\src\lib\studio\usePreviewUrl.ts:31:5
+  29 |
+  30 |   useEffect(() => {
+> 31 |     refresh()
+     |     ^^^^^^^ Avoid calling setState() directly within an effect
+  32 |   }, [refresh])
+  33 |
+  34 |   return { previewUrl, setPreviewUrl, vercelConnected, refreshPreviewUrl: refresh }  react-hooks/set-state-in-effect
+
+✖ 156 problems (107 errors, 49 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
 
 npm error Lifecycle script `lint` failed with error:
 npm error code 1
