@@ -8,7 +8,7 @@ export type IntegrationProviderId =
   | 'zapier'
   | 'resend'
 
-export type ConnectMode = 'oauth' | 'platform' | 'coming_soon' | 'link_github'
+export type ConnectMode = 'oauth' | 'platform' | 'coming_soon' | 'link_github' | 'link_platform'
 
 export interface ProviderDefinition {
   id: IntegrationProviderId
@@ -81,7 +81,7 @@ export const INTEGRATION_PROVIDERS: ProviderDefinition[] = [
     name: 'Resend',
     icon: '📧',
     valueProp: 'Karnex sends transactional briefs, alerts, and automation emails on your behalf',
-    connectMode: 'platform',
+    connectMode: 'link_platform',
     category: 'platform',
   },
 ]

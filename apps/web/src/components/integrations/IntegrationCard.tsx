@@ -32,21 +32,24 @@ export function IntegrationCard({
   const isPlatform = provider.connectMode === 'platform'
   const isComingSoon = provider.connectMode === 'coming_soon'
   const isLinkGithub = provider.connectMode === 'link_github'
-
+  const isLinkPlatform = provider.connectMode === 'link_platform'
+ 
   const connected = isPlatform
     ? platformResendActive
     : isLinkGithub
       ? Boolean(integration) || githubConnected
-      : integration?.status === 'active'
-
+      : isLinkPlatform
+        ? platformResendActive && Boolean(integration)
+        : integration?.status === 'active'
+ 
   const showConnect =
     !isPlatform &&
     !isComingSoon &&
     !connected &&
-    provider.connectMode === 'oauth'
-
+    (provider.connectMode === 'oauth' || provider.connectMode === 'link_platform')
+ 
   const showDisconnect =
-    provider.connectMode === 'oauth' && connected && integration
+    (provider.connectMode === 'oauth' || provider.connectMode === 'link_platform') && connected && integration
 
   return (
     <div className="border border-[#1a1a1a] bg-[#050505] p-5 rounded-2xl flex flex-col justify-between hover:border-[#262626] transition-colors min-h-[180px]">
@@ -102,8 +105,9 @@ export function IntegrationCard({
           <button
             type="button"
             onClick={onConnect}
-            disabled={connecting}
+            disabled={connecting || (isLinkPlatform && !platformResendActive)}
             className="text-[12px] font-semibold text-[#6366f1] hover:text-[#818cf8] transition-colors cursor-pointer disabled:opacity-50"
+            title={isLinkPlatform && !platformResendActive ? 'Platform API key is not configured' : undefined}
           >
             {connecting ? 'Connecting…' : 'Connect →'}
           </button>

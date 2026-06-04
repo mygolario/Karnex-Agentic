@@ -116,6 +116,29 @@ function IntegrationsConnectContent() {
       return
     }
 
+    if (providerId === 'resend') {
+      setConnectingProvider('resend')
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (!session) return
+        await supabase.from('integrations').upsert({
+          founder_id: session.user.id,
+          provider: 'resend',
+          status: 'active',
+          metadata: { info: 'Enabled platform email' },
+        })
+        await loadData()
+        setBanner({ type: 'success', message: 'Resend integration enabled.' })
+      } catch {
+        setBanner({ type: 'error', message: 'Could not enable Resend.' })
+      } finally {
+        setConnectingProvider(null)
+      }
+      return
+    }
+
     setConnectingProvider(providerId)
     try {
       window.location.assign(`/api/integrations/${providerId}/connect`)
