@@ -211,6 +211,92 @@ export default function OnboardingWizard({ initialName, savedStep, savedContext 
     }
   }, [step, runId])
 
+  // Rehydrate wizard state from founder_memory when arriving at step 3/4 directly (page refresh / direct URL)
+  useEffect(() => {
+    if (step < 3) return
+    // Only rehydrate if state is empty (i.e. user didn't go through the wizard in this session)
+    if (startupName) return
+
+    const rehydrate = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // Load selected_hypothesis → startupName, tagline, industry, targetAudience, stage
+        const { data: hypMemory } = await supabase
+          .from('founder_memory')
+          .select('value')
+          .eq('founder_id', user.id)
+          .eq('namespace', 'onboarding')
+          .eq('key', 'selected_hypothesis')
+          .maybeSingle()
+
+        if (hypMemory?.value) {
+          const saved = hypMemory.value as {
+            startupName?: string
+            tagline?: string
+            industry?: string
+            targetAudience?: string
+            stage?: string
+            hypothesis?: { proposed_solution?: string; target_audience?: string; title?: string }
+          }
+          if (saved.startupName) setStartupName(saved.startupName)
+          else if (saved.hypothesis?.title) setStartupName(saved.hypothesis.title)
+          if (saved.tagline) setTagline(saved.tagline)
+          else if (saved.hypothesis?.proposed_solution) setTagline(saved.hypothesis.proposed_solution)
+          if (saved.industry) setIndustry(saved.industry)
+          if (saved.targetAudience) setTargetAudience(saved.targetAudience)
+          else if (saved.hypothesis?.target_audience) setTargetAudience(saved.hypothesis.target_audience)
+          if (saved.stage) setStage(saved.stage as any)
+        }
+
+        // Load pain_context → painInput (description)
+        if (!painInput) {
+          const { data: painMemory } = await supabase
+            .from('founder_memory')
+            .select('value')
+            .eq('founder_id', user.id)
+            .eq('namespace', 'onboarding')
+            .eq('key', 'pain_context')
+            .maybeSingle()
+
+          if (painMemory?.value) {
+            const saved = painMemory.value as { pain_description?: string }
+            if (saved.pain_description) setPainInput(saved.pain_description)
+          }
+        }
+
+        // Load founder preferences → displayName, technicalLevel, etc.
+        const { data: prefMemory } = await supabase
+          .from('founder_memory')
+          .select('value')
+          .eq('founder_id', user.id)
+          .eq('namespace', 'onboarding')
+          .eq('key', 'founder_preferences')
+          .maybeSingle()
+
+        if (prefMemory?.value) {
+          const saved = prefMemory.value as {
+            displayName?: string
+            technicalLevel?: string
+            weeklyHoursAvailable?: number
+            communicationTone?: string
+            preferredAgentSpeed?: string
+          }
+          if (saved.displayName) setDisplayName(saved.displayName)
+          if (saved.technicalLevel) setTechnicalLevel(saved.technicalLevel as any)
+          if (saved.weeklyHoursAvailable) setWeeklyHoursAvailable(saved.weeklyHoursAvailable)
+          if (saved.communicationTone) setCommunicationTone(saved.communicationTone as any)
+          if (saved.preferredAgentSpeed) setPreferredAgentSpeed(saved.preferredAgentSpeed as any)
+        }
+      } catch (err) {
+        console.error('Failed to rehydrate wizard state from founder_memory:', err)
+      }
+    }
+
+    rehydrate()
+  }, [step, startupName])
+
   // Trigger Step 1 Analysis
   const handleTransformPain = async () => {
     if (painInput.length < 30) return

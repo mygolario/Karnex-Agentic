@@ -40,8 +40,49 @@ export async function POST(request: NextRequest) {
     } = body
 
     if (!startupName || !description) {
-      return NextResponse.json({ error: 'Startup Name and Description are required' }, { status: 400 })
+      // Attempt to recover from DB: check founder_memory for selected_hypothesis and pain_context
+      const { data: hypMem } = await supabase
+        .from('founder_memory')
+        .select('value')
+        .eq('founder_id', user.id)
+        .eq('namespace', 'onboarding')
+        .eq('key', 'selected_hypothesis')
+        .maybeSingle()
+
+      const { data: painMem } = await supabase
+        .from('founder_memory')
+        .select('value')
+        .eq('founder_id', user.id)
+        .eq('namespace', 'onboarding')
+        .eq('key', 'pain_context')
+        .maybeSingle()
+
+      const hypVal = hypMem?.value as any
+      const painVal = painMem?.value as any
+
+      const recoveredName = startupName || hypVal?.startupName || hypVal?.hypothesis?.title
+      const recoveredDesc = description || painVal?.pain_description || hypVal?.hypothesis?.problem_statement
+
+      if (!recoveredName || !recoveredDesc) {
+        return NextResponse.json({ error: 'Startup Name and Description are required' }, { status: 400 })
+      }
+
+      // Use recovered values for the rest of the request
+      body.startupName = recoveredName
+      body.description = recoveredDesc
+      if (!tagline) body.tagline = hypVal?.tagline || hypVal?.hypothesis?.proposed_solution || ''
+      if (!industry) body.industry = hypVal?.industry || ''
+      if (!targetAudience) body.targetAudience = hypVal?.targetAudience || hypVal?.hypothesis?.target_audience || ''
     }
+
+    // Re-read potentially recovered values
+    const finalStartupName = body.startupName
+    const finalDescription = body.description
+    const finalTagline = body.tagline || tagline || ''
+    const finalIndustry = body.industry || industry || ''
+    const finalTargetAudience = body.targetAudience || targetAudience || ''
+    const finalStage = stage || 'ideation'
+
 
     // 1. Ensure startup row exists/gets updated
     let startupId: string
@@ -58,12 +99,12 @@ export async function POST(request: NextRequest) {
       const { error: startupUpdateErr } = await supabase
         .from('startups')
         .update({
-          name: startupName,
-          tagline: tagline || '',
-          description: description,
-          industry: industry || '',
-          target_audience: targetAudience || '',
-          stage: stage || 'ideation',
+          name: finalStartupName,
+          tagline: finalTagline,
+          description: finalDescription,
+          industry: finalIndustry,
+          target_audience: finalTargetAudience,
+          stage: finalStage,
         })
         .eq('id', startupId)
 
@@ -75,12 +116,12 @@ export async function POST(request: NextRequest) {
         .from('startups')
         .insert({
           founder_id: user.id,
-          name: startupName,
-          tagline: tagline || '',
-          description: description,
-          industry: industry || '',
-          target_audience: targetAudience || '',
-          stage: stage || 'ideation',
+          name: finalStartupName,
+          tagline: finalTagline,
+          description: finalDescription,
+          industry: finalIndustry,
+          target_audience: finalTargetAudience,
+          stage: finalStage,
           is_active: true
         })
         .select()
@@ -105,17 +146,17 @@ export async function POST(request: NextRequest) {
       const { error: ideaUpdateErr } = await supabase
         .from('ideas')
         .update({
-          title: startupName,
-          pain_description: description,
-          proposed_solution: tagline || '',
+          title: finalStartupName,
+          pain_description: finalDescription,
+          proposed_solution: finalTagline,
           product_brief: {
-            title: startupName,
-            problem_statement: description,
-            proposed_solution: tagline || '',
-            target_audience: targetAudience || ''
+            title: finalStartupName,
+            problem_statement: finalDescription,
+            proposed_solution: finalTagline,
+            target_audience: finalTargetAudience
           },
           icp_document: {
-            target_audience: targetAudience || '',
+            target_audience: finalTargetAudience,
             key_risks: [],
             next_steps: []
           },
@@ -132,18 +173,18 @@ export async function POST(request: NextRequest) {
         .insert({
           startup_id: startupId,
           founder_id: user.id,
-          title: startupName,
-          pain_description: description,
-          proposed_solution: tagline || '',
+          title: finalStartupName,
+          pain_description: finalDescription,
+          proposed_solution: finalTagline,
           status: 'selected',
           product_brief: {
-            title: startupName,
-            problem_statement: description,
-            proposed_solution: tagline || '',
-            target_audience: targetAudience || ''
+            title: finalStartupName,
+            problem_statement: finalDescription,
+            proposed_solution: finalTagline,
+            target_audience: finalTargetAudience
           },
           icp_document: {
-            target_audience: targetAudience || '',
+            target_audience: finalTargetAudience,
             key_risks: [],
             next_steps: []
           },
@@ -165,7 +206,7 @@ export async function POST(request: NextRequest) {
         weekly_hours_available: weeklyHoursAvailable || 20,
         communication_tone: communicationTone || 'direct',
         preferred_agent_speed: preferredAgentSpeed || 'thorough',
-        primary_goal: primaryGoal || tagline || 'Build startup',
+        primary_goal: primaryGoal || finalTagline || 'Build startup',
         current_startup_id: startupId,
         onboarding_completed: true
       })

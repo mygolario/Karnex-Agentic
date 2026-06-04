@@ -310,7 +310,7 @@ export default function RoadmapStep({
             .from('agent_runs')
             .select('id')
             .eq('founder_id', uid)
-            .eq('agent_id', 'war-room-v1')
+            .in('agent_id', ['war-room', 'war-room-v1'])
             .gt('started_at', twoMinutesAgo)
             .order('started_at', { ascending: false })
             .limit(1)
