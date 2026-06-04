@@ -622,6 +622,7 @@ function StudioWorkspace() {
               onSuggestionSelect={handleSuggestionSelect}
               onToggleAdvanced={() => setAdvancedOpen((v) => !v)}
               advancedOpen={advancedOpen}
+              activeMode={forgeMode === 'auto' ? (effectiveDetectedMode || 'auto') : forgeMode}
               hideTechnicalClutter={forgeAutonomy === 'founder'}
             />
           </div>

@@ -46,6 +46,16 @@ const getModeText = (mode: string) => {
   }
 }
 
+const getModeDotColor = (mode: string) => {
+  switch (mode) {
+    case 'plan': return 'bg-[#f59e0b]'
+    case 'ask': return 'bg-[#0ea5e9]'
+    case 'debug': return 'bg-[#f43f5e]'
+    case 'build': return 'bg-[#10b981]'
+    default: return 'bg-[#8b5cf6]'
+  }
+}
+
 export default function CTOChatPanel({
   messages,
   isBuilding,
@@ -139,7 +149,7 @@ export default function CTOChatPanel({
           </span>
         )}
         <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          <span className={`h-2 w-2 rounded-full ${getModeDotColor(activeMode)}`} />
           <span className="font-medium font-mono capitalize">{activeMode} Mode</span>
         </div>
       </div>
