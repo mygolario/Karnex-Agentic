@@ -127,7 +127,7 @@ async def run_outreach(
             model=settings.GEMINI_MODEL,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
-            max_tokens=settings.OPENROUTER_MAX_TOKENS,
+            max_tokens=settings.OPENROUTER_MAX_TOKENS_OUTREACH,
             default_headers={
                 "HTTP-Referer": "https://karnex.ai",
                 "X-Title": "Karnex"

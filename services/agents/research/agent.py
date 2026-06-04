@@ -54,7 +54,7 @@ async def run_research(input_data: ResearchInput, run_id: str, supabase: Any = N
         model=settings.GEMINI_MODEL_FLASH,
         openai_api_key=settings.OPENROUTER_API_KEY,
         openai_api_base=settings.OPENROUTER_BASE_URL,
-        max_tokens=settings.OPENROUTER_MAX_TOKENS,
+        max_tokens=settings.OPENROUTER_MAX_TOKENS_FLASH,
         default_headers={
             "HTTP-Referer": "https://karnex.ai",
             "X-Title": "Karnex"
@@ -106,7 +106,7 @@ async def run_research(input_data: ResearchInput, run_id: str, supabase: Any = N
         model=settings.GEMINI_MODEL,
         openai_api_key=settings.OPENROUTER_API_KEY,
         openai_api_base=settings.OPENROUTER_BASE_URL,
-        max_tokens=settings.OPENROUTER_MAX_TOKENS,
+        max_tokens=settings.OPENROUTER_MAX_TOKENS_RESEARCH,
         default_headers={
             "HTTP-Referer": "https://karnex.ai",
             "X-Title": "Karnex"

@@ -34,14 +34,14 @@ async def run_daily_standup(input_data: DailyStandupInput) -> DailyStandupOutput
     steps = get_step_labels(AGENT_ID)
     start_time = time.time()
     run_id = start_agent_run(
-        AGENT_ID, founder_id, input_data.model_dump(), llm_model=settings.GEMINI_MODEL_FLASH
+        AGENT_ID, founder_id, input_data.model_dump(), llm_model=settings.GEMINI_MODEL_FLASH_LITE
     )
 
     try:
         advance_step(run_id, 0, steps[0], tool_name="load_sprint_tasks")
         yesterday_tasks = input_data.yesterday_tasks
         today_sprint_tasks = input_data.today_sprint_tasks
-
+ 
         if yesterday_tasks is None or today_sprint_tasks is None:
             db_tasks = get_active_sprint_tasks(founder_id)
             if db_tasks:
@@ -55,13 +55,13 @@ async def run_daily_standup(input_data: DailyStandupInput) -> DailyStandupOutput
                 yesterday_tasks = ["No tasks currently scheduled"]
             if not today_sprint_tasks:
                 today_sprint_tasks = ["No tasks currently scheduled"]
-
+ 
         advance_step(run_id, 1, steps[1], tool_name="llm_standup")
         llm = ChatOpenAI(
-            model=settings.GEMINI_MODEL_FLASH,
+            model=settings.GEMINI_MODEL_FLASH_LITE,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
-            max_tokens=settings.OPENROUTER_MAX_TOKENS,
+            max_tokens=3000,
             default_headers={"HTTP-Referer": "https://karnex.ai", "X-Title": "Karnex"},
             temperature=0.5,
         )

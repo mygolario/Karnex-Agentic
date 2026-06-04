@@ -61,7 +61,7 @@ def run_analytics_insight(input_data: AnalyticsInsightInput) -> AnalyticsInsight
     founder_id = input_data.founder_id
     steps = get_step_labels(AGENT_ID)
     start_time = time.time()
-    run_id = start_agent_run(AGENT_ID, founder_id, input_data.model_dump(), llm_model=settings.GEMINI_MODEL_FLASH)
+    run_id = start_agent_run(AGENT_ID, founder_id, input_data.model_dump(), llm_model=settings.GEMINI_MODEL_FLASH_LITE)
 
     try:
         advance_step(run_id, 0, steps[0], tool_name="load_metrics")
@@ -69,10 +69,10 @@ def run_analytics_insight(input_data: AnalyticsInsightInput) -> AnalyticsInsight
 
         advance_step(run_id, 1, steps[1], tool_name="detect_anomalies")
         llm = ChatOpenAI(
-            model=settings.GEMINI_MODEL_FLASH,
+            model=settings.GEMINI_MODEL_FLASH_LITE,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
-            max_tokens=settings.OPENROUTER_MAX_TOKENS,
+            max_tokens=settings.OPENROUTER_MAX_TOKENS_SIMPLE,
             default_headers={"HTTP-Referer": "https://karnex.ai", "X-Title": "Karnex"},
             temperature=0.3,
         )

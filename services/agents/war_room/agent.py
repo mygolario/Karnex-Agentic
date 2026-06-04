@@ -35,7 +35,7 @@ def run_war_room(input_data: WarRoomInput) -> WarRoomOutput:
         AGENT_ID,
         founder_id,
         input_data.model_dump(),
-        llm_model=settings.GEMINI_MODEL,
+        llm_model=settings.GEMINI_MODEL_31_PRO,
     )
 
     try:
@@ -43,10 +43,10 @@ def run_war_room(input_data: WarRoomInput) -> WarRoomOutput:
 
         advance_step(run_id, 1, steps[1], tool_name="llm_roadmap")
         llm = ChatOpenAI(
-            model=settings.GEMINI_MODEL,
+            model=settings.GEMINI_MODEL_31_PRO,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
-            max_tokens=settings.OPENROUTER_MAX_TOKENS,
+            max_tokens=settings.OPENROUTER_MAX_TOKENS_WAR_ROOM,
             default_headers={"HTTP-Referer": "https://karnex.ai", "X-Title": "Karnex"},
             temperature=0.5,
         )

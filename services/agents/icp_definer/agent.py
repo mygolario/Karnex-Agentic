@@ -31,7 +31,7 @@ def run_icp_definer(input_data: ICPDefinerInput) -> ICPDefinerOutput:
     founder_id = input_data.founder_id
     steps = get_step_labels(AGENT_ID)
     start_time = time.time()
-    run_id = start_agent_run(AGENT_ID, founder_id, input_data.model_dump(), llm_model=settings.GEMINI_MODEL)
+    run_id = start_agent_run(AGENT_ID, founder_id, input_data.model_dump(), llm_model=settings.GEMINI_MODEL_FLASH)
 
     try:
         advance_step(run_id, 0, steps[0], tool_name="karnex_memory_read")
@@ -50,10 +50,10 @@ def run_icp_definer(input_data: ICPDefinerInput) -> ICPDefinerOutput:
 
         advance_step(run_id, 1, steps[1], tool_name="llm_icp")
         llm = ChatOpenAI(
-            model=settings.GEMINI_MODEL,
+            model=settings.GEMINI_MODEL_FLASH,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
-            max_tokens=settings.OPENROUTER_MAX_TOKENS,
+            max_tokens=settings.OPENROUTER_MAX_TOKENS_FLASH,
             default_headers={"HTTP-Referer": "https://karnex.ai", "X-Title": "Karnex"},
             temperature=0.7,
             timeout=30,

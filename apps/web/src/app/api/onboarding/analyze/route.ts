@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
             response_format: { type: 'json_object' },
+            max_tokens: 4096,
             messages: [
               {
                 role: 'system',

@@ -36,10 +36,35 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3080"
     KARNEX_WEB_ORIGIN: str = "https://arioai.site"
+    # ── Model Tiers ───────────────────────────────────────────────────────────
+    # Tier 1 – Complex reasoning (War Room roadmap)
+    GEMINI_MODEL_31_PRO: str = "google/gemini-3.1-pro-preview"
+    # Tier 1b – Proven Pro (Outreach, Research synthesis, Builder architecture)
     GEMINI_MODEL: str = "google/gemini-2.5-pro"
+    # Tier 2 – Structured JSON, high reliability (Pain Transformer, Crystallizer, ICP Definer)
     GEMINI_MODEL_FLASH: str = "google/gemini-2.5-flash"
-    # Cap OpenRouter max_tokens (increased to 32768 to support reasoning models)
+    # Tier 2b – Newer Flash-Lite, approaches Flash quality (Competitive Landscape, Weekly Debrief)
+    GEMINI_MODEL_31_FLASH_LITE: str = "google/gemini-3.1-flash-lite"
+    # Tier 3 – Cheapest, simple summaries (Daily Standup, Analytics, Sprint Planner)
+    GEMINI_MODEL_FLASH_LITE: str = "google/gemini-2.5-flash-lite"
+
+    # ── Per-Agent max_tokens caps ─────────────────────────────────────────────
+    # Global fallback (keep high for safety in unknown agents)
     OPENROUTER_MAX_TOKENS: int = 32768
+    # Tier 1 – War Room 90-day roadmap (large but bounded)
+    OPENROUTER_MAX_TOKENS_WAR_ROOM: int = 12000
+    # Tier 2 – Structured JSON agents (pain-transformer, crystallizer, icp-definer)
+    OPENROUTER_MAX_TOKENS_FLASH: int = 6000
+    # Research synthesis step (open-ended multi-source reasoning)
+    OPENROUTER_MAX_TOKENS_RESEARCH: int = 10000
+    # Builder architecture/code generation steps
+    OPENROUTER_MAX_TOKENS_BUILDER: int = 16000
+    # Outreach email sequences
+    OPENROUTER_MAX_TOKENS_OUTREACH: int = 4000
+    # Competitive landscape analysis
+    OPENROUTER_MAX_TOKENS_COMPETITIVE: int = 8000
+    # Simple summary agents (standup, analytics, debrief, sprint planner)
+    OPENROUTER_MAX_TOKENS_SIMPLE: int = 4000
 
     GMAIL_CLIENT_ID: str = ""
     GMAIL_CLIENT_SECRET: str = ""

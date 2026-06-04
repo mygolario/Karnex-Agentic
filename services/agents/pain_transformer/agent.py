@@ -53,7 +53,7 @@ def run_pain_transformer(input_data: PainTransformerInput) -> PainTransformerOut
             model=settings.GEMINI_MODEL_FLASH,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
-            max_tokens=settings.OPENROUTER_MAX_TOKENS,
+            max_tokens=settings.OPENROUTER_MAX_TOKENS_FLASH,
             default_headers={"HTTP-Referer": "https://karnex.ai", "X-Title": "Karnex"},
             temperature=0.8,
         )

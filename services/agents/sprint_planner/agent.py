@@ -42,7 +42,7 @@ def run_sprint_planner(input_data: SprintPlannerInput) -> SprintPlannerOutput:
         AGENT_ID,
         founder_id,
         input_data.model_dump(),
-        llm_model=settings.GEMINI_MODEL_FLASH,
+        llm_model=settings.GEMINI_MODEL_FLASH_LITE,
     )
 
     try:
@@ -50,10 +50,10 @@ def run_sprint_planner(input_data: SprintPlannerInput) -> SprintPlannerOutput:
 
         advance_step(run_id, 1, steps[1], tool_name="llm_sprint")
         llm = ChatOpenAI(
-            model=settings.GEMINI_MODEL_FLASH,
+            model=settings.GEMINI_MODEL_FLASH_LITE,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
-            max_tokens=settings.OPENROUTER_MAX_TOKENS,
+            max_tokens=settings.OPENROUTER_MAX_TOKENS_FLASH,
             default_headers={"HTTP-Referer": "https://karnex.ai", "X-Title": "Karnex"},
             temperature=0.4,
         )
