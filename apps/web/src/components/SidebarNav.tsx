@@ -88,7 +88,7 @@ export default function SidebarNav({ user }: SidebarNavProps) {
       {/* Brand */}
       <div className="flex h-14 items-center px-6 border-b border-[#1a1a1a]">
         <Link href="/home" className="flex items-center gap-2.5">
-          <img src="/logo.jpeg" alt="Karnex Logo" className="h-6 w-6 rounded-md object-cover" />
+          <img src="/logo.jpeg" alt="Karnex Logo" className="h-8 w-8 rounded-md object-cover" />
           <span className="font-display text-[18px] font-bold tracking-[-0.02em] text-white">
             Karnex
           </span>

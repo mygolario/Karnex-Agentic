@@ -27,7 +27,7 @@ function HeaderContent() {
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
         {/* Brand Logo */}
         <div className="flex items-center gap-2.5">
-          <img src="/logo.jpeg" alt="Karnex Logo" className="h-7 w-7 rounded-md object-cover" />
+          <img src="/logo.jpeg" alt="Karnex Logo" className="h-8 w-8 rounded-md object-cover" />
           <span className="font-display font-bold tracking-tight text-white text-lg">Karnex</span>
         </div>
 

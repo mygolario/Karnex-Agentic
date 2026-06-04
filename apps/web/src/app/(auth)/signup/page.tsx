@@ -91,7 +91,7 @@ export default function SignupPage({
             Back to home
           </Link>
           <Link href="/" className="flex items-center gap-2 font-display font-bold text-[18px] tracking-[-0.02em] text-white">
-            <img src="/logo.jpeg" alt="Karnex Logo" className="h-5.5 w-5.5 rounded-md object-cover" />
+            <img src="/logo.jpeg" alt="Karnex Logo" className="h-7 w-7 rounded-md object-cover" />
             Karnex
           </Link>
         </div>
