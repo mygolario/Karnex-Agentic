@@ -273,7 +273,7 @@ export default function ModelPicker({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-[320px] max-h-[500px] overflow-hidden flex flex-col bg-zinc-950/95 backdrop-blur-xl border border-zinc-850 rounded-xl shadow-2xl z-50 animate-reveal">
+        <div className="absolute top-full right-0 mt-2 w-[320px] max-h-[500px] overflow-hidden flex flex-col bg-zinc-950/95 backdrop-blur-xl border border-zinc-850 rounded-xl shadow-2xl z-50 animate-reveal">
           {/* Search Header */}
           <div className="p-2 border-b border-zinc-800/50 flex items-center gap-2 bg-zinc-900/20">
             <Search className="w-4 h-4 text-zinc-500 shrink-0 ml-1.5" />

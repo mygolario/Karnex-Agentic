@@ -567,7 +567,7 @@ function StudioWorkspace() {
 
       <div className="forge-accent-bar shrink-0 z-10" />
 
-      <div className="z-10 bg-[#0c0c0e]/80 backdrop-blur-md border-b border-zinc-800/40">
+      <div className="relative z-30 bg-[#0c0c0e]/80 backdrop-blur-md border-b border-zinc-800/40">
         <StudioForgeControls
           mode={forgeMode}
           autonomy={forgeAutonomy}
