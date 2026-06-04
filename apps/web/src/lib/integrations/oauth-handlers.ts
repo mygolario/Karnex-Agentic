@@ -28,6 +28,43 @@ export async function startGmailConnect(options?: {
   } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Unauthorized', { status: 401 })
 
+  if (env.GMAIL_MOCK_MODE) {
+    const encryptedAccess = encryptToken('mock_access_token', env.ENCRYPTION_KEY)
+    const encryptedRefresh = encryptToken('mock_refresh_token', env.ENCRYPTION_KEY)
+    const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString()
+    const scopesList = [
+      'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/gmail.compose',
+    ]
+
+    const { error: dbError } = await supabase.from('integrations').upsert(
+      {
+        founder_id: user.id,
+        provider: 'gmail',
+        status: 'active',
+        access_token_encrypted: encryptedAccess,
+        refresh_token_encrypted: encryptedRefresh,
+        token_expires_at: expiresAt,
+        scopes: scopesList,
+        metadata: { gmail_email: user.email || 'mock.user@gmail.com', gmail_name: 'Mock Gmail User' },
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'founder_id,provider' }
+    )
+
+    if (dbError) {
+      console.error('Gmail save mock failed:', dbError)
+      return NextResponse.redirect(`${INTEGRATIONS_REDIRECT}?error=database_save_failed`)
+    }
+
+    const legacy = options?.legacyCallback ?? false
+    if (legacy) {
+      return NextResponse.redirect(`${env.NEXT_PUBLIC_APP_URL}/agents/outreach?gmail_connected=true`)
+    }
+    return NextResponse.redirect(`${INTEGRATIONS_REDIRECT}?connected=gmail`)
+  }
+
   const legacy = options?.legacyCallback ?? false
   const callbackPath = legacy
     ? '/api/auth/callback/gmail'
