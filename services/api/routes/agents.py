@@ -349,7 +349,7 @@ class BuilderTechStackRequest(BaseModel):
 
 
 class BuilderRequest(BaseModel):
-    """API request payload for the Builder Agent."""
+    """API request payload for the Builder / Karnex Forge Agent."""
     task_id: Optional[str] = Field(None, description="Sprint task ID for completion webhook.")
     task_type: str = Field(..., description="Type of build task.")
     specification: str = Field(..., description="Feature specification description.")
@@ -357,6 +357,18 @@ class BuilderRequest(BaseModel):
     existing_codebase_context: Optional[str] = Field(None, description="Context about the existing repository layout.")
     design_references: Optional[List[str]] = Field(None, description="Optional layout or styling specifications.")
     github_repo: Optional[str] = Field(None, description="User's target GitHub repository URL.")
+    mode: Optional[str] = Field("auto", description="plan | ask | debug | build | auto")
+    autonomy: Optional[str] = Field("founder", description="founder | developer")
+    project_type: Optional[str] = Field("auto", description="web_nextjs | mobile_expo | api_service | infra_devops | fullstack_monorepo | auto")
+    model_id: Optional[str] = Field(None, description="Forge model catalog id")
+    auto_model: Optional[bool] = Field(False, description="Auto-select model per pipeline step")
+    max_mode: Optional[bool] = Field(False, description="High-effort MAX mode")
+    plan_approved: Optional[bool] = Field(False, description="Developer mode plan approval")
+    war_room_task_id: Optional[str] = Field(None, description="War Room task link")
+    preview_url: Optional[str] = Field(None, description="Live preview URL for debug mode")
+    use_selected_model_all_steps: Optional[bool] = Field(False, description="Use selected model for all subagents")
+    skip_github_push: Optional[bool] = Field(False, description="Developer: skip GitHub push")
+    estimated_cost_usd: Optional[List[float]] = Field(None, description="Client cost estimate [low, high]")
 
 
 # Async wrapper helper to execute Research Agent in background
@@ -604,6 +616,16 @@ async def trigger_research(
     return {"run_id": run_id, "status": "queued"}
 
 
+def _forge_llm_label_from_payload(payload: "BuilderRequest") -> str:
+    from agents.forge.catalog import resolve_llm_model_label
+
+    return resolve_llm_model_label(
+        payload.model_id,
+        auto_model=bool(payload.auto_model),
+        max_mode=bool(payload.max_mode),
+    )
+
+
 @router.post(
     "/builder",
     status_code=status.HTTP_202_ACCEPTED,
@@ -634,7 +656,7 @@ async def trigger_builder(
             "input": payload.model_dump(),
             "triggered_by": "user",
             "started_at": datetime.now(timezone.utc).isoformat(),
-            "llm_model": settings.GEMINI_MODEL
+            "llm_model": _forge_llm_label_from_payload(payload),
         }).execute()
     except Exception as e:
         logger.warning(f"Could not log async builder run start: {e}")
@@ -659,6 +681,18 @@ async def trigger_builder(
         github_repo=payload.github_repo,
         task_id=payload.task_id,
         pre_populated=bool(payload.task_id),
+        mode=payload.mode or "auto",
+        autonomy=payload.autonomy or "founder",
+        project_type=payload.project_type or "auto",
+        model_id=payload.model_id,
+        auto_model=bool(payload.auto_model),
+        max_mode=bool(payload.max_mode),
+        plan_approved=bool(payload.plan_approved),
+        war_room_task_id=payload.war_room_task_id,
+        preview_url=payload.preview_url,
+        use_selected_model_all_steps=bool(payload.use_selected_model_all_steps),
+        skip_github_push=bool(payload.skip_github_push),
+        estimated_cost_usd=payload.estimated_cost_usd,
     )
 
     # Queue task in FastAPI background tasks

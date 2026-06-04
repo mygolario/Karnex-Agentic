@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import CodePanel from '@/components/forge/CodePanel'
 import SchemaVisualizer from '@/components/forge/SchemaVisualizer'
+import ModelPicker from './ModelPicker'
+import ManifestExport from './ManifestExport'
 import type { BuilderOutput, TechStack } from '@/lib/studio/types'
 
 interface AdvancedPanelProps {
@@ -11,6 +13,14 @@ interface AdvancedPanelProps {
   builderOutput: BuilderOutput | null
   techStack: TechStack
   githubRepo: string | null
+  runId?: string | null
+  modelId?: string
+  autoModel?: boolean
+  maxMode?: boolean
+  toolsStatus?: 'ok' | 'degraded'
+  onModelIdChange?: (id: string) => void
+  onAutoModelChange?: (v: boolean) => void
+  onMaxModeChange?: (v: boolean) => void
 }
 
 export default function AdvancedPanel({
@@ -18,10 +28,18 @@ export default function AdvancedPanel({
   builderOutput,
   techStack,
   githubRepo,
+  runId,
+  modelId = 'karnex-forge-fast-high',
+  autoModel = false,
+  maxMode = false,
+  toolsStatus = 'ok',
+  onModelIdChange,
+  onAutoModelChange,
+  onMaxModeChange,
 }: AdvancedPanelProps) {
   const supabase = createSupabaseBrowserClient()
   const [selectedFileIdx, setSelectedFileIdx] = useState(0)
-  const [activeTab, setActiveTab] = useState<'files' | 'schema' | 'config'>('files')
+  const [activeTab, setActiveTab] = useState<'files' | 'schema' | 'config' | 'manifest'>('files')
   const [memoryStack, setMemoryStack] = useState<TechStack | null>(null)
   const [githubMeta, setGithubMeta] = useState<string | null>(null)
 
@@ -65,6 +83,7 @@ export default function AdvancedPanel({
 
   const files = builderOutput?.files ?? []
   const stack = memoryStack ?? techStack
+  const manifest = builderOutput?.run_manifest
 
   if (!open) {
     return null
@@ -72,26 +91,39 @@ export default function AdvancedPanel({
 
   return (
     <div className="border-t border-[#141417] bg-[#09090b] shrink-0 transition-all duration-300">
-      <div className="flex gap-6 px-4 pt-3 border-b border-[#141417]">
-        {(['files', 'schema', 'config'] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`text-[12px] font-medium pb-2 cursor-pointer ${
-              activeTab === tab
-                ? 'text-zinc-100 border-b-2 border-[#6366f1] -mb-px'
-                : 'text-zinc-600 hover:text-zinc-400'
-            }`}
-          >
-            {tab === 'files' ? 'Files' : tab === 'schema' ? 'Schema' : 'Stack'}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-4 px-4 pt-3 border-b border-[#141417]">
+        <div className="flex gap-6">
+          {(['files', 'schema', 'config', 'manifest'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`text-[12px] font-medium pb-2 cursor-pointer capitalize ${
+                activeTab === tab
+                  ? 'text-zinc-100 border-b-2 border-[#6366f1] -mb-px'
+                  : 'text-zinc-600 hover:text-zinc-400'
+              }`}
+            >
+              {tab === 'manifest' ? 'Manifest' : tab === 'config' ? 'Stack' : tab}
+            </button>
+          ))}
+        </div>
+        {onModelIdChange && onAutoModelChange && onMaxModeChange && (
+          <ModelPicker
+            modelId={modelId}
+            autoModel={autoModel}
+            maxMode={maxMode}
+            toolsStatus={toolsStatus}
+            onModelIdChange={onModelIdChange}
+            onAutoModelChange={onAutoModelChange}
+            onMaxModeChange={onMaxModeChange}
+          />
+        )}
       </div>
 
       <div className="h-[320px] min-h-[240px]">
-        {activeTab === 'files' && (
-          files.length > 0 ? (
+        {activeTab === 'files' &&
+          (files.length > 0 ? (
             <CodePanel
               files={files}
               selectedFileIdx={selectedFileIdx}
@@ -101,18 +133,16 @@ export default function AdvancedPanel({
             <div className="h-full flex items-center justify-center text-[12px] text-zinc-600 font-mono">
               {githubMeta ? `github/${githubMeta}` : 'No files — run a build'}
             </div>
-          )
-        )}
+          ))}
 
-        {activeTab === 'schema' && (
-          files.length > 0 ? (
+        {activeTab === 'schema' &&
+          (files.length > 0 ? (
             <SchemaVisualizer files={files} />
           ) : (
             <div className="h-full flex items-center justify-center text-[12px] text-zinc-600">
               No schema
             </div>
-          )
-        )}
+          ))}
 
         {activeTab === 'config' && (
           <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-6 font-mono text-[12px]">
@@ -132,7 +162,23 @@ export default function AdvancedPanel({
               <p className="text-zinc-600 uppercase tracking-wider text-[10px] mb-1">GitHub</p>
               <p className="text-zinc-200 truncate">{githubRepo || githubMeta || '—'}</p>
             </div>
+            {builderOutput?.detected_mode && (
+              <div>
+                <p className="text-zinc-600 uppercase tracking-wider text-[10px] mb-1">Mode</p>
+                <p className="text-zinc-200">{builderOutput.detected_mode}</p>
+              </div>
+            )}
+            {builderOutput?.project_type && (
+              <div>
+                <p className="text-zinc-600 uppercase tracking-wider text-[10px] mb-1">Project</p>
+                <p className="text-zinc-200">{builderOutput.project_type}</p>
+              </div>
+            )}
           </div>
+        )}
+
+        {activeTab === 'manifest' && (
+          <ManifestExport manifest={manifest} runId={runId} />
         )}
       </div>
     </div>

@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react'
 import BuildChecklist from './BuildChecklist'
+import ProgressTimeline from './ProgressTimeline'
 import type { AgentRunLog } from '@/lib/studio/types'
+import type { ForgeProjectType } from '@/lib/studio/forge-types'
 
 type Viewport = 'desktop' | 'mobile'
 
@@ -14,11 +16,85 @@ interface PreviewPaneProps {
   runStatus: string
   runLogs: AgentRunLog[]
   vercelConnected: boolean
+  projectType?: ForgeProjectType
+  builderSummary?: string | null
   onReviewCode: () => void
   onDeploy: () => Promise<void>
   onSharePreview: () => void
   deployError: string | null
   deploying: boolean
+  showProgressFeed?: boolean
+}
+
+function ProjectTypePreview({
+  projectType,
+  previewUrl,
+  summary,
+}: {
+  projectType: ForgeProjectType
+  previewUrl: string | null
+  summary?: string | null
+}) {
+  if (projectType === 'mobile_expo') {
+    const expoUrl = previewUrl || 'exp://localhost:8081'
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-[13px] font-semibold text-white mb-2">Expo / Mobile preview</p>
+        <p className="text-[11px] text-zinc-500 mb-4 max-w-sm">
+          Run <code className="text-zinc-400">npx expo start</code> locally or open Expo Go with your dev server URL.
+        </p>
+        <a
+          href={expoUrl.startsWith('http') ? expoUrl : `https://expo.dev`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[12px] text-[#818cf8] underline font-mono break-all"
+        >
+          {expoUrl}
+        </a>
+        {summary && (
+          <p className="mt-4 text-[11px] text-zinc-600 max-w-md line-clamp-4">{summary}</p>
+        )}
+      </div>
+    )
+  }
+
+  if (projectType === 'api_service') {
+    const swaggerHint = previewUrl
+      ? `${previewUrl.replace(/\/$/, '')}/docs`
+      : '/api/docs or /swagger'
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center p-6">
+        <p className="text-[13px] font-semibold text-white mb-2">API service preview</p>
+        <p className="text-[11px] text-zinc-500 mb-3">OpenAPI / Swagger when the service is running:</p>
+        <span className="text-[12px] font-mono text-[#a5b4fc] bg-[#6366f1]/10 px-3 py-2 rounded">
+          {swaggerHint}
+        </span>
+        <p className="mt-4 text-[10px] text-zinc-600">
+          Health: GET /health · Routes under /api/v1
+        </p>
+      </div>
+    )
+  }
+
+  if (projectType === 'infra_devops') {
+    return (
+      <div className="w-full h-full flex flex-col p-6 overflow-auto">
+        <p className="text-[13px] font-semibold text-white mb-2">Infra / DevOps output</p>
+        <p className="text-[11px] text-zinc-500 mb-4">
+          Review generated Terraform, Railway, or CI configs in Advanced → Files. Deploy via your provider CLI.
+        </p>
+        <div className="border border-dashed border-[#262626] rounded-lg p-4 font-mono text-[11px] text-zinc-500 text-left">
+          <p>railway up</p>
+          <p className="mt-2 text-zinc-600"># or terraform plan / apply</p>
+        </div>
+        {summary && (
+          <pre className="mt-4 text-[10px] text-zinc-600 whitespace-pre-wrap">{summary.slice(0, 800)}</pre>
+        )}
+      </div>
+    )
+  }
+
+  return null
 }
 
 function PreviewEmptyState() {
@@ -54,23 +130,30 @@ export default function PreviewPane({
   runStatus,
   runLogs,
   vercelConnected,
+  projectType = 'auto',
+  builderSummary,
   onReviewCode,
   onDeploy,
   onSharePreview,
   deployError,
   deploying,
+  showProgressFeed = false,
 }: PreviewPaneProps) {
   const [viewport, setViewport] = useState<Viewport>('desktop')
   const [iframeKey, setIframeKey] = useState(0)
 
+  const resolvedType =
+    projectType === 'auto' ? 'web_nextjs' : projectType
+  const isWeb = resolvedType === 'web_nextjs' || resolvedType === 'fullstack_monorepo'
   const displayUrl = previewUrl || 'preview.karnex.app'
 
   const showChecklist = isBuilding && runId
-  const showIframe = !isBuilding && previewUrl && buildComplete
+  const showIframe = isWeb && !isBuilding && previewUrl && buildComplete
+  const showAltPreview =
+    !isWeb && (buildComplete || !!builderSummary) && !showChecklist
 
   return (
     <div className="flex flex-col h-full bg-[#0a0a0e] border border-[#141417] rounded-lg overflow-hidden min-h-0">
-      {/* Browser chrome */}
       <div className="shrink-0 flex items-center gap-3 px-3 py-2 border-b border-[#141417] bg-[#09090b]">
         <div className="flex gap-1.5">
           <div className="h-[10px] w-[10px] rounded-full forge-dot-red opacity-80" />
@@ -79,6 +162,9 @@ export default function PreviewPane({
         </div>
         <div className="flex-1 flex items-center gap-2 bg-[#050505] border border-[#141417] rounded-md px-3 py-1 min-w-0">
           <span className="text-[11px] font-mono text-zinc-600 truncate">{displayUrl}</span>
+          {resolvedType !== 'web_nextjs' && (
+            <span className="text-[9px] text-zinc-600 shrink-0 uppercase">{resolvedType.replace('_', ' ')}</span>
+          )}
         </div>
         <button
           type="button"
@@ -88,30 +174,31 @@ export default function PreviewPane({
         >
           ↻
         </button>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => setViewport('desktop')}
-            className={`text-[10px] px-2 py-1 rounded ${viewport === 'desktop' ? 'bg-white/[0.06] text-zinc-200' : 'text-zinc-600'}`}
-          >
-            Desktop
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewport('mobile')}
-            className={`text-[10px] px-2 py-1 rounded ${viewport === 'mobile' ? 'bg-white/[0.06] text-zinc-200' : 'text-zinc-600'}`}
-          >
-            Mobile
-          </button>
-        </div>
+        {isWeb && (
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setViewport('desktop')}
+              className={`text-[10px] px-2 py-1 rounded ${viewport === 'desktop' ? 'bg-white/[0.06] text-zinc-200' : 'text-zinc-600'}`}
+            >
+              Desktop
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewport('mobile')}
+              className={`text-[10px] px-2 py-1 rounded ${viewport === 'mobile' ? 'bg-white/[0.06] text-zinc-200' : 'text-zinc-600'}`}
+            >
+              Mobile
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Viewport */}
       <div className="flex-1 relative min-h-0 bg-[#050505] flex items-center justify-center p-2">
         <div
           className={`relative h-full transition-all duration-300 ${
-            viewport === 'mobile' ? 'w-[375px] max-w-full' : 'w-full'
-          } ${showIframe ? 'opacity-100' : showChecklist ? 'opacity-0' : 'opacity-100'}`}
+            isWeb && viewport === 'mobile' ? 'w-[375px] max-w-full' : 'w-full'
+          } ${showIframe || showAltPreview ? 'opacity-100' : showChecklist ? 'opacity-0' : 'opacity-100'}`}
         >
           {showIframe ? (
             <iframe
@@ -121,13 +208,21 @@ export default function PreviewPane({
               className="w-full h-full border-0 rounded-md bg-white"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             />
+          ) : showAltPreview ? (
+            <ProjectTypePreview
+              projectType={resolvedType as ForgeProjectType}
+              previewUrl={previewUrl}
+              summary={builderSummary}
+            />
           ) : (
             <PreviewEmptyState />
           )}
         </div>
 
         {showChecklist && runId && (
-          <div className={`absolute inset-2 transition-opacity duration-300 ${buildComplete ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <div
+            className={`absolute inset-2 transition-opacity duration-300 ${buildComplete ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          >
             <BuildChecklist status={runStatus} logs={runLogs} />
           </div>
         )}
@@ -144,15 +239,16 @@ export default function PreviewPane({
         </div>
       )}
 
-      {/* Actions */}
+      {showProgressFeed && runLogs.length > 0 && <ProgressTimeline logs={runLogs} />}
+
       <div className="shrink-0 grid grid-cols-3 gap-2 p-3 border-t border-[#141417] bg-[#09090b]">
         <button
           type="button"
           onClick={() => void onDeploy()}
-          disabled={deploying}
+          disabled={deploying || !isWeb}
           className="text-[12px] font-semibold text-white bg-[#6366f1] hover:bg-[#5558e6] py-2.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
         >
-          {deploying ? 'Deploying...' : 'Deploy to Vercel'}
+          {deploying ? 'Deploying...' : isWeb ? 'Deploy to Vercel' : 'Deploy N/A'}
         </button>
         <button
           type="button"

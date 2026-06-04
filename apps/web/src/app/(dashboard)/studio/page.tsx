@@ -16,6 +16,13 @@ import {
   statusToCtoMessage,
 } from '@/lib/studio/status-mappers'
 import type { BuilderOutput, ChatMessage, TechStack } from '@/lib/studio/types'
+import type { ForgeAutonomy, ForgeMode, ForgeProjectType } from '@/lib/studio/forge-types'
+import StudioForgeControls from '@/components/studio/StudioForgeControls'
+import ProgressTimeline from '@/components/studio/ProgressTimeline'
+import LetKarnexHandoffs from '@/components/studio/LetKarnexHandoffs'
+import DetectedModeChip from '@/components/studio/DetectedModeChip'
+import PlanEditor from '@/components/studio/PlanEditor'
+import { detectForgeModeClient } from '@/lib/studio/detect-mode'
 
 const DEFAULT_TECH_STACK: TechStack = {
   framework: 'nextjs',
@@ -59,6 +66,21 @@ function StudioWorkspace() {
   const [deploying, setDeploying] = useState(false)
   const [pendingSpec, setPendingSpec] = useState('')
   const lastStatusRef = useRef<string>('')
+  const [forgeMode, setForgeMode] = useState<ForgeMode>('auto')
+  const [forgeAutonomy, setForgeAutonomy] = useState<ForgeAutonomy>('founder')
+  const [projectType, setProjectType] = useState<ForgeProjectType>('auto')
+  const [modelId, setModelId] = useState('karnex-forge-fast-high')
+  const [autoModel, setAutoModel] = useState(false)
+  const [maxMode, setMaxMode] = useState(false)
+  const [planApproved, setPlanApproved] = useState(false)
+  const [awaitingPlanApproval, setAwaitingPlanApproval] = useState(false)
+  const [toolsStatus, setToolsStatus] = useState<'ok' | 'degraded'>('ok')
+  const [useAllSteps, setUseAllSteps] = useState(false)
+  const [skipGithubPush, setSkipGithubPush] = useState(false)
+  const [costEstimate, setCostEstimate] = useState<string | null>(null)
+  const [costUsdRange, setCostUsdRange] = useState<[number, number] | null>(null)
+  const [proactiveScanning, setProactiveScanning] = useState(false)
+  const [detectedFromLogs, setDetectedFromLogs] = useState<string | null>(null)
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -126,6 +148,9 @@ function StudioWorkspace() {
       setLoading(false)
       setBuildComplete(true)
       const output = await fetchRunOutput(runId)
+      if (output?.approval_required || output?.pending_plan) {
+        setAwaitingPlanApproval(true)
+      }
       await refreshPreviewUrl()
       setMessages((prev) => {
         const summary = output?.summary || statusToCtoMessage('success')?.message || 'Build completed successfully.'
@@ -182,9 +207,14 @@ function StudioWorkspace() {
     })
   }, [runStatus])
 
-  const handleBuild = async (specification: string) => {
+  const handleBuild = async (
+    specification: string,
+    opts?: { planApprovedOverride?: boolean }
+  ) => {
     const spec = specification.trim() || pendingSpec.trim()
     if (!spec) return
+
+    const approved = opts?.planApprovedOverride ?? planApproved
 
     setLoading(true)
     setBuildComplete(false)
@@ -192,6 +222,10 @@ function StudioWorkspace() {
     setCurrentRunId(null)
     lastStatusRef.current = ''
     setDeployError(null)
+    if (!opts?.planApprovedOverride) {
+      setPlanApproved(false)
+      setAwaitingPlanApproval(false)
+    }
 
     setMessages((prev) => [
       ...prev,
@@ -215,6 +249,17 @@ function StudioWorkspace() {
         specification: spec,
         tech_stack: techStack,
         github_repo: githubRepo,
+        mode: forgeMode,
+        autonomy: forgeAutonomy,
+        project_type: projectType,
+        model_id: autoModel ? undefined : modelId,
+        auto_model: autoModel,
+        max_mode: maxMode,
+        plan_approved: approved,
+        preview_url: previewUrl,
+        use_selected_model_all_steps: useAllSteps,
+        skip_github_push: skipGithubPush,
+        estimated_cost_usd: costUsdRange ?? undefined,
       }
 
       if (task) {
@@ -223,6 +268,17 @@ function StudioWorkspace() {
           specification: spec,
           tech_stack: techStack,
           github_repo: githubRepo,
+          mode: forgeMode,
+          autonomy: forgeAutonomy,
+          project_type: projectType,
+          model_id: autoModel ? undefined : modelId,
+          auto_model: autoModel,
+          max_mode: maxMode,
+          plan_approved: approved,
+          preview_url: previewUrl,
+          use_selected_model_all_steps: useAllSteps,
+          skip_github_push: skipGithubPush,
+          task_id: task.id,
         }
       }
 
@@ -284,9 +340,130 @@ function StudioWorkspace() {
     void navigator.clipboard.writeText(previewUrl)
   }
 
+  const handlePlanApproved = () => {
+    setPlanApproved(true)
+    setAwaitingPlanApproval(false)
+    const lastUser = [...messages].reverse().find((m) => m.sender === 'user')
+    if (lastUser) void handleBuild(lastUser.message, { planApprovedOverride: true })
+  }
+
+  const handleProactiveScan = async () => {
+    setProactiveScanning(true)
+    setForgeMode('debug')
+    const spec =
+      'Proactive scan: find bugs, missing error handling, type issues, and security risks. Apply patches where possible.'
+    setPendingSpec(spec)
+    await handleBuild(spec)
+    setProactiveScanning(false)
+  }
+
+  useEffect(() => {
+    if (searchParams.get('advanced') === '1') setAdvancedOpen(true)
+    const specParam = searchParams.get('spec')
+    if (specParam) setPendingSpec(decodeURIComponent(specParam))
+  }, [searchParams])
+
+  useEffect(() => {
+    fetch('/api/forge/tools-health')
+      .then((r) => r.json())
+      .then((d) => setToolsStatus(d.status === 'degraded' ? 'degraded' : 'ok'))
+      .catch(() => setToolsStatus('degraded'))
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/forge/studio-defaults')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.autonomy) setForgeAutonomy(d.autonomy)
+        if (typeof d.max_mode === 'boolean') setMaxMode(d.max_mode)
+        if (typeof d.auto_model === 'boolean') setAutoModel(d.auto_model)
+        if (d.mode) setForgeMode(d.mode)
+        if (d.project_type) setProjectType(d.project_type)
+      })
+      .catch(() => {})
+  }, [])
+
+  const clientDetected = pendingSpec.trim()
+    ? detectForgeModeClient(pendingSpec)
+    : null
+
+  const effectiveDetectedMode =
+    (detectedFromLogs as Exclude<ForgeMode, 'auto'> | null) ||
+    (clientDetected?.mode ?? null)
+
+  useEffect(() => {
+    const logMode = runLogs.find((l) => l.type === 'mode_detected' || l.detected_mode)
+    if (logMode?.detected_mode) setDetectedFromLogs(logMode.detected_mode)
+  }, [runLogs])
+
+  const refreshCostEstimate = useCallback(async (spec: string) => {
+    if (!spec.trim()) {
+      setCostEstimate(null)
+      return
+    }
+    try {
+      const res = await fetch('/api/forge/cost-estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          specification: spec,
+          max_mode: maxMode,
+          mode: forgeMode,
+        }),
+      })
+      const data = await res.json()
+      if (data.usd_range && data.usd_range.length >= 2) {
+        setCostUsdRange([data.usd_range[0], data.usd_range[1]])
+        setCostEstimate(`$${data.usd_range[0]}–$${data.usd_range[1]}`)
+      }
+    } catch {
+      setCostEstimate(null)
+    }
+  }, [maxMode, forgeMode])
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      void refreshCostEstimate(pendingSpec)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [pendingSpec, refreshCostEstimate])
+
   return (
     <div className="flex flex-col h-screen min-h-0 bg-[#050505]">
       <div className="forge-accent-bar shrink-0" />
+
+      <StudioForgeControls
+        mode={forgeMode}
+        autonomy={forgeAutonomy}
+        projectType={projectType}
+        modelId={modelId}
+        autoModel={autoModel}
+        maxMode={maxMode}
+        planApproved={planApproved}
+        toolsStatus={toolsStatus}
+        useAllSteps={useAllSteps}
+        skipGithubPush={skipGithubPush}
+        costEstimate={costEstimate}
+        showPlanApprove={awaitingPlanApproval && forgeAutonomy === 'developer'}
+        onModeChange={setForgeMode}
+        onAutonomyChange={setForgeAutonomy}
+        onProjectTypeChange={setProjectType}
+        onModelIdChange={setModelId}
+        onAutoModelChange={setAutoModel}
+        onMaxModeChange={setMaxMode}
+        onPlanApproved={handlePlanApproved}
+        onUseAllStepsChange={setUseAllSteps}
+        onSkipGithubPushChange={setSkipGithubPush}
+        onProactiveScan={() => void handleProactiveScan()}
+        proactiveScanning={proactiveScanning}
+      />
+
+      <DetectedModeChip
+        detectedMode={effectiveDetectedMode}
+        reason={clientDetected?.reason}
+        currentMode={forgeMode}
+        onSwitch={(m) => setForgeMode(m)}
+      />
 
       <div className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 min-h-0">
@@ -308,6 +485,11 @@ function StudioWorkspace() {
               runId={currentRunId}
               runStatus={runStatus}
               runLogs={runLogs}
+              projectType={
+                (builderOutput?.project_type as ForgeProjectType) || projectType
+              }
+              builderSummary={builderOutput?.summary}
+              showProgressFeed
               vercelConnected={vercelConnected}
               onReviewCode={() => setAdvancedOpen(true)}
               onDeploy={handleDeploy}
@@ -318,11 +500,35 @@ function StudioWorkspace() {
           </div>
         </div>
 
+        {awaitingPlanApproval && builderOutput?.pending_plan && (
+          <PlanEditor
+            pendingPlan={builderOutput.pending_plan}
+            disabled={loading}
+            onSaveAndBuild={(edited) => void handleBuild(edited, { planApprovedOverride: true })}
+          />
+        )}
+
+        {builderOutput?.handoff_actions && builderOutput.handoff_actions.length > 0 && (
+          <LetKarnexHandoffs actions={builderOutput.handoff_actions} />
+        )}
+
+        {currentRunId && runLogs.length > 0 && (
+          <ProgressTimeline logs={runLogs} />
+        )}
+
         <AdvancedPanel
           open={advancedOpen}
           builderOutput={builderOutput}
           techStack={techStack}
           githubRepo={githubRepo}
+          runId={currentRunId}
+          toolsStatus={toolsStatus}
+          modelId={modelId}
+          autoModel={autoModel}
+          maxMode={maxMode}
+          onModelIdChange={setModelId}
+          onAutoModelChange={setAutoModel}
+          onMaxModeChange={setMaxMode}
         />
       </div>
     </div>

@@ -12,6 +12,12 @@ export interface BuilderOutput {
   tests_included: boolean
   deployment_ready: boolean
   suggested_improvements: string[]
+  pending_plan?: Record<string, unknown>
+  approval_required?: boolean
+  detected_mode?: string
+  project_type?: string
+  handoff_actions?: string[]
+  run_manifest?: Record<string, unknown>
 }
 
 export type ChatSender = 'user' | 'builder' | 'system'
@@ -28,6 +34,11 @@ export interface AgentRunLog {
   message: string
   timestamp: string
   fileCreated?: string
+  type?: string
+  detected_mode?: string
+  project_type?: string
+  subagent?: string
+  approval_type?: string
 }
 
 export interface TechStack {

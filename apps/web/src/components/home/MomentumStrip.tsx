@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 interface MomentumStripProps {
@@ -141,6 +142,14 @@ export default function MomentumStrip({
             style={{ width: `${Math.min(100, momentum)}%` }}
           />
         </div>
+        {momentum < 45 && (
+          <Link
+            href={`/studio?spec=${encodeURIComponent('Ship one small feature today to rebuild momentum — landing section or core dashboard widget.')}`}
+            className="text-[11px] text-[#818cf8] hover:text-white underline"
+          >
+            Open Studio with suggested build →
+          </Link>
+        )}
       </div>
 
       {/* Active Streak */}

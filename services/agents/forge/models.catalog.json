@@ -1,0 +1,115 @@
+{
+  "version": "1.0.0",
+  "default_model_id": "karnex-forge-fast-high",
+  "models": [
+    {
+      "id": "karnex-forge-fast",
+      "display_name": "Karnex Forge Fast",
+      "openrouter_model": "google/gemini-2.5-flash",
+      "tier": "Fast",
+      "max_tokens": 8000,
+      "badge": "Fast",
+      "role": "fast",
+      "best_for": "Subagent codegen, quick iterations"
+    },
+    {
+      "id": "karnex-forge-fast-low",
+      "display_name": "Karnex Forge Fast",
+      "openrouter_model": "google/gemini-2.5-flash",
+      "tier": "Low",
+      "max_tokens": 4000,
+      "badge": "Fast",
+      "role": "fast",
+      "temperature": 0.2
+    },
+    {
+      "id": "karnex-forge-fast-medium",
+      "display_name": "Karnex Forge Fast",
+      "openrouter_model": "google/gemini-2.5-flash",
+      "tier": "Medium",
+      "max_tokens": 8000,
+      "badge": "Fast",
+      "role": "fast",
+      "temperature": 0.3
+    },
+    {
+      "id": "karnex-forge-fast-high",
+      "display_name": "Karnex Forge Fast",
+      "openrouter_model": "google/gemini-2.5-flash",
+      "tier": "High",
+      "max_tokens": 12000,
+      "badge": "Fast",
+      "role": "fast",
+      "temperature": 0.4
+    },
+    {
+      "id": "gemini-3.5-flash-low",
+      "display_name": "Gemini 3.5 Flash",
+      "openrouter_model": "google/gemini-2.5-flash",
+      "tier": "Low",
+      "max_tokens": 4000,
+      "badge": "Fast",
+      "role": "fast"
+    },
+    {
+      "id": "gemini-3.5-flash-medium",
+      "display_name": "Gemini 3.5 Flash",
+      "openrouter_model": "google/gemini-2.5-flash",
+      "tier": "Medium",
+      "max_tokens": 8000,
+      "badge": "Fast",
+      "role": "fast"
+    },
+    {
+      "id": "gemini-3.5-flash-high",
+      "display_name": "Gemini 3.5 Flash",
+      "openrouter_model": "google/gemini-2.5-flash",
+      "tier": "High",
+      "max_tokens": 12000,
+      "badge": "Fast",
+      "role": "fast"
+    },
+    {
+      "id": "gemini-3.1-pro-low",
+      "display_name": "Gemini 3.1 Pro",
+      "openrouter_model": "google/gemini-3.1-pro-preview",
+      "tier": "Low",
+      "max_tokens": 8000,
+      "role": "pro"
+    },
+    {
+      "id": "gemini-3.1-pro-high",
+      "display_name": "Gemini 3.1 Pro",
+      "openrouter_model": "google/gemini-3.1-pro-preview",
+      "tier": "High",
+      "max_tokens": 16000,
+      "role": "pro"
+    },
+    {
+      "id": "claude-sonnet-4.6-thinking",
+      "display_name": "Claude Sonnet 4.6",
+      "openrouter_model": "anthropic/claude-sonnet-4",
+      "tier": "Thinking",
+      "max_tokens": 16000,
+      "thinking": true,
+      "role": "pro"
+    },
+    {
+      "id": "claude-opus-4.6-thinking",
+      "display_name": "Claude Opus 4.6",
+      "openrouter_model": "anthropic/claude-opus-4",
+      "tier": "Thinking",
+      "max_tokens": 16000,
+      "thinking": true,
+      "role": "pro"
+    },
+    {
+      "id": "gpt-oss-120b-medium",
+      "display_name": "GPT-OSS 120B",
+      "openrouter_model": "openai/gpt-oss-120b",
+      "tier": "Medium",
+      "max_tokens": 12000,
+      "role": "pro"
+    }
+  ]
+}

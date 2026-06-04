@@ -18,7 +18,11 @@ async def test():
 
     # 1. Create a dummy run ID in agent_runs
     run_id = str(uuid.uuid4())
-    founder_id = "bd00f3a0-ac1a-4cad-b42f-64de9a005545" # Existing founder in DB
+    # Fetch a valid founder ID from the database
+    founders_res = supabase.table("founders").select("id").limit(1).execute()
+    if not founders_res.data:
+        raise RuntimeError("No founders found in the database. Please register a user first.")
+    founder_id = founders_res.data[0]["id"]
 
     print(f"Creating run {run_id} in database...")
     supabase.table("agent_runs").insert({

@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/forge',
-        destination: '/studio',
+        destination: '/studio?advanced=1',
         permanent: false,
       },
       {

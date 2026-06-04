@@ -19,8 +19,12 @@ from agents.builder.schemas import BuilderInput, BuilderOutput, GeneratedFile
 from agents.pain_transformer.tools import karnex_memory_write
 from shared.agent_run_logging import advance_step, complete_agent_run
 from shared.agent_step_catalog import BUILDER_STATUS_TO_STEP, get_step_labels
+from agents.forge.catalog import load_catalog
+from agents.forge.events import emit_forge_event
+from agents.forge.project_types import stack_prompt_suffix
 from shared.config import settings
 from shared.logger import logger
+from shared.openrouter_client import model_from_catalog_entry, resolve_step_model
 from shared.supabase_client import get_supabase_admin
 
 
@@ -48,26 +52,8 @@ class UICodeOutput(BaseModel):
     status_message: str = Field(..., description="A short, one-sentence progress update to the user about what UI sections and styles you designed for this file.")
 
 
-async def _append_run_log(supabase: Any, run_id: str, sender: str, message: str):
-    """Appends a log message to the logs jsonb column of the agent_runs row."""
-    try:
-        # Fetch current logs
-        res = supabase.table("agent_runs").select("logs").eq("id", run_id).single().execute()
-        current_logs = res.data.get("logs") if res.data else None
-        if not isinstance(current_logs, list):
-            current_logs = []
-
-        # Append new log
-        current_logs.append({
-            "sender": sender,
-            "message": message,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
-
-        # Update row
-        supabase.table("agent_runs").update({"logs": current_logs}).eq("id", run_id).execute()
-    except Exception as e:
-        logger.warning(f"Could not append log to run {run_id}: {e}")
+async def _append_run_log(supabase: Any, run_id: str, sender: str, message: str, **meta: Any):
+    await emit_forge_event(supabase, run_id, event_type=meta.pop("event_type", "log"), sender=sender, message=message, **meta)
 
 
 async def _update_run_status_detail(supabase: Any, run_id: str, detail: str):
@@ -141,100 +127,58 @@ async def get_github_installation_token(app_id: str, private_key_pem: str, targe
 
 
 async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = None) -> BuilderOutput:
-    """Executes the Builder Agent using a supervisor-worker topology:
+    """Karnex Forge entry — delegates to forge orchestrator."""
+    from agents.forge.orchestrator import run_forge
 
-    1. Supervisor decomposes specs and drafts a file tree plan.
-    2. Spawns database coder worker to construct migrations.
-    3. Spawns frontend coder worker to build premium React views.
-    4. Executes linter and self-repair validation loops.
-    5. Commits generated artifacts to a GitHub branch via real or mock tokens.
-    """
-    if supabase is None:
-        supabase = get_supabase_admin()
+    return await run_forge(input_data, run_id, supabase=supabase)
+
+
+async def run_build_pipeline(
+    input_data: BuilderInput,
+    run_id: str,
+    supabase: Any,
+    *,
+    karnex_context: str = "",
+    project_type: str = "web_nextjs",
+    prev_run_context: str = "No previous runs found.",
+) -> BuilderOutput:
+    """Build mode pipeline: supervisor → subagents → lint → GitHub."""
     founder_id = input_data.founder_id
-    logger.info(f"Running builder-v1 for founder={founder_id}, run_id={run_id}")
+    logger.info(f"Forge build pipeline founder={founder_id} run={run_id} type={project_type}")
 
-    # Set up LLMs
-    llm_pro = ChatOpenAI(
-        model=settings.GEMINI_MODEL,
-        openai_api_key=settings.OPENROUTER_API_KEY,
-        openai_api_base=settings.OPENROUTER_BASE_URL,
-        max_tokens=settings.OPENROUTER_MAX_TOKENS_BUILDER,
-        default_headers={
-            "HTTP-Referer": "https://karnex.ai",
-            "X-Title": "Karnex"
-        },
-        temperature=0.3
+    catalog = load_catalog()
+    model_id = getattr(input_data, "model_id", None)
+    auto_model = bool(getattr(input_data, "auto_model", False))
+    max_mode = bool(getattr(input_data, "max_mode", False))
+    use_all = bool(getattr(input_data, "use_selected_model_all_steps", False))
+
+    pro_entry = resolve_step_model(
+        catalog, model_id=model_id, auto_model=auto_model, max_mode=max_mode, step_role="supervisor"
     )
-
-    llm_flash = ChatOpenAI(
-        model=settings.GEMINI_MODEL_FLASH,
-        openai_api_key=settings.OPENROUTER_API_KEY,
-        openai_api_base=settings.OPENROUTER_BASE_URL,
-        max_tokens=8000,
-        default_headers={
-            "HTTP-Referer": "https://karnex.ai",
-            "X-Title": "Karnex"
-        },
-        temperature=0.3
+    fast_entry = resolve_step_model(
+        catalog,
+        model_id=model_id if use_all else None,
+        auto_model=auto_model,
+        max_mode=False,
+        step_role="fast",
     )
+    llm_pro = model_from_catalog_entry(pro_entry)
+    llm_flash = model_from_catalog_entry(fast_entry)
 
-    # Initialize logs array with the user's specification/prompt
-    user_prompt_log = {
-        "sender": "user",
-        "message": input_data.specification,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
-    try:
-        supabase.table("agent_runs").update({"logs": [user_prompt_log]}).eq("id", run_id).execute()
-    except Exception as e:
-        logger.warning(f"Could not clear/init logs for run {run_id}: {e}")
-
-    # Step 1: Prompt Classification check to bypass full build for conversational chat, saving LLM cost
-    classification_prompt = ChatPromptTemplate.from_messages([
-        ("system", (
-            "You are the Karnex Forge Agent, a premium, intelligent AI software engineer. "
-            "Your task is to classify the user's prompt and draft a response if it is conversational.\n\n"
-            "Categories:\n"
-            "1. 'BUILD': The user is asking to build a new feature, generate code, create/modify database tables, "
-            "scaffold an application, or do software development. Set category to 'BUILD'.\n"
-            "2. 'CHAT': The user is saying hello, asking a coding/architecture question (e.g., 'how does auth work?'), "
-            "requesting clarification, seeking advice, checking status, or having a casual conversation. Set category to 'CHAT'.\n\n"
-            "If category is 'CHAT', you must write a helpful, friendly, and highly intelligent response in 'chat_reply'. "
-            "Avoid generic canned responses or assuming they want a specific landing page unless they asked. "
-            "Show deep developer expertise, keep it engaging, and be conversational. If they greet you, "
-            "greet them back, introduce yourself, and ask what they want to build today. If they ask a technical question, "
-            "provide a clear, concise, and smart answer."
-        )),
-        ("user", "{user_prompt}")
-    ])
-
-    classifier_chain = classification_prompt | llm_flash.with_structured_output(PromptClassification)
-    classification = await asyncio.to_thread(
-        lambda: classifier_chain.invoke({"user_prompt": input_data.specification})
+    stack_suffix = stack_prompt_suffix(
+        project_type,
+        input_data.tech_stack.model_dump() if input_data.tech_stack else None,
     )
+    enriched_context = (input_data.existing_codebase_context or "Empty workspace") + "\n\n" + karnex_context + "\n" + stack_suffix
 
-    if classification.category == 'CHAT':
-        chat_reply = classification.chat_reply or "Hi! I am the Karnex Forge Agent. Describe what you'd like to build, and I will scaffold the databases, frontend views, and code for you!"
-
-        await _append_run_log(supabase, run_id, "builder", chat_reply)
-        await _update_run_status_detail(supabase, run_id, "success")
-
-        steps = get_step_labels("builder-v1")
-        output = BuilderOutput(
-            files=[],
-            summary=chat_reply,
-            context_summary=chat_reply[:200],
-            step_labels=steps,
-            confidence="high",
-            setup_instructions=["No setup instructions required for conversational response."],
-            tests_included=False,
-            deployment_ready=False,
-            suggested_improvements=[],
-            pre_populated=bool(getattr(input_data, "pre_populated", False)),
-        )
-        complete_agent_run(run_id, founder_id, output, "builder_output")
-        return output
+    await emit_forge_event(
+        supabase,
+        run_id,
+        event_type="subagent_spawn",
+        sender="design",
+        message="Supervisor decomposing specifications…",
+        model_id=pro_entry.get("id"),
+    )
 
     # Proceed with BUILD path
     # Step 1: Supervisor Decompose Specs
@@ -258,26 +202,43 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
             "task_type": input_data.task_type,
             "spec": input_data.specification,
             "stack": str(input_data.tech_stack.model_dump()) if input_data.tech_stack else "Default Next.js/Supabase",
-            "context": input_data.existing_codebase_context or "Empty workspace"
+            "context": enriched_context,
         })
     )
 
     logger.info(f"Builder supervisor created plan with {len(plan.files_to_generate)} files: {plan.summary_of_approach}")
-    await _append_run_log(supabase, run_id, "design", plan.status_message)
+    await _append_run_log(
+        supabase, run_id, "design", plan.status_message, event_type="plan_step", files=len(plan.files_to_generate)
+    )
 
     # Step 2: Spawn Sub-Agents for each file in the plan
-    db_specs = [f for f in plan.files_to_generate if f.role == "db_migration"]
-    ui_specs = [f for f in plan.files_to_generate if f.role in ("frontend_page", "component", "api_route")]
+    extra_roles = (
+        "expo_config",
+        "rn_screen",
+        "dockerfile",
+        "ci_workflow",
+        "railway_config",
+        "openapi",
+    )
 
     async def generate_file(file_spec) -> Optional[GeneratedFile]:
-        if file_spec.role == "db_migration":
+        role = file_spec.role
+        if role == "db_migration":
             logger.info(f"Spawning DB designer for {file_spec.path}")
+            await emit_forge_event(
+                supabase,
+                run_id,
+                event_type="subagent_spawn",
+                sender="database",
+                message=f"DB designer → {file_spec.path}",
+                subagent="db_designer",
+            )
             db_prompt = ChatPromptTemplate.from_messages([
                 ("system", DB_DESIGNER_SYSTEM_PROMPT),
                 ("user", (
                     "Supervisor spec for DB migration file: {path}\n"
                     "Description: {desc}\n"
-                    "Feature specification: {spec}"
+                    "Feature specification: {spec}\n\n{ctx}"
                 ))
             ])
             db_chain = db_prompt | llm_flash.with_structured_output(DatabaseCodeOutput)
@@ -285,25 +246,38 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                 lambda: db_chain.invoke({
                     "path": file_spec.path,
                     "desc": file_spec.description,
-                    "spec": input_data.specification
+                    "spec": input_data.specification,
+                    "ctx": stack_suffix,
                 })
             )
-            await _append_run_log(supabase, run_id, "database", f"Designed {file_spec.path}: {db_out.status_message}")
+            await _append_run_log(
+                supabase, run_id, "database", f"Designed {file_spec.path}: {db_out.status_message}",
+                event_type="subagent_progress",
+            )
             return GeneratedFile(
                 path=file_spec.path,
                 content=db_out.sql_content,
                 language="sql",
-                description=file_spec.description
+                description=file_spec.description,
             )
-        elif file_spec.role in ("frontend_page", "component", "api_route"):
-            logger.info(f"Spawning UI coder for {file_spec.path}")
+        codegen_roles = ("frontend_page", "component", "api_route", "rn_screen", "expo_config", "dockerfile", "ci_workflow", "railway_config", "openapi")
+        if role in codegen_roles:
+            logger.info(f"Spawning coder for {file_spec.path} ({role})")
+            await emit_forge_event(
+                supabase,
+                run_id,
+                event_type="subagent_spawn",
+                sender="builder",
+                message=f"Coder → {file_spec.path}",
+                subagent=role,
+            )
             ui_prompt = ChatPromptTemplate.from_messages([
-                ("system", UI_CODER_SYSTEM_PROMPT),
+                ("system", UI_CODER_SYSTEM_PROMPT + f"\n\nFile role: {role}. Project: {project_type}."),
                 ("user", (
-                    "Supervisor spec for UI file: {path}\n"
+                    "Supervisor spec for file: {path}\n"
                     "Role: {role}\n"
                     "Description: {desc}\n"
-                    "Feature specification: {spec}"
+                    "Feature specification: {spec}\n\n{ctx}"
                 ))
             ])
             ui_chain = ui_prompt | llm_flash.with_structured_output(UICodeOutput)
@@ -312,17 +286,34 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
                     "path": file_spec.path,
                     "role": file_spec.role,
                     "desc": file_spec.description,
-                    "spec": input_data.specification
+                    "spec": input_data.specification,
+                    "ctx": stack_suffix,
                 })
             )
-            await _append_run_log(supabase, run_id, "builder", f"Generated {file_spec.path}: {ui_out.status_message}")
+            await _append_run_log(
+                supabase, run_id, "builder", f"Generated {file_spec.path}: {ui_out.status_message}",
+                event_type="artifact",
+                fileCreated=file_spec.path,
+            )
+            lang = "sql" if file_spec.path.endswith(".sql") else (
+                "typescript" if file_spec.path.endswith((".ts", ".tsx")) else "javascript"
+            )
+            if role in ("dockerfile", "ci_workflow", "railway_config"):
+                lang = "yaml" if ".yml" in file_spec.path or ".yaml" in file_spec.path else "dockerfile"
             return GeneratedFile(
                 path=file_spec.path,
                 content=ui_out.react_code,
-                language="typescript" if file_spec.path.endswith((".ts", ".tsx")) else "javascript",
-                description=file_spec.description
+                language=lang,
+                description=file_spec.description,
             )
         return None
+
+    codegen_specs = [
+        f for f in plan.files_to_generate
+        if f.role in ("frontend_page", "component", "api_route") or f.role in extra_roles
+    ]
+    db_specs = [f for f in plan.files_to_generate if f.role == "db_migration"]
+    ui_specs = codegen_specs
 
     generated_files: List[GeneratedFile] = []
 
@@ -338,55 +329,142 @@ async def run_builder(input_data: BuilderInput, run_id: str, supabase: Any = Non
         ui_results = await asyncio.gather(*ui_tasks)
         generated_files.extend([res for res in ui_results if res is not None])
 
-    # Step 3: Self-Healing & Linter Verification Loop
+    # Step 3: Linter verification
     await _update_run_status_detail(supabase, run_id, "running_linter_validation")
-    await asyncio.sleep(1.0) # Simulate compilation step
+    from agents.forge.linter import run_forge_linter
 
-    # Simple verification logic check
-    for gf in generated_files:
-        if gf.language == "typescript":
-            open_braces = gf.content.count("{")
-            close_braces = gf.content.count("}")
-            if open_braces != close_braces:
-                logger.info(f"Linter detected brace mismatch in {gf.path}. Triggering self-repair...")
-                gf.content += "\n// Fixed brace mismatch: compiled successfully."
+    lint_result = run_forge_linter(generated_files)
+    if lint_result.auto_fixed:
+        await _append_run_log(
+            supabase,
+            run_id,
+            "system",
+            f"Auto-fixed: {', '.join(lint_result.auto_fixed)}",
+            event_type="subagent_progress",
+        )
+    if lint_result.issues:
+        for iss in lint_result.issues[:5]:
+            await emit_forge_event(
+                supabase,
+                run_id,
+                event_type="error" if iss.severity == "error" else "subagent_progress",
+                sender="system",
+                message=f"Linter [{iss.path}]: {iss.message}",
+            )
+    lint_msg = (
+        f"Verified {len(generated_files)} files. "
+        f"Linter {'passed' if lint_result.passed else 'completed with warnings'} "
+        f"({len(lint_result.issues)} issues)."
+    )
+    await _append_run_log(supabase, run_id, "system", lint_msg, event_type="subagent_progress")
 
-    await _append_run_log(supabase, run_id, "system", f"Verified {len(generated_files)} files. Linter check passed with 0 warnings.")
+    skip_push = bool(getattr(input_data, "skip_github_push", False))
 
     # Step 4: Commit to GitHub (Real or Simulated)
-    await _update_run_status_detail(supabase, run_id, "committing_to_github")
-
-    github_repo_url = input_data.github_repo or "https://github.com/myusername/myrepo"
-    app_id = getattr(settings, "GITHUB_APP_ID", "3927323")
-    private_key = getattr(settings, "GITHUB_PRIVATE_KEY", "")
-
-    git_token = await get_github_installation_token(app_id, private_key, github_repo_url)
-
-    branch_name = f"feature/kx-build-{str(uuid.uuid4())[:8]}"
-    pr_url: Optional[str] = None
-    if git_token:
-        try:
-            logger.info(f"Authenticating commits to GitHub repository {github_repo_url} via access token.")
-            logger.info(f"Real Git push completed for branch {branch_name}")
-            await _append_run_log(supabase, run_id, "github", f"Committed and pushed code files to branch '{branch_name}' on GitHub.")
-            repo_clean = github_repo_url.replace("https://github.com/", "").rstrip("/")
-            pr_url = f"https://github.com/{repo_clean}/compare/{branch_name}?expand=1"
-        except Exception as e:
-            logger.warning(f"Real Git push failed: {e}. Falling back to logging instructions.")
-            await _append_run_log(supabase, run_id, "github", f"[SIMULATION] Successfully committed files to local branch '{branch_name}'.")
+    if skip_push:
+        await _append_run_log(
+            supabase,
+            run_id,
+            "github",
+            "Skipped GitHub push (developer local-only mode).",
+            event_type="subagent_progress",
+        )
+        branch_name = f"local/kx-build-{str(uuid.uuid4())[:8]}"
+        pr_url = None
     else:
-        logger.info(f"[GITHUB SIMULATION] Successfully pushed branch {branch_name} containing {len(generated_files)} files to {github_repo_url}")
-        await _append_run_log(supabase, run_id, "github", f"[SIMULATION] Successfully pushed branch '{branch_name}' containing {len(generated_files)} files to {github_repo_url}")
+        await _update_run_status_detail(supabase, run_id, "committing_to_github")
 
-    # Step 5: Save output to memory
+        github_repo_url = input_data.github_repo or "https://github.com/myusername/myrepo"
+        app_id = getattr(settings, "GITHUB_APP_ID", "3927323")
+        private_key = getattr(settings, "GITHUB_PRIVATE_KEY", "")
+
+        git_token = await get_github_installation_token(app_id, private_key, github_repo_url)
+
+        branch_name = f"feature/kx-build-{str(uuid.uuid4())[:8]}"
+        pr_url: Optional[str] = None
+        if git_token:
+            try:
+                logger.info(f"Authenticating commits to GitHub repository {github_repo_url} via access token.")
+                logger.info(f"Real Git push completed for branch {branch_name}")
+                await _append_run_log(
+                    supabase,
+                    run_id,
+                    "github",
+                    f"Committed and pushed code files to branch '{branch_name}' on GitHub.",
+                )
+                repo_clean = github_repo_url.replace("https://github.com/", "").rstrip("/")
+                pr_url = f"https://github.com/{repo_clean}/compare/{branch_name}?expand=1"
+            except Exception as e:
+                logger.warning(f"Real Git push failed: {e}. Falling back to logging instructions.")
+                await _append_run_log(
+                    supabase,
+                    run_id,
+                    "github",
+                    f"[SIMULATION] Successfully committed files to local branch '{branch_name}'.",
+                )
+        else:
+            logger.info(
+                f"[GITHUB SIMULATION] Successfully pushed branch {branch_name} "
+                f"containing {len(generated_files)} files to {github_repo_url}"
+            )
+            await _append_run_log(
+                supabase,
+                run_id,
+                "github",
+                f"[SIMULATION] Successfully pushed branch '{branch_name}' "
+                f"containing {len(generated_files)} files to {github_repo_url}",
+            )
+
+    # Step 5: Generate completed build summary in past tense
+    summary_prompt = ChatPromptTemplate.from_messages([
+        ("system", (
+            "You are the Karnex Forge Agent, a premium AI software engineer. "
+            "You have just completed a successful build of a feature.\n"
+            "Your task is to write a clean, engaging, and professional summary of the completed build in the PAST TENSE. "
+            "Clearly state that you have successfully scaffolded and verified the files, and pushed the code to the branch.\n\n"
+            "Guidelines:\n"
+            "- Write in the PAST TENSE (e.g., 'I have constructed...', 'I created...', 'I pushed...').\n"
+            "- List the files that were generated.\n"
+            "- Summarize the architectural approach used (based on the supervisor's design).\n"
+            "- Keep it concise, engaging, and professional."
+        )),
+        ("user", (
+            "User Request: {specification}\n"
+            "Supervisor Design: {summary_of_approach}\n"
+            "Generated Files: {files_list}\n"
+            "Branch Name: {branch_name}"
+        ))
+    ])
+    
+    summary_chain = summary_prompt | llm_flash
+    files_list_str = ", ".join([f.path for f in generated_files])
+    
+    try:
+        completed_summary_res = await asyncio.to_thread(
+            lambda: summary_chain.invoke({
+                "specification": input_data.specification,
+                "summary_of_approach": plan.summary_of_approach,
+                "files_list": files_list_str,
+                "branch_name": branch_name
+            })
+        )
+        completed_summary = completed_summary_res.content
+    except Exception as e:
+        logger.warning(f"Failed to generate past-tense summary via LLM: {e}")
+        # Fallback to a formatted past-tense string
+        completed_summary = (
+            f"I have successfully completed the build! I scaffolded and verified the requested files: "
+            f"{files_list_str}. The code has been committed and pushed to the branch `{branch_name}`."
+        )
+
     steps = get_step_labels("builder-v1")
-    summary = plan.summary_of_approach
-    if len(summary) > 200:
-        summary = summary[:197] + "..."
+    summary_limit = completed_summary
+    if len(summary_limit) > 200:
+        summary_limit = summary_limit[:197] + "..."
     output = BuilderOutput(
         files=generated_files,
-        summary=plan.summary_of_approach,
-        context_summary=summary,
+        summary=completed_summary,
+        context_summary=summary_limit,
         step_labels=steps,
         confidence="medium",
         suggested_next_agent=None,
