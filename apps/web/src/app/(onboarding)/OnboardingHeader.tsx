@@ -26,10 +26,8 @@ function HeaderContent() {
     <header className="sticky top-0 z-50 w-full border-b border-[#1a1a1a] bg-[#050505]/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
         {/* Brand Logo */}
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <span className="font-display font-bold text-white text-sm">K</span>
-          </div>
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.jpeg" alt="Karnex Logo" className="h-7 w-7 rounded-md object-cover" />
           <span className="font-display font-bold tracking-tight text-white text-lg">Karnex</span>
         </div>
 

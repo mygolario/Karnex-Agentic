@@ -18,6 +18,30 @@ export const metadata: Metadata = {
   description:
     "Karnex is a multi-agent AI platform that turns raw ideas into launched products with real revenue. Build and launch startups alone, without being alone.",
   keywords: ["AI", "startup", "co-founder", "agents", "SaaS", "solo founder", "indie hacker", "automation"],
+  icons: {
+    icon: "/icon.jpeg",
+    apple: "/apple-icon.jpeg",
+  },
+  openGraph: {
+    title: "Karnex — The AI Co-Founder for Solo Founders",
+    description:
+      "Karnex is a multi-agent AI platform that turns raw ideas into launched products with real revenue. Build and launch startups alone, without being alone.",
+    images: [
+      {
+        url: "/opengraph-image.jpeg",
+        width: 1200,
+        height: 630,
+        alt: "Karnex Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Karnex — The AI Co-Founder for Solo Founders",
+    description:
+      "Karnex is a multi-agent AI platform that turns raw ideas into launched products with real revenue. Build and launch startups alone, without being alone.",
+    images: ["/twitter-image.jpeg"],
+  },
 };
 
 export default function RootLayout({
