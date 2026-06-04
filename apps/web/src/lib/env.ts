@@ -7,7 +7,12 @@ const envSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string().optional().default(''),
   ENCRYPTION_KEY: z.string().length(32),
   NEXT_PUBLIC_APP_URL: z.string().url(),
-  GMAIL_MOCK_MODE: z.coerce.boolean().default(false),
+  GMAIL_MOCK_MODE: z
+    .preprocess(
+      (val) => typeof val === 'string' ? val === 'true' : Boolean(val),
+      z.boolean()
+    )
+    .default(false),
   KARNEX_INTERNAL_WEBHOOK_SECRET: z.string().optional().default(''),
   RESEND_API_KEY: z.string().optional().default(''),
 })
