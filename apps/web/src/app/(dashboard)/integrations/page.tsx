@@ -117,6 +117,11 @@ function IntegrationsConnectContent() {
     }
 
     if (providerId === 'resend') {
+      const confirmConnect = window.confirm(
+        'Authorize Resend connection? This will allow Karnex to send transactional briefs, alerts, and automation emails on your behalf.'
+      )
+      if (!confirmConnect) return
+
       setConnectingProvider('resend')
       try {
         const {
