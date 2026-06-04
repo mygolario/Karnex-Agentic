@@ -253,64 +253,84 @@ export default function ProductBriefStep({
   useEffect(() => {
     let crystallizerInterval: NodeJS.Timeout
     let icpInterval: NodeJS.Timeout
+    let active = true
+
+    const checkCrystallizer = async () => {
+      try {
+        const { data: run, error } = await supabase
+          .from('agent_runs')
+          .select('status, error_message')
+          .eq('id', crystallizerRunId)
+          .maybeSingle()
+
+        if (error) throw error
+        if (run && active) {
+          const status = run.status as any
+          const targetStatus = status === 'partial' ? 'success' : status
+          setCrystallizerStatus(targetStatus)
+          if (targetStatus === 'success') {
+            if (crystallizerInterval) clearInterval(crystallizerInterval)
+            await fetchCrystallizerOutput(crystallizerRunId)
+            return true
+          } else if (targetStatus === 'error') {
+            if (crystallizerInterval) clearInterval(crystallizerInterval)
+            setCrystallizerError(run.error_message || 'Idea crystallization failed.')
+            return true
+          }
+        }
+      } catch (err) {
+        console.error('Error polling/checking crystallizer status:', err)
+      }
+      return false
+    }
+
+    const checkIcp = async () => {
+      try {
+        const { data: run, error } = await supabase
+          .from('agent_runs')
+          .select('status, error_message')
+          .eq('id', icpRunId)
+          .maybeSingle()
+
+        if (error) throw error
+        if (run && active) {
+          const status = run.status as any
+          const targetStatus = status === 'partial' ? 'success' : status
+          setIcpStatus(targetStatus)
+          if (targetStatus === 'success') {
+            if (icpInterval) clearInterval(icpInterval)
+            await fetchIcpOutput(icpRunId)
+            return true
+          } else if (targetStatus === 'error') {
+            if (icpInterval) clearInterval(icpInterval)
+            setIcpError(run.error_message || 'ICP definition failed.')
+            return true
+          }
+        }
+      } catch (err) {
+        console.error('Error polling/checking ICP status:', err)
+      }
+      return false
+    }
 
     if (crystallizerRunId && crystallizerStatus !== 'success' && crystallizerStatus !== 'error') {
-      crystallizerInterval = setInterval(async () => {
-        try {
-          const { data: run, error } = await supabase
-            .from('agent_runs')
-            .select('status, error_message')
-            .eq('id', crystallizerRunId)
-            .maybeSingle()
-
-          if (error) throw error
-          if (run) {
-            const status = run.status as any
-            const targetStatus = status === 'partial' ? 'success' : status
-            setCrystallizerStatus(targetStatus)
-            if (targetStatus === 'success') {
-              clearInterval(crystallizerInterval)
-              await fetchCrystallizerOutput(crystallizerRunId)
-            } else if (targetStatus === 'error') {
-              clearInterval(crystallizerInterval)
-              setCrystallizerError(run.error_message || 'Idea crystallization failed.')
-            }
-          }
-        } catch (err) {
-          console.error('Error polling crystallizer status:', err)
+      checkCrystallizer().then((done) => {
+        if (!done && active) {
+          crystallizerInterval = setInterval(checkCrystallizer, 2500)
         }
-      }, 2500)
+      })
     }
 
     if (icpRunId && icpStatus !== 'success' && icpStatus !== 'error') {
-      icpInterval = setInterval(async () => {
-        try {
-          const { data: run, error } = await supabase
-            .from('agent_runs')
-            .select('status, error_message')
-            .eq('id', icpRunId)
-            .maybeSingle()
-
-          if (error) throw error
-          if (run) {
-            const status = run.status as any
-            const targetStatus = status === 'partial' ? 'success' : status
-            setIcpStatus(targetStatus)
-            if (targetStatus === 'success') {
-              clearInterval(icpInterval)
-              await fetchIcpOutput(icpRunId)
-            } else if (targetStatus === 'error') {
-              clearInterval(icpInterval)
-              setIcpError(run.error_message || 'ICP definition failed.')
-            }
-          }
-        } catch (err) {
-          console.error('Error polling ICP status:', err)
+      checkIcp().then((done) => {
+        if (!done && active) {
+          icpInterval = setInterval(checkIcp, 2500)
         }
-      }, 2500)
+      })
     }
 
     return () => {
+      active = false
       if (crystallizerInterval) clearInterval(crystallizerInterval)
       if (icpInterval) clearInterval(icpInterval)
     }

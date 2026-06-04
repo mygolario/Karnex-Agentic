@@ -208,12 +208,12 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
         fetch(`/api/agents/idea-crystallizer-v1/run`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ ideaId: idea.id })
+          body: JSON.stringify({ ideaId: idea.id, pre_generated: true })
         }),
         fetch(`/api/agents/icp-definer-v1/run`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ ideaId: idea.id })
+          body: JSON.stringify({ ideaId: idea.id, pre_generated: true })
         })
       ])
 

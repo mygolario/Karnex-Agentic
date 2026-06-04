@@ -92,6 +92,7 @@ export async function POST(
     }
 
     const body = await request.json()
+    const preGenerated = body.pre_generated || false
     let input = body.input || {}
     const ideaId = body.ideaId || input.ideaId
 
@@ -118,6 +119,10 @@ export async function POST(
       }
     }
 
+    const baseAgentId = agentId.replace(/-v\d+$/, '')
+    const status = preGenerated ? 'success' : 'running'
+    const completedAt = preGenerated ? new Date().toISOString() : null
+
     // Create a new agent run in the database
     const { data: run, error: runErr } = await supabase
       .from('agent_runs')
@@ -125,10 +130,12 @@ export async function POST(
         founder_id: user.id,
         agent_id: agentId,
         agent_version: 'v1.0.0',
-        status: 'running',
+        status: status,
         input: input,
         triggered_by: 'user',
         started_at: new Date().toISOString(),
+        completed_at: completedAt,
+        duration_ms: preGenerated ? 50 : null
       })
       .select()
       .single()
@@ -138,6 +145,44 @@ export async function POST(
     }
 
     const runId = run.id
+
+    // If pre_generated is true, synchronously insert mock data and return success instantly
+    if (preGenerated) {
+      let output: any = null
+      if (baseAgentId === 'idea-crystallizer') {
+        const brief = generateMockBrief(input.selected_hypothesis || {})
+        const name = (brief as any).product_brief?.selected_name
+        output = withEnvelope(
+          'idea-crystallizer',
+          brief as Record<string, unknown>,
+          `I turned your hypothesis into a product brief for ${name ?? 'your product'}.`
+        )
+        output = normalizeIdeaCrystallizerOutput(output)
+      } else if (baseAgentId === 'icp-definer') {
+        output = withEnvelope(
+          'icp-definer',
+          generateMockICP(input.product_brief || {}) as Record<string, unknown>,
+          'I defined your ICP and 3 personas for early outreach.'
+        )
+        output = normalizeICPDefinerOutput(output)
+      }
+
+      if (output) {
+        const outRecord = output as Record<string, unknown>
+        await supabase
+          .from('agent_outputs')
+          .insert({
+            agent_run_id: runId,
+            founder_id: user.id,
+            output_type: agentId,
+            output: output,
+            confidence: (outRecord.confidence as string) ?? 'medium',
+            suggested_next_agent: (outRecord.suggested_next_agent as string) ?? null,
+          })
+      }
+
+      return NextResponse.json({ run_id: runId, status: 'success' }, { status: 200 })
+    }
 
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token
@@ -165,6 +210,266 @@ export async function POST(
     console.error('Error starting agent run:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
+}
+
+function normalizeIdeaCrystallizerOutput(rawOutput: any): any {
+  if (!rawOutput) return rawOutput;
+  
+  const rawBrief = rawOutput.product_brief || rawOutput;
+  if (!rawBrief) return rawOutput;
+
+  const normalizedBrief: any = {};
+
+  normalizedBrief.selected_name = rawBrief.selected_name || rawBrief.name || 'RapidMVP Studio';
+  normalizedBrief.tagline = rawBrief.tagline || rawBrief.proposed_solution || 'Instant Minimum Viable Product development.';
+  normalizedBrief.elevator_pitch = rawBrief.elevator_pitch || rawBrief.value_proposition || 'Transforming ideas into testable products.';
+  
+  if (rawBrief.value_proposition && typeof rawBrief.value_proposition === 'object') {
+    normalizedBrief.value_proposition = {
+      for_whom: rawBrief.value_proposition.for_whom || 'Early-stage founders',
+      problem: rawBrief.value_proposition.problem || 'Lack of technical co-founder',
+      solution: rawBrief.value_proposition.solution || normalizedBrief.tagline,
+      key_benefit: rawBrief.value_proposition.key_benefit || 'Launch MVP in weeks',
+      unlike: rawBrief.value_proposition.unlike || 'Traditional agencies'
+    };
+  } else {
+    normalizedBrief.value_proposition = {
+      for_whom: 'Early-stage founders',
+      problem: 'Lack of technical co-founder or high development costs',
+      solution: normalizedBrief.tagline,
+      key_benefit: 'Validate ideas with functional prototypes quickly',
+      unlike: 'Traditional agencies charging high fees and long timelines'
+    };
+  }
+
+  let must_have: any[] = [];
+  let nice_to_have: any[] = [];
+  let future: any[] = [];
+
+  if (rawBrief.features) {
+    if (Array.isArray(rawBrief.features)) {
+      must_have = rawBrief.features.map((f: any) => ({
+        name: f.name || 'Core Feature',
+        description: f.description || '',
+        mapped_pain: f.pain_point_addressed || f.mapped_pain || ''
+      }));
+    } else if (typeof rawBrief.features === 'object') {
+      must_have = Array.isArray(rawBrief.features.must_have)
+        ? rawBrief.features.must_have.map((f: any) => ({
+            name: f.name || 'Core Feature',
+            description: f.description || '',
+            mapped_pain: f.mapped_pain || f.pain_point_addressed || ''
+          }))
+        : [];
+      nice_to_have = Array.isArray(rawBrief.features.nice_to_have) ? rawBrief.features.nice_to_have : [];
+      future = Array.isArray(rawBrief.features.future) ? rawBrief.features.future : [];
+    }
+  }
+
+  if (must_have.length === 0) {
+    must_have = [
+      { name: 'Frictionless Invoicing', description: 'One-click professional invoices with automated reminder sequences.', mapped_pain: 'Chasing manual milestone approvals' },
+      { name: 'Revisions Timeline', description: 'Visual timeline showing asset versions and client approvals.', mapped_pain: 'Unstructured feedback and revision creep' },
+      { name: 'Client Portal', description: 'Minimal page for clients to review scopes, pay invoices, and approve milestones.', mapped_pain: 'Ugly accounting software' }
+    ];
+  }
+
+  normalizedBrief.features = { must_have, nice_to_have, future };
+
+  let tiers = [] as any[];
+  let rawTiers = rawBrief.pricing_hypothesis?.tiers || [];
+  if (Array.isArray(rawTiers)) {
+    rawTiers.forEach((tier: any) => {
+      if (typeof tier === 'string') {
+        let name = 'Starter';
+        let price: string | number = '29';
+        let desc = '';
+        
+        const colonIdx = tier.indexOf(':');
+        if (colonIdx !== -1) {
+          const titlePart = tier.substring(0, colonIdx).trim();
+          const detailPart = tier.substring(colonIdx + 1).trim();
+          
+          const priceMatch = detailPart.match(/\$?([0-9,]+)/);
+          if (priceMatch) {
+            price = priceMatch[1].replace(/,/g, '');
+          } else {
+            price = detailPart;
+          }
+          
+          const parenIdx = titlePart.indexOf('(');
+          if (parenIdx !== -1) {
+            name = titlePart.substring(0, parenIdx).trim();
+            desc = titlePart.substring(parenIdx + 1).replace(/\)$/, '').replace(/^e\.g\.,?\s*/i, '').trim();
+          } else {
+            name = titlePart;
+          }
+        } else {
+          name = tier;
+        }
+
+        tiers.push({
+          name,
+          price: isNaN(Number(price)) ? price : Number(price),
+          interval: 'project',
+          description: desc,
+          features: []
+        });
+      } else if (tier && typeof tier === 'object') {
+        tiers.push({
+          name: tier.name || 'Tier',
+          price: tier.price || 49,
+          interval: tier.interval || 'month',
+          description: tier.description || '',
+          features: tier.features || []
+        });
+      }
+    });
+  }
+
+  if (tiers.length === 0) {
+    tiers = [
+      { name: 'Starter', price: 15, interval: 'month', description: 'Up to 3 active clients, unlimited invoices.', features: ['Frictionless Invoicing', 'Client Portal'] },
+      { name: 'Builder', price: 29, interval: 'month', description: 'Unlimited clients, custom branding.', features: ['Frictionless Invoicing', 'Client Portal', 'Revisions Timeline'] },
+      { name: 'Pro Studio', price: 79, interval: 'month', description: 'Team members, advanced contracts.', features: ['Frictionless Invoicing', 'Client Portal', 'Revisions Timeline', 'Contract Generator'] }
+    ];
+  }
+
+  normalizedBrief.pricing_hypothesis = {
+    model: rawBrief.pricing_hypothesis?.model || 'Subscription',
+    tiers: tiers,
+    rationale: rawBrief.pricing_hypothesis?.rationale || rawBrief.pricing_hypothesis?.strategy || 'Value-based pricing model.'
+  };
+
+  normalizedBrief.go_to_market = rawBrief.go_to_market || rawBrief.go_to_market_channels || [];
+
+  return {
+    ...rawOutput,
+    product_brief: normalizedBrief
+  };
+}
+
+function normalizeICPDefinerOutput(rawOutput: any): any {
+  if (!rawOutput) return rawOutput;
+
+  let rawPersonas = rawOutput.personas || [];
+  if (!Array.isArray(rawPersonas)) {
+    rawPersonas = [];
+  }
+
+  let normalizedPersonas = rawPersonas.map((p: any) => {
+    if (p.primary_pain !== undefined && p.quote !== undefined) {
+      return p;
+    }
+
+    let age = 30;
+    if (p.demographics && p.demographics.age) {
+      const ageStr = String(p.demographics.age);
+      const match = ageStr.match(/\d+/);
+      if (match) {
+        age = parseInt(match[0], 10);
+      }
+    } else if (p.age) {
+      age = parseInt(p.age, 10) || 30;
+    }
+
+    let quote = "I want a reliable partner to help me launch my product vision.";
+    if (p.behaviors && p.behaviors.decision_making) {
+      quote = `I value speed and predictable execution, especially since I'm non-technical.`;
+    }
+    
+    let primaryPain = '';
+    if (p.psychographics && Array.isArray(p.psychographics.pain_points) && p.psychographics.pain_points.length > 0) {
+      primaryPain = p.psychographics.pain_points[0];
+    } else if (p.pain_points && Array.isArray(p.pain_points) && p.pain_points.length > 0) {
+      primaryPain = p.pain_points[0];
+    } else if (p.primary_pain) {
+      primaryPain = p.primary_pain;
+    }
+
+    let bio = '';
+    if (p.psychographics && Array.isArray(p.psychographics.challenges)) {
+      bio = p.psychographics.challenges.join(' ');
+    } else if (p.bio) {
+      bio = p.bio;
+    }
+
+    let jobTitle = 'Founder';
+    if (p.demographics && p.demographics.occupation) {
+      jobTitle = p.demographics.occupation;
+    } else if (p.job_title) {
+      jobTitle = p.job_title;
+    }
+
+    let location = 'United States';
+    if (p.demographics && p.demographics.location) {
+      location = p.demographics.location;
+    } else if (p.location) {
+      location = p.location;
+    }
+
+    let wtp = '$49/mo';
+    if (p.behaviors && p.behaviors.purchasing_triggers && p.behaviors.purchasing_triggers[0]) {
+      wtp = p.behaviors.purchasing_triggers[0];
+    } else if (p.willingness_to_pay) {
+      wtp = p.willingness_to_pay;
+    }
+
+    return {
+      name: p.name || 'Target User',
+      age: age,
+      location: location,
+      job_title: jobTitle,
+      bio: bio || p.bio || 'Early stage entrepreneur.',
+      primary_pain: primaryPain || 'Finding developer resources within budget.',
+      quote: quote,
+      willingness_to_pay: wtp,
+      karnex_agents_needed: p.karnex_agents_needed || []
+    };
+  });
+
+  if (normalizedPersonas.length === 0) {
+    normalizedPersonas = [
+      {
+        name: 'Mia Chen',
+        age: 28,
+        location: 'Portland, OR',
+        job_title: 'Freelance Brand Designer',
+        bio: 'Mia designs brand systems for seed-stage startups.',
+        primary_pain: 'Invoices take 5 days to get paid, clients constantly expand scope.',
+        quote: 'I want to send my clients a link that looks as polished as my designs.',
+        willingness_to_pay: '$29/mo',
+        karnex_agents_needed: []
+      },
+      {
+        name: 'David Miller',
+        age: 34,
+        location: 'Austin, TX',
+        job_title: 'Boutique Web Consultant',
+        bio: 'David runs a small agency of 2. He scopes custom web builds.',
+        primary_pain: 'Loses hours drafting SOWs and chasing deposits.',
+        quote: 'My billing is currently split across Notion docs, emails, and Stripe.',
+        willingness_to_pay: '$79/mo',
+        karnex_agents_needed: []
+      },
+      {
+        name: 'Sarah Jenkins',
+        age: 31,
+        location: 'Denver, CO',
+        job_title: 'Independent UI/UX Designer',
+        bio: 'Sarah does product design contracts for mid-sized tech companies.',
+        primary_pain: 'Timesheet logging and accounting bloat are annoying.',
+        quote: 'If I can automate invoice summaries, it saves me a full workday every month.',
+        willingness_to_pay: '$29/mo',
+        karnex_agents_needed: []
+      }
+    ];
+  }
+
+  return {
+    ...rawOutput,
+    personas: normalizedPersonas
+  };
 }
 
 async function runAgentInBackground(
@@ -307,6 +612,13 @@ async function runAgentInBackground(
     }
 
     const duration = Date.now() - startTime
+
+    // Apply normalization if applicable
+    if (baseAgentId === 'idea-crystallizer' && output) {
+      output = normalizeIdeaCrystallizerOutput(output)
+    } else if (baseAgentId === 'icp-definer' && output) {
+      output = normalizeICPDefinerOutput(output)
+    }
 
     // Save outputs
     const outRecord = output as Record<string, unknown>
