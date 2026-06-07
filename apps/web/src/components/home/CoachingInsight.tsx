@@ -56,25 +56,34 @@ export default function CoachingInsight({
     const reply = recentReplies[0]
     return (
       <div
-        className="border border-[#1a1a1a] border-l-2 border-l-emerald-500 bg-[#050505] rounded-2xl p-5 transition-all duration-500"
-        style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(6px)' }}
+        className="forge-glass-card p-5 transition-all duration-500 shadow-2xl relative overflow-hidden"
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(8px)',
+          borderLeft: '2.5px solid #10b981'
+        }}
       >
-        <div className="flex items-start gap-3">
-          <span className="text-[18px] shrink-0 mt-0.5">📬</span>
+        <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full blur pointer-events-none" />
+        
+        <div className="flex items-start gap-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            📬
+          </div>
           <div className="min-w-0 space-y-1">
-            <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#525252]">
-              New Reply
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#52525c]">
+              Outreach Intelligence
             </p>
-            <p className="text-[14px] text-[#a1a1a1] leading-relaxed line-clamp-2">
-              <span className="text-white font-medium">{reply.contact_name}</span> responded to
-              your outreach.{' '}
+            <p className="text-[13px] text-[#a1a1a1] leading-relaxed">
+              <span className="text-white font-semibold">{reply.contact_name}</span> responded to your campaign!
+            </p>
+            <div className="pt-1.5">
               <a
                 href="/vault"
-                className="text-[13px] text-[#6366f1] hover:text-[#818cf8] font-medium inline-flex items-center gap-1 transition-colors"
+                className="text-[12px] text-[#6366f1] hover:text-[#818cf8] font-bold inline-flex items-center gap-1 transition-colors"
               >
-                Open reply →
+                Review client reply →
               </a>
-            </p>
+            </div>
           </div>
         </div>
       </div>
@@ -85,16 +94,24 @@ export default function CoachingInsight({
   if (lastStandupSummary) {
     return (
       <div
-        className="border border-[#1a1a1a] border-l-2 border-l-[#6366f1] bg-[#050505] rounded-2xl p-5 transition-all duration-500"
-        style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(6px)' }}
+        className="forge-glass-card p-5 transition-all duration-500 shadow-2xl relative overflow-hidden"
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(8px)',
+          borderLeft: '2.5px solid #6366f1'
+        }}
       >
-        <div className="flex items-start gap-3">
-          <span className="text-[18px] shrink-0 mt-0.5">💬</span>
+        <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/5 rounded-full blur pointer-events-none" />
+
+        <div className="flex items-start gap-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 border border-[#6366f1]/20">
+            💬
+          </div>
           <div className="min-w-0 space-y-1">
-            <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#525252]">
-              Karnex says
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#52525c]">
+              Co-Founder Feedback
             </p>
-            <p className="text-[14px] text-[#a1a1a1] leading-relaxed line-clamp-2">
+            <p className="text-[13px] text-[#e5e5e5] leading-relaxed font-sans">
               {lastStandupSummary}
             </p>
           </div>
@@ -106,16 +123,22 @@ export default function CoachingInsight({
   // Priority 3: Phase-based contextual tip
   return (
     <div
-      className="border border-[#1a1a1a] border-l-2 border-l-[#333] bg-[#050505] rounded-2xl p-5 transition-all duration-500"
-      style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(6px)' }}
+      className="forge-glass-card p-5 transition-all duration-500 shadow-2xl relative overflow-hidden animate-fade-in"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(8px)',
+        borderLeft: '2.5px solid #27272a'
+      }}
     >
-      <div className="flex items-start gap-3">
-        <span className="text-[18px] shrink-0 mt-0.5">🧭</span>
+      <div className="flex items-start gap-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 border border-[#1a1a1f] text-zinc-400">
+          🧭
+        </div>
         <div className="min-w-0 space-y-1">
-          <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#525252]">
-            Phase {phase} Tip
+          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#52525c]">
+            Phase {phase} Strategy Tip
           </p>
-          <p className="text-[14px] text-[#a1a1a1] leading-relaxed line-clamp-2">
+          <p className="text-[13px] text-[#a1a1a1] leading-relaxed">
             {phaseTip}
           </p>
         </div>

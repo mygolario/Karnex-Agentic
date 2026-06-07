@@ -19,22 +19,15 @@ function getMomentumColor(score: number) {
 }
 
 function getMomentumArrow(score: number) {
-  if (score > 60) return { symbol: '↑', color: 'text-emerald-400' }
-  if (score >= 40) return { symbol: '→', color: 'text-amber-400' }
-  return { symbol: '↓', color: 'text-red-400' }
+  if (score > 60) return { symbol: '↑', color: 'text-emerald-400', label: 'Surging' }
+  if (score >= 40) return { symbol: '→', color: 'text-amber-400', label: 'Stable' }
+  return { symbol: '↓', color: 'text-red-400', label: 'Dropping' }
 }
 
-function getMomentumBarColor(score: number) {
-  if (score > 60) return 'bg-emerald-400'
-  if (score >= 40) return 'bg-amber-400'
-  return 'bg-red-400'
-}
-
-function getCreditsColor(remaining: number, limit: number) {
-  const pct = remaining / limit
-  if (pct < 0.1) return 'text-red-400'
-  if (pct < 0.25) return 'text-amber-400'
-  return 'text-white'
+function getCreditsGlowColor(pct: number) {
+  if (pct < 0.1) return 'rgba(239, 68, 68, 0.4)'
+  if (pct < 0.3) return 'rgba(245, 158, 11, 0.4)'
+  return 'rgba(99, 102, 241, 0.4)'
 }
 
 export default function MomentumStrip({
@@ -52,6 +45,7 @@ export default function MomentumStrip({
 
   const supabase = createSupabaseBrowserClient()
   const creditsRemaining = Math.max(0, creditsLimit - creditsUsed)
+  const creditsPercent = creditsLimit > 0 ? (creditsRemaining / creditsLimit) * 100 : 0
   const arrow = getMomentumArrow(momentum)
 
   // Pulse animation on value change
@@ -60,7 +54,7 @@ export default function MomentumStrip({
     setTimeout(() => setPulse(null), 300)
   }, [])
 
-  // Realtime: founders table (momentum + streak)
+  // Realtime updates: founders
   useEffect(() => {
     const channel = supabase
       .channel('momentum-updates')
@@ -90,7 +84,7 @@ export default function MomentumStrip({
     }
   }, [founderId, supabase, triggerPulse])
 
-  // Realtime: subscriptions table (credits)
+  // Realtime updates: subscriptions
   useEffect(() => {
     const channel = supabase
       .channel('credit-updates')
@@ -119,93 +113,183 @@ export default function MomentumStrip({
     }
   }, [founderId, supabase, triggerPulse])
 
+  // SVG parameters for circular dials
+  const radius = 32
+  const strokeWidth = 5
+  const circumference = 2 * Math.PI * radius
+
   return (
-    <div className="flex flex-col sm:flex-row gap-4">
-      {/* Momentum Score */}
-      <div className="flex-1 border border-[#1a1a1a] bg-[#050505] rounded-2xl p-5 space-y-3">
-        <p className="text-[12px] font-bold tracking-[0.06em] uppercase text-[#525252]">
-          Momentum
-        </p>
-        <div className="flex items-baseline gap-2">
-          <span
-            className={`text-[28px] font-bold font-mono transition-transform duration-200 ${getMomentumColor(momentum)} ${
-              pulse === 'momentum' ? 'scale-110' : 'scale-100'
-            }`}
-          >
-            {momentum}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      {/* Momentum Radial Dial Card */}
+      <div className="forge-glass-card forge-border-glow p-5 flex flex-col justify-between h-44 transition-all duration-300">
+        <div className="flex justify-between items-start">
+          <p className="text-[12px] font-bold tracking-[0.08em] uppercase text-[#71717a]">
+            Momentum
+          </p>
+          <span className={`text-[12px] font-semibold uppercase tracking-wider ${arrow.color} bg-black/40 border border-[#1a1a1e] px-2 py-0.5 rounded`}>
+            {arrow.label} {arrow.symbol}
           </span>
-          <span className={`text-[18px] font-semibold ${arrow.color}`}>{arrow.symbol}</span>
         </div>
-        <div className="h-1 rounded-full bg-[#1a1a1a] overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-700 ease-out ${getMomentumBarColor(momentum)}`}
-            style={{ width: `${Math.min(100, momentum)}%` }}
-          />
+
+        <div className="flex items-center gap-5 my-2">
+          {/* Circular SVG Gauge */}
+          <div className="relative w-[76px] h-[76px] shrink-0">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle
+                cx="38"
+                cy="38"
+                r={radius}
+                stroke="#0e0e11"
+                strokeWidth={strokeWidth}
+                fill="transparent"
+              />
+              <circle
+                cx="38"
+                cy="38"
+                r={radius}
+                stroke={momentum > 60 ? '#34d399' : momentum >= 40 ? '#fbbf24' : '#f87171'}
+                strokeWidth={strokeWidth}
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference - (momentum / 100) * circumference}
+                strokeLinecap="round"
+                className="transition-all duration-700 ease-out"
+                style={{
+                  filter: `drop-shadow(0 0 6px ${momentum > 60 ? 'rgba(52, 211, 153, 0.4)' : momentum >= 40 ? 'rgba(251, 191, 36, 0.4)' : 'rgba(248, 113, 113, 0.4)'})`
+                }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className={`text-[17px] font-mono font-bold text-white transition-transform ${pulse === 'momentum' ? 'scale-125' : 'scale-100'}`}>
+                {momentum}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1 min-w-0">
+            <p className="text-[13px] text-[#a1a1a1] leading-relaxed">
+              Founder velocity is determined by daily task approvals and standup streak.
+            </p>
+            {momentum < 45 && (
+              <Link
+                href={`/studio?spec=${encodeURIComponent('Build a clean feature or map some pricing targets to rebuild momentum.')}`}
+                className="text-[11px] text-[#818cf8] hover:text-white underline block truncate"
+              >
+                Suggested Task: Deploy Build →
+              </Link>
+            )}
+          </div>
         </div>
-        {momentum < 45 && (
-          <Link
-            href={`/studio?spec=${encodeURIComponent('Ship one small feature today to rebuild momentum — landing section or core dashboard widget.')}`}
-            className="text-[11px] text-[#818cf8] hover:text-white underline"
-          >
-            Open Studio with suggested build →
-          </Link>
-        )}
       </div>
 
-      {/* Active Streak */}
-      <div className="flex-1 border border-[#1a1a1a] bg-[#050505] rounded-2xl p-5 space-y-3">
-        <p className="text-[12px] font-bold tracking-[0.06em] uppercase text-[#525252]">
-          Streak
-        </p>
-        <div className="flex items-baseline gap-2">
-          <span
-            className={`text-[28px] font-bold font-mono text-white transition-transform duration-200 ${
-              pulse === 'streak' ? 'scale-110' : 'scale-100'
-            }`}
-          >
-            {streak}
+      {/* Streak Fire Card */}
+      <div className="forge-glass-card forge-border-glow p-5 flex flex-col justify-between h-44 transition-all duration-300">
+        <div className="flex justify-between items-start">
+          <p className="text-[12px] font-bold tracking-[0.08em] uppercase text-[#71717a]">
+            Active Streak
+          </p>
+          <span className="text-[11px] font-mono font-bold text-[#a855f7] bg-[#a855f7]/10 px-2 py-0.5 rounded">
+            Day Streak
           </span>
-          <span className="text-[14px] text-[#525252]">days</span>
-          {streak > 7 && <span className="text-[16px]">🔥</span>}
         </div>
-        <div className="h-1 rounded-full bg-[#1a1a1a] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#6366f1] to-[#a855f7] transition-all duration-700 ease-out"
-            style={{ width: `${Math.min(100, (streak / 90) * 100)}%` }}
-          />
+
+        <div className="flex items-center gap-5 my-2">
+          {/* Animated Streak Fire Icon */}
+          <div className="relative w-[76px] h-[76px] shrink-0 flex items-center justify-center bg-[#07070a] border border-[#1a1a1e] rounded-full shadow-inner group">
+            <div className="absolute inset-0 rounded-full border border-dashed border-[#a855f7]/10 group-hover:animate-[spin_20s_linear_infinite]" />
+            <div className={`text-[32px] transition-transform duration-300 ${pulse === 'streak' ? 'scale-125' : 'scale-100'} group-hover:scale-110`}>
+              🔥
+            </div>
+            {streak > 5 && (
+              <div className="absolute -inset-1 rounded-full border border-[#fbbf24]/30 animate-pulse pointer-events-none" />
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-baseline gap-1">
+              <span className="text-[26px] font-bold font-mono text-white leading-none">{streak}</span>
+              <span className="text-[13px] text-[#737373]">consecutive days</span>
+            </div>
+            <p className="text-[13px] text-[#a1a1a1] leading-normal">
+              You are in the top 12% of founder consistency this week. Keep it up!
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Credits Remaining */}
-      <div className="flex-1 border border-[#1a1a1a] bg-[#050505] rounded-2xl p-5 space-y-3">
-        <p className="text-[12px] font-bold tracking-[0.06em] uppercase text-[#525252]">
-          Credits
-        </p>
-        <div className="flex items-baseline gap-2">
-          <span
-            className={`text-[28px] font-bold font-mono transition-transform duration-200 ${getCreditsColor(creditsRemaining, creditsLimit)} ${
-              pulse === 'credits' ? 'scale-110' : 'scale-100'
-            }`}
-          >
-            {creditsRemaining}
-          </span>
-          <span className="text-[14px] text-[#525252]">left</span>
-          {creditsRemaining < creditsLimit * 0.1 && (
-            <span className="text-[11px] font-medium text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded">
-              Low
+      {/* Concentric Credit Ring Card */}
+      <div className="forge-glass-card forge-border-glow p-5 flex flex-col justify-between h-44 transition-all duration-300">
+        <div className="flex justify-between items-start">
+          <p className="text-[12px] font-bold tracking-[0.08em] uppercase text-[#71717a]">
+            Tasks & Credits
+          </p>
+          {creditsRemaining < creditsLimit * 0.15 ? (
+            <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded">
+              Limit Close
+            </span>
+          ) : (
+            <span className="text-[11px] font-mono text-[#a1a1a1]">
+              Starter Tier
             </span>
           )}
         </div>
-        <div className="h-1 rounded-full bg-[#1a1a1a] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#6366f1] to-[#a855f7] transition-all duration-700 ease-out"
-            style={{ width: `${creditsLimit > 0 ? (creditsUsed / creditsLimit) * 100 : 0}%` }}
-          />
+
+        <div className="flex items-center gap-5 my-2">
+          {/* Circular Credits Remaining Gauge */}
+          <div className="relative w-[76px] h-[76px] shrink-0">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle
+                cx="38"
+                cy="38"
+                r={radius}
+                stroke="#0e0e11"
+                strokeWidth={strokeWidth}
+                fill="transparent"
+              />
+              <circle
+                cx="38"
+                cy="38"
+                r={radius}
+                stroke="var(--color-mode-build, #6366f1)"
+                strokeWidth={strokeWidth}
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference - (creditsPercent / 100) * circumference}
+                strokeLinecap="round"
+                className="transition-all duration-700 ease-out"
+                style={{
+                  filter: `drop-shadow(0 0 6px ${getCreditsGlowColor(creditsPercent / 100)})`
+                }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className={`text-[17px] font-mono font-bold text-white leading-tight transition-transform ${pulse === 'credits' ? 'scale-125' : 'scale-100'}`}>
+                {creditsRemaining}
+              </span>
+              <span className="text-[9px] uppercase tracking-wider text-[#525252] leading-none">left</span>
+            </div>
+          </div>
+
+          <div className="space-y-1 min-w-0">
+            <div className="text-[13px] text-[#e5e5e5] font-mono">
+              <span className="text-white font-bold">{creditsUsed}</span> / {creditsLimit} tasks used
+            </div>
+            <p className="text-[12px] text-[#737373] leading-normal truncate">
+              Resets next billing cycle.
+            </p>
+            {creditsRemaining < creditsLimit * 0.25 && (
+              <a
+                href="/billing"
+                className="text-[11px] text-[#6366f1] hover:text-white underline block"
+              >
+                Upgrade Plan for Unlimited Tasks →
+              </a>
+            )}
+          </div>
         </div>
-        <p className="text-[11px] text-[#525252] font-mono">
-          {creditsUsed} / {creditsLimit} used
-        </p>
       </div>
+      
     </div>
   )
 }

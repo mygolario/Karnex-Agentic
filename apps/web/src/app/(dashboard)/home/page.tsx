@@ -5,6 +5,7 @@ import MorningStandup from '@/components/home/MorningStandup'
 import TodaysTasks from '@/components/home/TodaysTasks'
 import MomentumStrip from '@/components/home/MomentumStrip'
 import CoachingInsight from '@/components/home/CoachingInsight'
+import AgentMap from '@/components/home/AgentMap'
 
 export const dynamic = 'force-dynamic'
 
@@ -238,7 +239,9 @@ export default async function HomePage() {
 
   // ── Render ────────────────────────────────────────────────────────
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 dash-reveal space-y-6">
+      
+      {/* Immersive header timeline at the top */}
       <JourneyHeader
         founder={{
           id: founder.id,
@@ -250,31 +253,44 @@ export default async function HomePage() {
         dayNumber={dayNumber}
       />
 
-      <MorningStandup
-        founderId={founder.id}
-        founderName={founder.display_name || founder.full_name || 'Founder'}
-        hasStandupToday={hasStandupToday}
-      />
+      {/* Two Column Mission Control Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
+        {/* Left Column: Sprints, Morning Standup, Dials */}
+        <div className="lg:col-span-2 space-y-6">
+          <MorningStandup
+            founderId={founder.id}
+            founderName={founder.display_name || founder.full_name || 'Founder'}
+            hasStandupToday={hasStandupToday}
+          />
 
-      <TodaysTasks tasks={tasks} founderId={founder.id} />
+          <TodaysTasks tasks={tasks} founderId={founder.id} />
 
-      <MomentumStrip
-        founderId={founder.id}
-        initialMomentum={founder.momentum_score ?? 50}
-        initialStreak={founder.streak_days ?? 0}
-        initialCreditsUsed={sub.tasks_used_this_cycle}
-        initialCreditsLimit={sub.tasks_limit}
-      />
+          <MomentumStrip
+            founderId={founder.id}
+            initialMomentum={founder.momentum_score ?? 50}
+            initialStreak={founder.streak_days ?? 0}
+            initialCreditsUsed={sub.tasks_used_this_cycle}
+            initialCreditsLimit={sub.tasks_limit}
+          />
+        </div>
 
-      <CoachingInsight
-        phase={currentPhase}
-        lastStandupSummary={
-          hasStandupToday
-            ? "Great progress on your standups. Keep the momentum — you're on track for Phase completion."
-            : null
-        }
-        recentReplies={formattedReplies}
-      />
+        {/* Right Column: Visual Agent Node Map and Coaching Wisdom */}
+        <div className="space-y-6">
+          <AgentMap />
+
+          <CoachingInsight
+            phase={currentPhase}
+            lastStandupSummary={
+              hasStandupToday
+                ? "Great progress on your standups. Keep the momentum — you're on track for Phase completion."
+                : null
+            }
+            recentReplies={formattedReplies}
+          />
+        </div>
+
+      </div>
     </div>
   )
 }
