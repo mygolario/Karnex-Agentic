@@ -157,10 +157,10 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-[#050505] font-sans antialiased text-[#e5e5e5]">
       {/* Sidebar Navigation */}
-      <SidebarNav user={userProps} />
+      {!isStudio && <SidebarNav user={userProps} />}
 
       {/* Main content area */}
-      <div className="flex-1 pl-64 flex flex-col min-h-screen">
+      <div className={`flex-1 flex flex-col min-h-screen min-w-0 ${isStudio ? 'pl-0' : 'pl-64'}`}>
         
         {/* Top Header — hidden on Studio for full-bleed IDE */}
         {!isStudio && (

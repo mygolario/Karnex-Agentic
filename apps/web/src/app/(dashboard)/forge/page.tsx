@@ -474,10 +474,10 @@ function ForgeWorkspace() {
       />
 
       {/* Main workspace (Three-Column Layout) */}
-      <div className="flex-1 flex min-h-0 divide-x divide-zinc-900">
+      <div className="flex-1 flex min-h-0 divide-x divide-zinc-900 overflow-hidden">
         
         {/* Column 1: Chat & Progress timeline */}
-        <div className="w-[340px] shrink-0 flex flex-col h-full bg-[#07070a]">
+        <div className="w-[300px] shrink-0 flex flex-col h-full bg-[#07070a]">
           {loading && (
             <div className="border-b border-zinc-900 bg-zinc-950/50 p-4 space-y-2">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400">Build Progress</span>
@@ -516,7 +516,7 @@ function ForgeWorkspace() {
         </div>
 
         {/* Column 2: Code Editor */}
-        <div className="flex-1 flex flex-col h-full min-w-0 bg-[#09090d]">
+        <div className="flex-[1.2] flex flex-col h-full min-w-[320px] bg-[#09090d]">
           {hasOutput ? (
             <CodePanel
               files={builderOutput.files}
@@ -545,7 +545,7 @@ function ForgeWorkspace() {
         </div>
 
         {/* Column 3: Live Preview / DB Schema */}
-        <div className="w-[480px] shrink-0 flex flex-col h-full bg-[#050505]">
+        <div className="flex-1 flex flex-col h-full min-w-[360px] bg-[#050505]">
           <div className="flex-1 min-h-0 p-2 overflow-hidden">
             {/* Preview Panel */}
             {activeTab === 'preview' && (

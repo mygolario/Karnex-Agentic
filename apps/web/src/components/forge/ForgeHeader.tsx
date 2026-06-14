@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef, useEffect } from 'react'
+import Link from 'next/link'
 
 interface ForgeHeaderProps {
   projectName: string
@@ -40,7 +41,16 @@ export default function ForgeHeader({
   return (
     <div className="h-12 flex items-center justify-between px-5 bg-[#0a0a0e]/90 backdrop-blur-sm border-b border-[#141417] shrink-0 relative z-20">
       {/* Left — Brand + Project */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
+        <Link 
+          href="/home" 
+          className="flex items-center justify-center p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] transition-colors shrink-0 mr-1"
+          title="Back to Dashboard"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </Link>
         <span className="font-display text-[15px] font-semibold text-white tracking-[-0.01em] shrink-0">
           Forge
         </span>
