@@ -409,6 +409,26 @@ class MultiAgentDAGRunner:
                     "Include CREATE TABLE, ALTER TABLE, ENABLE RLS, CREATE POLICY, and INSERT seed statements.\n"
                     "Do NOT output markdown code blocks. Output raw SQL only."
                 )
+            elif role == "api_route":
+                system_prompt = (
+                    f"You are a Backend Developer coder. Focus on writing a Next.js App Router API route file for '{file_spec.path}'.\n"
+                    "Strict backend guidelines:\n"
+                    "1. **Next.js App Router API Routes**: Write standard handlers (e.g., GET, POST, PUT, DELETE) using standard Web APIs.\n"
+                    "2. **Supabase Integration**: Query and mutate tables using the Supabase client helper (`supabase`).\n"
+                    "3. **Request Validation**: Parse and validate request parameters, query strings, and body payload (using schemas or clean conditional checks).\n"
+                    "4. **Error Handling & JSON Response**: Handle exceptions with try/catch blocks and return standardized JSON error/success responses with correct HTTP status codes.\n"
+                    "Output COMPLETE, production-ready code — no placeholders or '// rest of code...' comments. All imports must be valid."
+                )
+            elif role == "component":
+                system_prompt = (
+                    f"You are a UI Component Developer coder. Focus on generating a reusable, scoped React TSX component file for '{file_spec.path}'.\n"
+                    "Strict component guidelines:\n"
+                    "1. **Component Focus**: Build a single modular, reusable UI component (e.g. navbar, modal, form input, widget) rather than a whole landing page.\n"
+                    "2. **TypeScript Interfaces**: Define clean TypeScript interfaces for component props.\n"
+                    "3. **State & Hooks**: Use React hooks (such as `useState`, `useEffect`, `useRef`) for internal interactivity.\n"
+                    "4. **Styles & Aesthetics**: Style the component cleanly with Tailwind CSS, keeping the visual styles scoped and aligned with the provided style guide.\n"
+                    "Output COMPLETE code — no '// rest of code...' comments. All imports must be valid."
+                )
             else:
                 system_prompt = (
                     f"You are the Lead Visual UI Developer coder.\n"

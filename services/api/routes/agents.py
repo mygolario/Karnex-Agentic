@@ -466,6 +466,8 @@ async def run_builder_async_wrapper(run_id: str, input_data: BuilderInput):
         logger.error(f"Builder Agent run {run_id} timed out after 10 minutes.")
         try:
             supabase = get_supabase_admin()
+            from agents.forge.events import flush_all_forge_events
+            await flush_all_forge_events(supabase, run_id)
             supabase.table("agent_runs").update({
                 "status": "error",
                 "completed_at": datetime.now(timezone.utc).isoformat(),
@@ -485,6 +487,8 @@ async def run_builder_async_wrapper(run_id: str, input_data: BuilderInput):
         logger.exception(f"Async Builder Agent execution failed for run {run_id}")
         try:
             supabase = get_supabase_admin()
+            from agents.forge.events import flush_all_forge_events
+            await flush_all_forge_events(supabase, run_id)
             supabase.table("agent_runs").update({
                 "status": "error",
                 "completed_at": datetime.now(timezone.utc).isoformat(),
