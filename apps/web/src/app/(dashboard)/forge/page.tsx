@@ -550,28 +550,16 @@ function ForgeWorkspace() {
             {/* Preview Panel */}
             {activeTab === 'preview' && (
               <div className="h-full">
-                {builderOutput?.pr_url ? (
-                  <div className="h-full flex flex-col bg-[#0a0a0e] rounded-lg overflow-hidden border border-zinc-900">
-                    <div className="bg-[#09090b] px-3 py-1.5 border-b border-zinc-900 flex items-center justify-between shrink-0">
-                      <span className="text-[10px] font-mono text-zinc-500 truncate">{builderOutput.pr_url}</span>
-                    </div>
-                    <iframe
-                      src={builderOutput.pr_url}
-                      className="flex-1 w-full border-none bg-white"
-                      title="MVP Preview"
-                    />
-                  </div>
-                ) : (
-                  <PreviewPanel
-                    files={builderOutput?.files || []}
-                    inspectMode={inspectMode}
-                    onToggleInspect={() => setInspectMode(!inspectMode)}
-                    onSelectElement={(selector, text) => {
-                      appendChat('system', `Selected: ${selector} — "${text}"`)
-                    }}
-                    isBuilding={loading && !hasOutput}
-                  />
-                )}
+                <PreviewPanel
+                  files={builderOutput?.files || []}
+                  inspectMode={inspectMode}
+                  onToggleInspect={() => setInspectMode(!inspectMode)}
+                  onSelectElement={(selector, text) => {
+                    appendChat('system', `Selected: ${selector} — "${text}"`)
+                  }}
+                  isBuilding={loading && !hasOutput}
+                  gitHubPrUrl={builderOutput?.pr_url}
+                />
               </div>
             )}
 
@@ -593,6 +581,26 @@ function ForgeWorkspace() {
               <div className="h-full overflow-y-auto forge-scroll rounded-lg border border-zinc-900 bg-[#0a0a0e] p-6">
                 {hasOutput ? (
                   <div className="space-y-6">
+                    {builderOutput.pr_url && (
+                      <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-xl p-4 flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h4 className="text-[12px] font-medium text-white">GitHub Repository Connected</h4>
+                          <p className="text-[11px] text-zinc-400">The generated code has been pushed to a new branch in your repository.</p>
+                        </div>
+                        <a
+                          href={builderOutput.pr_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 bg-[#6366f1] hover:bg-[#5558e6] text-white text-[11px] font-medium rounded-md px-3 py-1.5 transition-colors shrink-0 cursor-pointer"
+                        >
+                          Open Pull Request
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0019 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                          </svg>
+                        </a>
+                      </div>
+                    )}
+
                     {/* Setup instructions */}
                     <div>
                       <h3 className="text-[12px] font-medium text-zinc-200">Setup Instructions</h3>
