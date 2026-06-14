@@ -104,6 +104,12 @@ export default function MorningStandup({
         return
       }
 
+      const combinedUpdate = [
+        `Yesterday's Work: ${yesterday.trim()}`,
+        `Today's Focus: ${focus.trim()}`,
+        `Active Blockers: ${blockers.trim() || 'None'}`
+      ].join('\n')
+
       const response = await fetch(getAgentApiUrl('v1/agents/daily-standup'), {
         method: 'POST',
         headers: {
@@ -111,9 +117,7 @@ export default function MorningStandup({
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          founder_update: yesterday,
-          today_focus: focus,
-          blockers: blockers || 'None',
+          founder_update: combinedUpdate,
         }),
       })
 
@@ -130,7 +134,6 @@ export default function MorningStandup({
         .from('founders')
         .update({
           last_standup_at: todayISO,
-          momentum_score: Math.min(100, 58), // Server will compute the real value
         })
         .eq('id', founderId)
 

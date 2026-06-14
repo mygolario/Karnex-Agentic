@@ -158,6 +158,8 @@ export default function ProductBriefStep({
   const [editedPricingTiers, setEditedPricingTiers] = useState<PricingTier[]>([])
   const [editedPricingModel, setEditedPricingModel] = useState('')
   const [editedPricingRationale, setEditedPricingRationale] = useState('')
+  const [editedIndustry, setEditedIndustry] = useState('SaaS')
+  const [editedStage, setEditedStage] = useState<'ideation' | 'validation' | 'building' | 'launching' | 'growing'>('ideation')
 
   // Founder preferences states
   const [editedDisplayName, setEditedDisplayName] = useState('')
@@ -166,12 +168,13 @@ export default function ProductBriefStep({
   const [editedCommunicationTone, setEditedCommunicationTone] = useState<'casual' | 'direct' | 'formal'>('direct')
   const [editedPreferredAgentSpeed, setEditedPreferredAgentSpeed] = useState<'fast' | 'thorough'>('thorough')
 
-  // Load founder preferences on mount
+  // Load founder preferences and active startup on mount
   useEffect(() => {
-    const loadFounderPrefs = async () => {
+    const loadFounderPrefsAndStartup = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
+          // 1. Fetch founder preferences
           const { data: founder, error } = await supabase
             .from('founders')
             .select('display_name, technical_level, weekly_hours_available, communication_tone, preferred_agent_speed')
@@ -193,12 +196,30 @@ export default function ProductBriefStep({
               setEditedPreferredAgentSpeed(founder.preferred_agent_speed as any)
             }
           }
+
+          // 2. Fetch active startup record
+          const { data: startup, error: startupError } = await supabase
+            .from('startups')
+            .select('industry, stage')
+            .eq('founder_id', user.id)
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle()
+
+          if (!startupError && startup) {
+            if (startup.industry) {
+              setEditedIndustry(startup.industry)
+            }
+            if (startup.stage) {
+              setEditedStage(startup.stage as any)
+            }
+          }
         }
       } catch (err) {
-        console.error('Failed to load founder preferences:', err)
+        console.error('Failed to load founder preferences or startup details:', err)
       }
     }
-    loadFounderPrefs()
+    loadFounderPrefsAndStartup()
   }, [supabase])
 
   // Action states
@@ -423,6 +444,26 @@ export default function ProductBriefStep({
         personas: editedPersonas
       }
 
+      // Update active startup profile with user edits
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { error: startupUpdateErr } = await supabase
+          .from('startups')
+          .update({
+            name: editedName,
+            tagline: editedTagline,
+            description: editedPitch.slice(0, 500),
+            industry: editedIndustry,
+            stage: editedStage
+          })
+          .eq('founder_id', user.id)
+          .eq('is_active', true)
+
+        if (startupUpdateErr) {
+          console.warn('Failed to update startup with customized details:', startupUpdateErr)
+        }
+      }
+
       const res = await fetch('/api/agents/war-room/run', {
         method: 'POST',
         headers: {
@@ -452,9 +493,9 @@ export default function ProductBriefStep({
           startupName: editedName,
           tagline: editedTagline,
           description: updatedBriefPayload.elevator_pitch,
-          industry: 'SaaS',
+          industry: editedIndustry,
           targetAudience: updatedBriefPayload.value_proposition.for_whom,
-          stage: 'ideation',
+          stage: editedStage,
           displayName: editedDisplayName,
           technicalLevel: editedTechnicalLevel,
           weeklyHoursAvailable: editedWeeklyHoursAvailable,
@@ -1004,6 +1045,33 @@ export default function ProductBriefStep({
                         onChange={(e) => setEditedPitch(e.target.value)}
                         className="w-full bg-[#050505]/60 border border-[#1a1a1a] focus:border-[#6366f1]/45 text-[#e5e5e5] rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors resize-none leading-relaxed font-sans"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-[#525252] uppercase tracking-wider mb-1.5">
+                        Industry
+                      </label>
+                      <input 
+                        type="text" 
+                        value={editedIndustry}
+                        onChange={(e) => setEditedIndustry(e.target.value)}
+                        className="w-full bg-[#050505]/60 border border-[#1a1a1a] focus:border-[#6366f1]/45 text-[#e5e5e5] rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-[#525252] uppercase tracking-wider mb-1.5">
+                        Startup Stage
+                      </label>
+                      <select 
+                        value={editedStage}
+                        onChange={(e) => setEditedStage(e.target.value as any)}
+                        className="w-full bg-[#050505]/60 border border-[#1a1a1a] focus:border-[#6366f1]/45 text-[#e5e5e5] rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors"
+                      >
+                        <option value="ideation" className="bg-[#0c0c0f] text-[#e5e5e5]">Ideation</option>
+                        <option value="validation" className="bg-[#0c0c0f] text-[#e5e5e5]">Validation</option>
+                        <option value="building" className="bg-[#0c0c0f] text-[#e5e5e5]">Building</option>
+                        <option value="launching" className="bg-[#0c0c0f] text-[#e5e5e5]">Launching</option>
+                        <option value="growing" className="bg-[#0c0c0f] text-[#e5e5e5]">Growing</option>
+                      </select>
                     </div>
                   </div>
                 )}

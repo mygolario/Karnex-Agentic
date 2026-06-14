@@ -387,7 +387,8 @@ export default function OnboardingWizard({ initialName, savedStep, savedContext 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           description: `Startup name: ${startupName}. Tagline: ${tagline}. Industry: ${industry}. Target Audience: ${targetAudience}. Stage: ${stage}. Description of frustration: ${painInput}`,
-          fullName: displayName
+          fullName: displayName,
+          weeklyHoursAvailable: weeklyHoursAvailable
         })
       })
 

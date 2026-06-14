@@ -117,6 +117,17 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
       const user = session.user
       const token = session.access_token
 
+      // Retrieve custom industry context from pain description stage (if saved)
+      const { data: memoryData } = await supabase
+        .from('founder_memory')
+        .select('value')
+        .eq('founder_id', user.id)
+        .eq('namespace', 'onboarding')
+        .eq('key', 'pain_context')
+        .maybeSingle()
+
+      const industryContext = (memoryData?.value as any)?.industry_context || 'SaaS'
+
       // 1. Create a startup row in startups table
       const { data: startup, error: startupErr } = await supabase
           .from('startups')
@@ -125,7 +136,7 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
             name: hypothesis.title,
             tagline: hypothesis.proposed_solution.slice(0, 100),
             description: hypothesis.problem_statement.slice(0, 500),
-            industry: 'SaaS',
+            industry: industryContext,
             target_audience: hypothesis.target_audience.slice(0, 200),
             stage: 'ideation',
             is_active: true
@@ -182,7 +193,7 @@ export default function HypothesisStep({ runId, onSelect }: HypothesisStepProps)
               hypothesis: hypothesis,
               startupName: hypothesis.title,
               tagline: hypothesis.proposed_solution,
-              industry: 'SaaS',
+              industry: industryContext,
               targetAudience: hypothesis.target_audience,
               stage: 'ideation'
             }

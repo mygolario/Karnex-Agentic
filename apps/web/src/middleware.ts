@@ -6,10 +6,6 @@ export async function middleware(request: NextRequest) {
 
   const redirects: Record<string, string> = {
     '/dashboard': '/home',
-    '/agents': '/home',
-    '/warroom': '/home',
-    '/compass': '/home',
-    '/ideas': '/vault',
   }
 
   if (pathname in redirects) {

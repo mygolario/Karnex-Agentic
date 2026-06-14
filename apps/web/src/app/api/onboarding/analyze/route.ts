@@ -26,12 +26,13 @@ interface AnalysisResult {
 
 export async function POST(request: NextRequest) {
   try {
-    const { description, fullName } = await request.json()
+    const { description, fullName, weeklyHoursAvailable } = await request.json()
 
     if (!description) {
       return NextResponse.json({ error: 'Description is required' }, { status: 400 })
     }
 
+    const targetHours = weeklyHoursAvailable || 20
     const apiKey = process.env.OPENROUTER_API_KEY
     const isMockKey = !apiKey || apiKey.includes('your_gemini_api_key_here') || apiKey.startsWith('sk-or-v1-d06c7a')
 
@@ -53,6 +54,11 @@ export async function POST(request: NextRequest) {
               {
                 role: 'system',
                 content: `You are Karnex, an elite AI Co-Founder. Analyze the user's startup idea description and return a structured JSON object containing a personalized workspace proposal.
+You must personalize the entire proposal:
+- The suggested name must be creative, distinct, and highly relevant.
+- The 90-Day Roadmap must be deeply contextualized to their target industry and the specific workflow/validation requirements for their idea. Do not generate generic placeholders.
+- Enforce the founder's weekly capacity limit of exactly ${targetHours} hours for estimated_hours per week in all roadmap goals. Make sure goals are realistically achievable within this limit.
+
 You must return a JSON object with this exact typescript structure:
 {
   "startupName": string (creative name suggestion, or keep it if they specify a name),
@@ -72,25 +78,25 @@ You must return a JSON object with this exact typescript structure:
             "week_number": 1,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 2,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 3,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 4,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           }
         ]
       },
@@ -103,25 +109,25 @@ You must return a JSON object with this exact typescript structure:
             "week_number": 5,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 6,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 7,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 8,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           }
         ]
       },
@@ -134,25 +140,25 @@ You must return a JSON object with this exact typescript structure:
             "week_number": 9,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 10,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 11,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           },
           {
             "week_number": 12,
             "focus": string,
             "goals": string[] (3 actionable bullet goals),
-            "estimated_hours": 20
+            "estimated_hours": ${targetHours}
           }
         ]
       }
@@ -183,7 +189,7 @@ You must return a JSON object with this exact typescript structure:
     }
 
     // Dynamic Mockup Fallback (High Quality, parses the user's idea to make it highly relevant)
-    const fallbackData = generateDynamicFallback(description, fullName)
+    const fallbackData = generateDynamicFallback(description, fullName, targetHours)
     return NextResponse.json(fallbackData)
 
   } catch (error) {
@@ -192,7 +198,7 @@ You must return a JSON object with this exact typescript structure:
   }
 }
 
-function generateDynamicFallback(description: string, fullName: string): AnalysisResult {
+function generateDynamicFallback(description: string, fullName: string, weeklyHoursAvailable: number): AnalysisResult {
   const descLower = description.toLowerCase()
   let suggestedName = "Karnex Venture"
   let tagline = "Building the future of digital products."
@@ -261,7 +267,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Define the top 3 high-intensity user pain points",
                 "Draft initial product value proposition document"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 2,
@@ -271,7 +277,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Conduct competitive analysis mapping 3 key competitors",
                 "Select primary launch channel strategy"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 3,
@@ -281,7 +287,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Set up basic conversion metrics monitoring (e.g. PostHog)",
                 "Drive 100 targeted visitors to the landing page"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 4,
@@ -291,7 +297,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Formulate 3 product-market validation hypotheses",
                 "Conduct War Room planning loop to review feedback"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             }
           ]
         },
@@ -308,7 +314,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Set up Supabase authentication and access controls",
                 "Write basic server functions to process data"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 6,
@@ -318,7 +324,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Integrate external AI model endpoints (Gemini/OpenRouter)",
                 "Connect core logical handlers to state providers"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 7,
@@ -328,7 +334,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Implement stripe/oxapay payment transaction routes",
                 "Conduct internal end-to-end integration dry runs"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 8,
@@ -338,7 +344,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Optimize API latency and database query speeds",
                 "Fix top blocker bugs and improve UI micro-interactions"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             }
           ]
         },
@@ -355,7 +361,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Create feedback channel for reporting bugs and suggestions",
                 "Deploy hotfixes based on beta user feedback"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 10,
@@ -365,7 +371,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Create demo video walk-through demonstrating features",
                 "Configure production deployment domains and certificates"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 11,
@@ -375,7 +381,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Run outbound outreach campaigns targeting first users",
                 "Coordinate community support for product release"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             },
             {
               week_number: 12,
@@ -385,7 +391,7 @@ function generateDynamicFallback(description: string, fullName: string): Analysi
                 "Identify high-impact scaling bottlenecks",
                 "Outline Sprint plan for Phase 4 validation"
               ],
-              estimated_hours: 20
+              estimated_hours: weeklyHoursAvailable
             }
           ]
         }
