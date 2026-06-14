@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from agents.builder.schemas import BuilderInput, BuilderOutput
-from agents.builder.agent import run_build_pipeline
 
 
 async def run_build_mode(
@@ -17,6 +16,8 @@ async def run_build_mode(
     project_type: str,
     prev_run_context: str,
 ) -> BuilderOutput:
+    from agents.builder.agent import run_build_pipeline
+
     return await run_build_pipeline(
         input_data,
         run_id,

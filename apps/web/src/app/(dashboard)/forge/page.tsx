@@ -29,6 +29,7 @@ interface BuilderOutput {
   tests_included: boolean
   deployment_ready: boolean
   suggested_improvements: string[]
+  pr_url?: string
 }
 
 interface ChatMessage {
@@ -46,51 +47,67 @@ interface BuildVersion {
   timestamp: Date
 }
 
-/* ── Status → Progress mapping ── */
-
-function statusToProgress(status: string): number {
-  switch (status) {
-    case 'queued': return 8
-    case 'decomposing_specifications': return 25
-    case 'spawning_db_designer': return 50
-    case 'spawning_ui_coder': return 70
-    case 'running_linter_validation': return 88
-    case 'committing_to_github': return 95
-    case 'success': return 100
-    default: return 0
-  }
+interface StepState {
+  id: string
+  label: string
+  state: 'pending' | 'active' | 'done' | 'failed'
 }
 
-function statusToAgentLabel(status: string): string | null {
-  switch (status) {
-    case 'decomposing_specifications': return 'Design Agent'
-    case 'spawning_db_designer': return 'Database Agent'
-    case 'spawning_ui_coder': return 'Builder Agent'
-    case 'running_linter_validation': return 'Linter'
-    case 'committing_to_github': return 'GitHub Agent'
-    default: return null
-  }
-}
+/* ── Helper to parse logs and determine active step ── */
 
-function statusToChatMessage(status: string): { sender: ChatMessage['sender']; message: string } | null {
-  switch (status) {
-    case 'queued':
-      return { sender: 'system', message: 'Build pipeline queued. Initializing agents...' }
-    case 'decomposing_specifications':
-      return { sender: 'design', message: 'Decomposing layout specs, mapping color variables and typography.' }
-    case 'spawning_db_designer':
-      return { sender: 'database', message: 'Provisioning SQL schemas, migration files, and table constraints.' }
-    case 'spawning_ui_coder':
-      return { sender: 'builder', message: 'Scaffolding React components, styles, and configuration.' }
-    case 'running_linter_validation':
-      return { sender: 'system', message: 'Running self-healing compilation, scanning imports and syntax.' }
-    case 'committing_to_github':
-      return { sender: 'github', message: 'Pushing feature branch commits to repository.' }
-    case 'success':
-      return { sender: 'system', message: 'Build succeeded. Files ready for review.' }
-    default:
-      return null
+function parseLogsToSteps(logs: ChatMessage[], status: string): StepState[] {
+  const steps: StepState[] = [
+    { id: 'content', label: 'Phase 1: Content & Copywriting Asset Generation', state: 'pending' },
+    { id: 'schema', label: 'Phase 2: Relational Schema & API Scaffolding', state: 'pending' },
+    { id: 'coding', label: 'Phase 3: Visual UI Coding (Framer Motion + Tailwind)', state: 'pending' },
+    { id: 'compilation', label: 'Phase 4: Sandboxed Compiler & QA Self-Healing', state: 'pending' },
+    { id: 'deploy', label: 'Phase 5: GitHub Sync & Vercel Preview Deploy', state: 'pending' },
+  ]
+
+  if (status === 'error') {
+    steps.forEach(s => s.state = 'failed')
+    return steps
   }
+
+  if (status === 'success') {
+    steps.forEach(s => s.state = 'done')
+    return steps
+  }
+
+  // Determine progress based on message strings
+  let activeIdx = 0
+  for (const log of logs) {
+    const msg = log.message.toLowerCase()
+    if (msg.includes('copywriting') || msg.includes('asset')) {
+      activeIdx = 0
+    } else if (msg.includes('database architect') || msg.includes('architecture plan')) {
+      steps[0].state = 'done'
+      activeIdx = 1
+    } else if (msg.includes('visual ui coder') || msg.includes('scaffolded')) {
+      steps[0].state = 'done'
+      steps[1].state = 'done'
+      activeIdx = 2
+    } else if (msg.includes('sandbox') || msg.includes('compiler') || msg.includes('heal')) {
+      steps[0].state = 'done'
+      steps[1].state = 'done'
+      steps[2].state = 'done'
+      activeIdx = 3
+    } else if (msg.includes('committing') || msg.includes('github') || msg.includes('deploying')) {
+      steps[0].state = 'done'
+      steps[1].state = 'done'
+      steps[2].state = 'done'
+      steps[3].state = 'done'
+      activeIdx = 4
+    }
+  }
+
+  for (let i = 0; i < steps.length; i++) {
+    if (i < activeIdx) steps[i].state = 'done'
+    else if (i === activeIdx) steps[i].state = 'active'
+    else steps[i].state = 'pending'
+  }
+
+  return steps
 }
 
 /* ── Page ── */
@@ -107,7 +124,7 @@ function ForgeWorkspace() {
   const supabase = createSupabaseBrowserClient()
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'database' | 'deploy'>('preview')
+  const [activeTab, setActiveTab] = useState<'preview' | 'database' | 'deploy'>('preview')
   const [showVersions, setShowVersions] = useState(false)
   const [inspectMode, setInspectMode] = useState(false)
 
@@ -437,100 +454,180 @@ function ForgeWorkspace() {
 
   // Computed
   const hasOutput = builderOutput !== null && builderOutput.files.length > 0
-  const buildProgress = statusToProgress(currentRunStatus)
-  const activeAgent = loading ? statusToAgentLabel(currentRunStatus) : null
+  const buildProgress = loading ? 50 : 0
+  const activeAgent = loading ? 'Orchestrator' : null
+  const activeSteps = parseLogsToSteps(chatMessages, currentRunStatus)
 
   return (
-    <div className="flex flex-col h-screen bg-[#050505]">
+    <div className="flex flex-col h-screen bg-[#050505] text-white">
       {/* Accent line */}
-      <div className="forge-accent-bar shrink-0" />
+      <div className="forge-accent-bar shrink-0 h-1 bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-500" />
 
       {/* Header */}
       <ForgeHeader
         projectName={projectName}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onDeploy={() => {}}
+        activeTab={activeTab as any}
+        onTabChange={setActiveTab as any}
+        onDeploy={() => setActiveTab('deploy')}
         onToggleVersions={() => setShowVersions(!showVersions)}
         hasOutput={hasOutput}
       />
 
-      {/* Main workspace */}
-      <div className="flex-1 flex min-h-0">
-        {/* Chat panel */}
-        <div className="w-[340px] shrink-0">
-          <ChatPanel
-            messages={chatMessages}
-            isBuilding={loading}
-            onSendPrompt={handleBuild}
-            framework={framework}
-            styling={styling}
-            database={database}
-            onFrameworkChange={setFramework}
-            onStylingChange={setStyling}
-            onDatabaseChange={setDatabase}
-            buildProgress={buildProgress}
-          />
+      {/* Main workspace (Three-Column Layout) */}
+      <div className="flex-1 flex min-h-0 divide-x divide-zinc-900">
+        
+        {/* Column 1: Chat & Progress timeline */}
+        <div className="w-[340px] shrink-0 flex flex-col h-full bg-[#07070a]">
+          {loading && (
+            <div className="border-b border-zinc-900 bg-zinc-950/50 p-4 space-y-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400">Build Progress</span>
+              <ul className="space-y-1.5">
+                {activeSteps.map(step => (
+                  <li key={step.id} className="flex items-center gap-2 text-[11px]">
+                    <span className={`h-3.5 w-3.5 rounded-full border flex items-center justify-center text-[8px] ${
+                      step.state === 'done' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
+                      step.state === 'active' ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400 animate-pulse' :
+                      step.state === 'failed' ? 'border-rose-500 bg-rose-500/10 text-rose-400' :
+                      'border-zinc-800 text-zinc-600'
+                    }`}>
+                      {step.state === 'done' ? '✓' : step.state === 'active' ? '→' : '○'}
+                    </span>
+                    <span className={step.state === 'active' ? 'text-zinc-100 font-medium' : 'text-zinc-400'}>{step.label}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex-1 min-h-0">
+            <ChatPanel
+              messages={chatMessages}
+              isBuilding={loading}
+              onSendPrompt={handleBuild}
+              framework={framework}
+              styling={styling}
+              database={database}
+              onFrameworkChange={setFramework}
+              onStylingChange={setStyling}
+              onDatabaseChange={setDatabase}
+              buildProgress={buildProgress}
+            />
+          </div>
         </div>
 
-        {/* Canvas area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 p-2 min-h-0">
-            {/* Show launcher when no output and not building */}
-            {!hasOutput && !loading && (
-              <ProjectLauncher
-                onSelectTemplate={handleBuild}
-                recentBuilds={pastBuilds}
-                onLoadBuild={handleLoadBuild}
-              />
+        {/* Column 2: Code Editor */}
+        <div className="flex-1 flex flex-col h-full min-w-0 bg-[#09090d]">
+          {hasOutput ? (
+            <CodePanel
+              files={builderOutput.files}
+              selectedFileIdx={selectedFileIdx}
+              onSelectFile={setSelectedFileIdx}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              {!loading && (
+                <div className="max-w-md">
+                  <ProjectLauncher
+                    onSelectTemplate={handleBuild}
+                    recentBuilds={pastBuilds}
+                    onLoadBuild={handleLoadBuild}
+                  />
+                </div>
+              )}
+              {loading && (
+                <div className="space-y-3">
+                  <div className="h-6 w-6 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mx-auto" />
+                  <p className="text-[12px] text-zinc-500">Preparing sandbox and generating MVP files...</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Column 3: Live Preview / DB Schema */}
+        <div className="w-[480px] shrink-0 flex flex-col h-full bg-[#050505]">
+          <div className="flex items-center justify-between border-b border-zinc-900 px-4 h-10 shrink-0 bg-[#07070a]">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setActiveTab('preview')}
+                className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors ${
+                  activeTab === 'preview' ? 'text-white bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Live Preview
+              </button>
+              <button
+                onClick={() => setActiveTab('database')}
+                className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors ${
+                  activeTab === 'database' ? 'text-white bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Database Schema
+              </button>
+              <button
+                onClick={() => setActiveTab('deploy')}
+                className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors ${
+                  activeTab === 'deploy' ? 'text-white bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Launch Staging
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0 p-2 overflow-hidden">
+            {/* Preview Panel */}
+            {activeTab === 'preview' && (
+              <div className="h-full">
+                {builderOutput?.pr_url ? (
+                  <div className="h-full flex flex-col bg-[#0a0a0e] rounded-lg overflow-hidden border border-zinc-900">
+                    <div className="bg-[#09090b] px-3 py-1.5 border-b border-zinc-900 flex items-center justify-between shrink-0">
+                      <span className="text-[10px] font-mono text-zinc-500 truncate">{builderOutput.pr_url}</span>
+                    </div>
+                    <iframe
+                      src={builderOutput.pr_url}
+                      className="flex-1 w-full border-none bg-white"
+                      title="MVP Preview"
+                    />
+                  </div>
+                ) : (
+                  <PreviewPanel
+                    files={builderOutput?.files || []}
+                    inspectMode={inspectMode}
+                    onToggleInspect={() => setInspectMode(!inspectMode)}
+                    onSelectElement={(selector, text) => {
+                      appendChat('system', `Selected: ${selector} — "${text}"`)
+                    }}
+                    isBuilding={loading && !hasOutput}
+                  />
+                )}
+              </div>
             )}
 
-            {/* Preview tab */}
-            {(hasOutput || loading) && activeTab === 'preview' && (
-              <PreviewPanel
-                files={builderOutput?.files || []}
-                inspectMode={inspectMode}
-                onToggleInspect={() => setInspectMode(!inspectMode)}
-                onSelectElement={(selector, text) => {
-                  appendChat('system', `Selected: ${selector} — "${text}"`)
-                }}
-                isBuilding={loading && !hasOutput}
-              />
-            )}
-
-            {/* Code tab */}
-            {hasOutput && activeTab === 'code' && (
-              <CodePanel
-                files={builderOutput.files}
-                selectedFileIdx={selectedFileIdx}
-                onSelectFile={setSelectedFileIdx}
-              />
-            )}
-
-            {/* Database tab */}
+            {/* Database Panel */}
             {activeTab === 'database' && (
               <div className="h-full">
                 {hasOutput ? (
                   <SchemaVisualizer files={builderOutput.files} />
                 ) : (
-                  <div className="flex items-center justify-center h-full rounded-lg border border-dashed border-[#1a1a1a]">
-                    <span className="text-[13px] text-zinc-600">Run a build to view database schemas</span>
+                  <div className="flex items-center justify-center h-full rounded-lg border border-dashed border-zinc-800">
+                    <span className="text-[12px] text-zinc-600">Run a build to view database schemas</span>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Deploy tab */}
+            {/* Launch / Deploy Panel */}
             {activeTab === 'deploy' && (
-              <div className="h-full overflow-y-auto forge-scroll rounded-lg border border-[#141417] bg-[#0a0a0e] p-6">
+              <div className="h-full overflow-y-auto forge-scroll rounded-lg border border-zinc-900 bg-[#0a0a0e] p-6">
                 {hasOutput ? (
-                  <div className="space-y-6 max-w-3xl">
+                  <div className="space-y-6">
                     {/* Setup instructions */}
                     <div>
-                      <h3 className="text-[13px] font-medium text-zinc-200">Setup Instructions</h3>
-                      <div className="mt-3 space-y-2">
+                      <h3 className="text-[12px] font-medium text-zinc-200">Setup Instructions</h3>
+                      <div className="mt-2 space-y-1.5">
                         {builderOutput.setup_instructions.map((inst, idx) => (
-                          <div key={idx} className="bg-[#09090b] rounded-md border border-[#141417] p-3 text-[12px] font-mono text-zinc-400">
+                          <div key={idx} className="bg-zinc-950 rounded border border-zinc-900 p-2.5 text-[11px] font-mono text-zinc-400">
                             {inst}
                           </div>
                         ))}
@@ -539,44 +636,20 @@ function ForgeWorkspace() {
 
                     {/* Improvements */}
                     <div>
-                      <h3 className="text-[13px] font-medium text-zinc-200">Suggested Improvements</h3>
-                      <ul className="mt-3 space-y-1.5">
+                      <h3 className="text-[12px] font-medium text-zinc-200">Suggested Improvements</h3>
+                      <ul className="mt-2 space-y-1">
                         {builderOutput.suggested_improvements.map((imp, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-[12px] text-zinc-400">
-                            <span className="text-zinc-600 mt-0.5 shrink-0">—</span>
+                          <li key={idx} className="flex items-start gap-2 text-[11px] text-zinc-400">
+                            <span className="text-zinc-700 mt-0.5 shrink-0">—</span>
                             {imp}
                           </li>
                         ))}
                       </ul>
                     </div>
-
-                    {/* Build history */}
-                    <div>
-                      <h3 className="text-[13px] font-medium text-zinc-200">Build History</h3>
-                      <div className="mt-3 space-y-2">
-                        {pastBuilds.map((build) => (
-                          <div
-                            key={build.id}
-                            className="flex items-center justify-between bg-[#09090b] rounded-md border border-[#141417] p-3"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-[12px] text-zinc-300 truncate">{build.spec}</p>
-                              <p className="text-[10px] text-zinc-600 font-mono mt-0.5">{build.id.slice(0, 8)}</p>
-                            </div>
-                            <span className="text-[10px] font-medium text-emerald-500/80 bg-emerald-500/8 border border-emerald-500/10 rounded px-2 py-0.5 shrink-0">
-                              DEPLOYED
-                            </span>
-                          </div>
-                        ))}
-                        {pastBuilds.length === 0 && (
-                          <p className="text-[12px] text-zinc-600">No builds yet</p>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <span className="text-[13px] text-zinc-600">Run a build to view deployment options</span>
+                    <span className="text-[12px] text-zinc-600">Run a build to launch staging environment</span>
                   </div>
                 )}
               </div>
@@ -584,15 +657,16 @@ function ForgeWorkspace() {
           </div>
         </div>
 
-        {/* Version timeline (slide-in) */}
-        <VersionTimeline
-          visible={showVersions}
-          versions={versions}
-          activeVersionId={currentRunId}
-          onSelectVersion={(id) => handleLoadBuild(id)}
-          onClose={() => setShowVersions(false)}
-        />
       </div>
+
+      {/* Version timeline (slide-in) */}
+      <VersionTimeline
+        visible={showVersions}
+        versions={versions}
+        activeVersionId={currentRunId}
+        onSelectVersion={(id) => handleLoadBuild(id)}
+        onClose={() => setShowVersions(false)}
+      />
 
       {/* Status bar */}
       <ForgeStatusBar

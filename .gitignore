@@ -61,3 +61,6 @@ htmlcov/
 # Supabase
 supabase/.temp/
 .supabase/
+
+# Karnex Sandbox
+sandbox/
