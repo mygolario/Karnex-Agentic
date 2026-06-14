@@ -230,7 +230,8 @@ function ForgeWorkspace() {
         setVersions(historyVersions)
 
         // Auto-restore workspace on refresh if no build is active or loaded
-        if (runs.length > 0 && !currentRunId && !builderOutput) {
+        const isNewSession = typeof window !== 'undefined' && sessionStorage.getItem('karnex-workspace-new') === 'true'
+        if (runs.length > 0 && !currentRunId && !builderOutput && !isNewSession) {
           const latestRun = runs[0]
           setProjectName(latestRun.input?.specification?.slice(0, 40) || 'Code Build')
 
@@ -389,6 +390,9 @@ function ForgeWorkspace() {
   // Trigger build
   const handleBuild = async (promptText: string) => {
     if (!promptText.trim()) return
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('karnex-workspace-new')
+    }
 
     setLoading(true)
     setBuilderOutput(null)
@@ -448,9 +452,33 @@ function ForgeWorkspace() {
 
   // Load a past build
   const handleLoadBuild = async (buildId: string) => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('karnex-workspace-new')
+    }
     setLoading(true)
     await fetchRunOutput(buildId)
     setLoading(false)
+  }
+
+  // Clear workspace for a new project
+  const handleNewProject = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('karnex-workspace-new', 'true')
+    }
+    setBuilderOutput(null)
+    setCurrentRunId(null)
+    setCurrentRunStatus('')
+    setSelectedFileIdx(0)
+    setProjectName('')
+    setChatMessages([
+      {
+        id: 'welcome',
+        sender: 'system',
+        message: 'Welcome to Karnex Forge. Describe your idea below to begin.',
+        timestamp: new Date(),
+      },
+    ])
+    setShowCode(false)
   }
 
   // Computed
@@ -474,6 +502,7 @@ function ForgeWorkspace() {
         hasOutput={hasOutput}
         showCode={showCode}
         onToggleCode={() => setShowCode(!showCode)}
+        onNewProject={handleNewProject}
       />
 
       {/* Main workspace (Three-Column Layout) */}

@@ -12,6 +12,7 @@ interface ForgeHeaderProps {
   hasOutput: boolean
   showCode: boolean
   onToggleCode: () => void
+  onNewProject: () => void
 }
 
 const tabs = [
@@ -29,6 +30,7 @@ export default function ForgeHeader({
   hasOutput,
   showCode,
   onToggleCode,
+  onNewProject,
 }: ForgeHeaderProps) {
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const indicatorRef = useRef<HTMLDivElement>(null)
@@ -104,6 +106,17 @@ export default function ForgeHeader({
 
         {hasOutput && (
           <>
+            <button
+              onClick={onNewProject}
+              className="flex items-center gap-1.5 border border-zinc-800 text-[12px] font-medium rounded-md px-3 py-1.5 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 transition-all"
+              title="Start a new project"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              New Project
+            </button>
+
             <button
               onClick={onToggleCode}
               className={`flex items-center gap-1.5 border border-zinc-800 text-[12px] font-medium rounded-md px-3 py-1.5 transition-all ${
