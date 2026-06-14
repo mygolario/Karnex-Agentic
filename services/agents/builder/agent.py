@@ -17,7 +17,7 @@ from agents.builder.prompts import (
 )
 from agents.builder.schemas import BuilderInput, BuilderOutput, GeneratedFile
 from agents.pain_transformer.tools import karnex_memory_write
-from shared.agent_run_logging import advance_step, complete_agent_run
+from shared.agent_run_logging import advance_step
 from shared.agent_step_catalog import BUILDER_STATUS_TO_STEP, get_step_labels
 from agents.forge.catalog import load_catalog
 from agents.forge.events import emit_forge_event
@@ -148,8 +148,5 @@ async def run_build_pipeline(
 
     runner = MultiAgentDAGRunner(input_data, run_id, supabase)
     output = await runner.run()
-
-    # Log completion in agent_runs
-    complete_agent_run(run_id, input_data.founder_id, output, "builder_output")
     return output
 

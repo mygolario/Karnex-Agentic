@@ -33,11 +33,28 @@ def create_chat_model(
     )
 
 
-def model_from_catalog_entry(entry: dict[str, Any]) -> ChatOpenAI:
-    """Instantiate ChatOpenAI from a catalog entry dict."""
+def model_from_catalog_entry(
+    entry: dict[str, Any],
+    *,
+    step_role: Optional[StepRole] = None,
+) -> ChatOpenAI:
+    """Instantiate ChatOpenAI from a catalog entry dict.
+
+    If step_role is provided and the entry has a step_max_tokens mapping,
+    the per-role token cap is used instead of the global max_tokens.
+    This prevents expensive oversized responses for simple steps.
+    """
+    global_max = int(entry.get("max_tokens", settings.OPENROUTER_MAX_TOKENS_BUILDER))
+
+    if step_role:
+        step_caps: dict = entry.get("step_max_tokens") or {}
+        max_tokens = int(step_caps.get(step_role, global_max))
+    else:
+        max_tokens = global_max
+
     return create_chat_model(
         entry["openrouter_model"],
-        max_tokens=int(entry.get("max_tokens", settings.OPENROUTER_MAX_TOKENS_BUILDER)),
+        max_tokens=max_tokens,
         temperature=float(entry.get("temperature", 0.3)),
     )
 
@@ -57,7 +74,7 @@ def resolve_step_model(
     if model_id and model_id in by_id and not auto_model:
         selected = by_id[model_id]
         if step_role in ("classifier", "fast") and selected.get("role") == "pro" and not max_mode:
-            pass
+            pass  # fall through to auto-select a cheaper model for fast steps
         else:
             return selected
 

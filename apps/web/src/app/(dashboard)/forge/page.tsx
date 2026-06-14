@@ -135,6 +135,12 @@ function ForgeWorkspace() {
   const [database, setDatabase] = useState('supabase')
   const [githubRepo, setGithubRepo] = useState('')
 
+  // Forge model & mode
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
+  const [forgeMode, setForgeMode] = useState<'auto' | 'build' | 'plan' | 'ask' | 'debug'>('auto')
+  const [autoModel, setAutoModel] = useState(false)
+  const [maxMode, setMaxMode] = useState(false)
+
   // Build state
   const [loading, setLoading] = useState(false)
   const [currentRunId, setCurrentRunId] = useState<string | null>(null)
@@ -436,6 +442,10 @@ function ForgeWorkspace() {
           specification: promptText,
           tech_stack: { framework, styling, database },
           github_repo: githubRepo || null,
+          mode: forgeMode,
+          model_id: selectedModelId || null,
+          auto_model: autoModel,
+          max_mode: maxMode,
         }),
       })
 
@@ -543,6 +553,10 @@ function ForgeWorkspace() {
               onStylingChange={setStyling}
               onDatabaseChange={setDatabase}
               buildProgress={buildProgress}
+              forgeMode={forgeMode}
+              onForgeModeChange={setForgeMode}
+              maxMode={maxMode}
+              onMaxModeChange={setMaxMode}
             />
           </div>
         </div>
@@ -568,9 +582,24 @@ function ForgeWorkspace() {
                   </div>
                 )}
                 {loading && (
-                  <div className="space-y-3">
-                    <div className="h-6 w-6 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mx-auto" />
-                    <p className="text-[12px] text-zinc-500">Preparing sandbox and generating MVP files...</p>
+                  <div className="flex flex-col items-center gap-5 max-w-xs">
+                    <div className="relative h-12 w-12">
+                      <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20" />
+                      <div className="absolute inset-0 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <p className="text-[13px] font-medium text-zinc-200">Karnex is building your MVP...</p>
+                      <p className="text-[11px] text-zinc-500">Running multi-agent pipeline · Generating files</p>
+                    </div>
+                    <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 animate-pulse"
+                        style={{ width: buildDuration ? `${Math.min(95, (buildDuration / 180) * 100)}%` : '15%' }}
+                      />
+                    </div>
+                    {buildDuration !== null && buildDuration > 0 && (
+                      <p className="text-[10px] text-zinc-600 font-mono">{buildDuration}s elapsed</p>
+                    )}
                   </div>
                 )}
               </div>

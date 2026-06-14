@@ -9,7 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from agents.builder.schemas import BuilderInput, BuilderOutput
 from agents.forge.catalog import load_catalog
-from agents.forge.events import emit_forge_event
+from agents.forge.events import emit_forge_event, flush_all_forge_events
 from shared.agent_run_logging import complete_agent_run
 from shared.agent_step_catalog import get_step_labels
 from shared.openrouter_client import model_from_catalog_entry, resolve_step_model
@@ -75,5 +75,6 @@ async def run_ask_mode(
         suggested_improvements=[],
         pre_populated=bool(getattr(input_data, "pre_populated", False)),
     )
+    await flush_all_forge_events(supabase, run_id)
     complete_agent_run(run_id, input_data.founder_id, output, "builder_output")
     return output

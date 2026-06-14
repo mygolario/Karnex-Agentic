@@ -21,6 +21,10 @@ interface ChatPanelProps {
   onStylingChange: (v: string) => void
   onDatabaseChange: (v: string) => void
   buildProgress: number
+  forgeMode: 'auto' | 'build' | 'plan' | 'ask' | 'debug'
+  onForgeModeChange: (v: 'auto' | 'build' | 'plan' | 'ask' | 'debug') => void
+  maxMode: boolean
+  onMaxModeChange: (v: boolean) => void
 }
 
 const senderConfig: Record<string, { label: string; color: string; iconBg: string }> = {
@@ -61,6 +65,10 @@ export default function ChatPanel({
   onStylingChange,
   onDatabaseChange,
   buildProgress,
+  forgeMode,
+  onForgeModeChange,
+  maxMode,
+  onMaxModeChange,
 }: ChatPanelProps) {
   const [draft, setDraft] = useState('')
   const [showConfig, setShowConfig] = useState(false)
@@ -173,7 +181,32 @@ export default function ChatPanel({
 
       {/* Config drawer */}
       {showConfig && (
-        <div className="px-4 py-3 border-t border-[#141417] bg-[#0a0a0e] space-y-2">
+        <div className="px-4 py-3 border-t border-[#141417] bg-[#0a0a0e] space-y-3">
+          {/* Mode selector */}
+          <div>
+            <label className="text-[9px] uppercase tracking-wider text-zinc-600 font-medium block mb-1.5">Forge Mode</label>
+            <div className="flex gap-1 flex-wrap">
+              {(['auto', 'build', 'plan', 'ask', 'debug'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => onForgeModeChange(m)}
+                  className={`px-2 py-1 rounded text-[10px] font-semibold capitalize transition-colors ${
+                    forgeMode === m
+                      ? m === 'debug' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                        : m === 'plan' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        : m === 'ask' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                        : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                      : 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-zinc-300'
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Stack config */}
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="text-[9px] uppercase tracking-wider text-zinc-600 font-medium block mb-1">Framework</label>
@@ -209,6 +242,25 @@ export default function ChatPanel({
                 <option value="postgresql">PostgreSQL</option>
               </select>
             </div>
+          </div>
+
+          {/* Max Mode toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-semibold text-zinc-400">Max Mode</p>
+              <p className="text-[9px] text-zinc-600">Stronger models, higher quality, more tokens</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onMaxModeChange(!maxMode)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                maxMode ? 'bg-indigo-500' : 'bg-zinc-800'
+              }`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                maxMode ? 'translate-x-4' : 'translate-x-1'
+              }`} />
+            </button>
           </div>
         </div>
       )}

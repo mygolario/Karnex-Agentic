@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from agents.builder.schemas import BuilderInput, BuilderOutput, GeneratedFile
 from agents.forge.catalog import load_catalog
-from agents.forge.events import emit_forge_event
+from agents.forge.events import emit_forge_event, flush_all_forge_events
 from agents.forge.linter import run_forge_linter
 from shared.agent_run_logging import complete_agent_run
 from shared.agent_step_catalog import get_step_labels
@@ -66,7 +66,7 @@ async def run_debug_mode(
         catalog,
         model_id=getattr(input_data, "model_id", None),
         auto_model=bool(getattr(input_data, "auto_model", False)),
-        max_mode=bool(getattr(input_data, "max_mode", True)),
+        max_mode=bool(getattr(input_data, "max_mode", False)),
         step_role="supervisor",
     )
     llm = model_from_catalog_entry(entry)
@@ -197,5 +197,6 @@ async def run_debug_mode(
         debug_path=diag.debug_path,
         approval_required=not can_apply,
     )
+    await flush_all_forge_events(supabase, run_id)
     complete_agent_run(run_id, input_data.founder_id, output, "builder_output")
     return output

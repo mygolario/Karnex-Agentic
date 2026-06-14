@@ -12,7 +12,7 @@ from agents.forge.context import (
     format_context_block,
     load_karnex_context,
 )
-from agents.forge.events import emit_forge_event
+from agents.forge.events import emit_forge_event, flush_all_forge_events
 from agents.forge.modes.ask import run_ask_mode
 from agents.forge.modes.debug import run_debug_mode
 from agents.forge.modes.plan import run_plan_mode
@@ -201,4 +201,7 @@ async def run_forge(input_data: BuilderInput, run_id: str, supabase: Any = None)
     )
     manifest["cost_estimate"] = cost_hint
     out.run_manifest = manifest
+
+    # Flush any remaining buffered events so they reach Supabase
+    await flush_all_forge_events(supabase, run_id)
     return out

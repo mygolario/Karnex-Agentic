@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from agents.builder.schemas import BuilderInput, BuilderOutput
 from agents.forge.catalog import load_catalog
-from agents.forge.events import emit_forge_event
+from agents.forge.events import emit_forge_event, flush_all_forge_events
 from agents.forge.project_types import resolve_project_type, stack_prompt_suffix
 from shared.agent_run_logging import complete_agent_run
 from shared.agent_step_catalog import get_step_labels
@@ -116,5 +116,6 @@ async def run_plan_mode(
             "estimated_minutes": plan.estimated_minutes,
         },
     )
+    await flush_all_forge_events(supabase, run_id)
     complete_agent_run(run_id, input_data.founder_id, output, "builder_output")
     return output
