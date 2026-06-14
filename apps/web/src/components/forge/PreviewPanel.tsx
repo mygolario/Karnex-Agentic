@@ -108,12 +108,88 @@ const extractReturnBlock = (code: string): string => {
   return '';
 };
 
+const extractProps = (attributes: string): Record<string, string> => {
+  const props: Record<string, string> = {};
+  if (!attributes) return props;
+  
+  // Match string props: title="Hello" or title='Hello'
+  const stringPropRegex = /([a-zA-Z0-9_]+)\s*=\s*["']([^"']*)["']/g;
+  let match;
+  while ((match = stringPropRegex.exec(attributes)) !== null) {
+    props[match[1]] = match[2];
+  }
+  
+  // Match expression props: icon={<IconFeature1SVG />} or isHighlighted={true}
+  const exprPropRegex = /([a-zA-Z0-9_]+)\s*=\s*\{([^}]+)\}/g;
+  while ((match = exprPropRegex.exec(attributes)) !== null) {
+    props[match[1]] = match[2].trim();
+  }
+
+  // Match boolean shorthand props: isHighlighted
+  const words = attributes.match(/\b[a-zA-Z0-9_]+\b/g);
+  if (words) {
+    words.forEach(w => {
+      const pattern = new RegExp(`\\b${w}\\b\\s*=`);
+      if (!pattern.test(attributes) && w !== 'class' && w !== 'className' && w !== 'style' && w !== 'id') {
+        props[w] = 'true';
+      }
+    });
+  }
+  
+  return props;
+};
+
+const extractLocalVariables = (fileContent: string): Record<string, string> => {
+  const vars: Record<string, string> = {};
+  if (!fileContent) return vars;
+  
+  // Match const name = "value"; or let name = 'value';
+  const varRegex = /(?:const|let|var)\s+([a-zA-Z0-9_]+)\s*=\s*["']([^"']*)["']/g;
+  let match;
+  while ((match = varRegex.exec(fileContent)) !== null) {
+    vars[match[1]] = match[2];
+  }
+  
+  return vars;
+};
+
 const extractLocalComponentReturn = (fileContent: string, componentName: string): string => {
-  const index = fileContent.indexOf(`function ${componentName}`);
-  if (index === -1) return '';
-  const searchArea = fileContent.slice(index);
+  const regex = new RegExp(`(?:function|const|let)\\s+${componentName}\\b`);
+  const match = fileContent.match(regex);
+  if (!match || match.index === undefined) return '';
+  
+  const searchArea = fileContent.slice(match.index);
+  
+  // Try to find standard return (...) block
   const returnMatch = searchArea.match(/return\s*\(\s*([\s\S]*?)\s*\)/);
-  return returnMatch ? returnMatch[1] : '';
+  if (returnMatch) return returnMatch[1];
+  
+  // Try to find standard return ... without parens (single line)
+  const returnSingleLine = searchArea.match(/return\s+(<[\s\S]*?>);/);
+  if (returnSingleLine) return returnSingleLine[1];
+
+  // Try to find arrow function direct return: const Component = () => ( ... )
+  const arrowIndex = searchArea.indexOf('=>');
+  if (arrowIndex !== -1 && arrowIndex < 200) {
+    const postArrow = searchArea.slice(arrowIndex + 2).trim();
+    if (postArrow.startsWith('(')) {
+      let depth = 0;
+      let i = 0;
+      for (; i < postArrow.length; i++) {
+        if (postArrow[i] === '(') depth++;
+        else if (postArrow[i] === ')') {
+          depth--;
+          if (depth === 0) break;
+        }
+      }
+      return postArrow.slice(1, i).trim();
+    } else if (postArrow.startsWith('<')) {
+      const tagMatch = postArrow.match(/^(<[\s\S]*?>)(?:;|\n|$)/);
+      if (tagMatch) return tagMatch[1];
+    }
+  }
+  
+  return '';
 };
 
 const resolveJSX = (
@@ -186,29 +262,48 @@ const resolveJSX = (
   });
 
   // Resolve JSX components and HTML tags
-  const tagRegex = /<([a-zA-Z0-9]+)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/\1>)/g;
+  const tagRegex = /<([a-zA-Z0-9.:_-]+)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/\1>)/g;
   resolved = resolved.replace(tagRegex, (fullMatch: string, TagName: string, attributes: string, children: string | undefined) => {
-    const isStandardHtml = TagName[0] === TagName[0].toLowerCase();
+    // Strip Framer Motion prefix (motion.div -> div, motion.section -> section, etc.)
+    let cleanTagName = TagName;
+    if (TagName.startsWith('motion.')) {
+      cleanTagName = TagName.slice(7);
+    }
+
+    // Convert Next.js Image component to standard img tag
+    if (cleanTagName === 'Image' || cleanTagName === 'img') {
+      const srcMatch = attributes.match(/src=\s*\{?["']?([^"'}]+)["']?\}?/);
+      const src = srcMatch ? srcMatch[1] : '';
+      const altMatch = attributes.match(/alt=\s*\{?["']?([^"'}]+)["']?\}?/);
+      const alt = altMatch ? altMatch[1] : '';
+      
+      const classNameMatch = attributes.match(/className=\s*\{?["']?([^"'}]+)["']?\}?/);
+      const cls = classNameMatch ? classNameMatch[1] : '';
+      
+      return `<img src="${src}" alt="${alt}" class="${cls}" style="object-fit: cover; width: 100%; height: 100%;" />`;
+    }
+
+    const isStandardHtml = cleanTagName[0] === cleanTagName[0].toLowerCase();
 
     if (isStandardHtml) {
       const resolvedChildren = children ? resolveJSX(children, currentFile, files, depth + 1) : '';
-      const closedTag = fullMatch.endsWith('/>') ? ' />' : `>${resolvedChildren}</${TagName}>`;
+      const closedTag = fullMatch.endsWith('/>') ? ' />' : `>${resolvedChildren}</${cleanTagName}>`;
       const cleanedAttrs = attributes
         .replace(/className=/g, 'class=')
         .replace(/onClick=\{[^}]+\}/g, '')
         .replace(/onChange=\{[^}]+\}/g, '')
         .replace(/onSubmit=\{[^}]+\}/g, '');
-      return `<${TagName}${cleanedAttrs}${closedTag}`;
+      return `<${cleanTagName}${cleanedAttrs}${closedTag}`;
     }
 
     const resolvedChildren = children ? resolveJSX(children, currentFile, files, depth + 1) : '';
 
-    if (uiComponentsMap[TagName]) {
-      return uiComponentsMap[TagName](attributes, resolvedChildren);
+    if (uiComponentsMap[cleanTagName]) {
+      return uiComponentsMap[cleanTagName](attributes, resolvedChildren);
     }
 
-    if (importsMap[TagName]) {
-      const matchedFile = findFileByImport(TagName, importsMap[TagName], files);
+    if (importsMap[cleanTagName]) {
+      const matchedFile = findFileByImport(cleanTagName, importsMap[cleanTagName], files);
       if (matchedFile) {
         let returnBlock = extractReturnBlock(matchedFile.content);
         if (resolvedChildren) {
@@ -216,24 +311,79 @@ const resolveJSX = (
         } else {
           returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, '');
         }
+
+        // Pass props
+        const props = extractProps(attributes);
+        Object.keys(props).forEach(propName => {
+          const propValue = props[propName];
+          const resolvedVal = resolveJSX(propValue, currentFile, files, depth + 1);
+          const propRegex = new RegExp(`\\{\\s*(?:props\\.)?${propName}\\s*\\}`, 'g');
+          returnBlock = returnBlock.replace(propRegex, resolvedVal);
+        });
+
+        // Resolve local variables
+        const localVars = extractLocalVariables(matchedFile.content);
+        Object.keys(localVars).forEach(varName => {
+          const varValue = localVars[varName];
+          const varRegex = new RegExp(`\\{\\s*${varName}\\s*\\}`, 'g');
+          returnBlock = returnBlock.replace(varRegex, varValue);
+        });
+
         return resolveJSX(returnBlock, matchedFile, files, depth + 1);
       }
     }
 
-    if (currentFile && currentFile.content.includes(`function ${TagName}`)) {
-      let returnBlock = extractLocalComponentReturn(currentFile.content, TagName);
-      if (resolvedChildren) {
-        returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, resolvedChildren);
-      } else {
-        returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, '');
+    const isLocalComponent = currentFile && (
+      currentFile.content.includes(`function ${cleanTagName}`) ||
+      currentFile.content.includes(`const ${cleanTagName}`) ||
+      currentFile.content.includes(`let ${cleanTagName}`)
+    );
+
+    if (isLocalComponent) {
+      let returnBlock = extractLocalComponentReturn(currentFile.content, cleanTagName);
+      if (returnBlock) {
+        if (resolvedChildren) {
+          returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, resolvedChildren);
+        } else {
+          returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, '');
+        }
+
+        // Pass props
+        const props = extractProps(attributes);
+        Object.keys(props).forEach(propName => {
+          const propValue = props[propName];
+          const resolvedVal = resolveJSX(propValue, currentFile, files, depth + 1);
+          const propRegex = new RegExp(`\\{\\s*(?:props\\.)?${propName}\\s*\\}`, 'g');
+          returnBlock = returnBlock.replace(propRegex, resolvedVal);
+        });
+
+        // Resolve local variables
+        const localVars = extractLocalVariables(currentFile.content);
+        Object.keys(localVars).forEach(varName => {
+          const varValue = localVars[varName];
+          const varRegex = new RegExp(`\\{\\s*${varName}\\s*\\}`, 'g');
+          returnBlock = returnBlock.replace(varRegex, varValue);
+        });
+
+        return resolveJSX(returnBlock, currentFile, files, depth + 1);
       }
-      return resolveJSX(returnBlock, currentFile, files, depth + 1);
     }
 
-    return resolvedChildren || `<div class="p-4 border border-zinc-800 text-zinc-500 rounded text-center text-xs font-mono">&lt;${TagName} /&gt;</div>`;
+    return resolvedChildren || `<div class="p-4 border border-zinc-800 text-zinc-500 rounded text-center text-xs font-mono">&lt;${cleanTagName} /&gt;</div>`;
   });
 
+  // Resolve local variables from currentFile for final text elements
+  if (currentFile) {
+    const localVars = extractLocalVariables(currentFile.content);
+    Object.keys(localVars).forEach(varName => {
+      const varValue = localVars[varName];
+      const varRegex = new RegExp(`\\{\\s*${varName}\\s*\\}`, 'g');
+      resolved = resolved.replace(varRegex, varValue);
+    });
+  }
+
   // Clean up remaining React/JS curly brace expressions
+  resolved = resolved.replace(/\{\s*new\s+Date\(\)\.getFullYear\(\)\s*\}/g, String(new Date().getFullYear()));
   resolved = resolved.replace(/\{\s*[^?}]+\?\s*['"]([^'"]*)['"]\s*:\s*['"]([^'"]*)['"]\s*\}/g, '$2');
   resolved = resolved.replace(/\{\s*[^}&&]+&&\s*([\s\S]*?)\s*\}/g, '');
   resolved = resolved.replace(/\{\s*[a-zA-Z0-9_.]+(?:\?\.[a-zA-Z0-9_.]+)*\s*\}/g, '');
