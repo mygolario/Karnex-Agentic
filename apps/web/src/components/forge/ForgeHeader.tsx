@@ -10,6 +10,8 @@ interface ForgeHeaderProps {
   onDeploy: () => void
   onToggleVersions: () => void
   hasOutput: boolean
+  showCode: boolean
+  onToggleCode: () => void
 }
 
 const tabs = [
@@ -25,6 +27,8 @@ export default function ForgeHeader({
   onDeploy,
   onToggleVersions,
   hasOutput,
+  showCode,
+  onToggleCode,
 }: ForgeHeaderProps) {
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const indicatorRef = useRef<HTMLDivElement>(null)
@@ -99,15 +103,31 @@ export default function ForgeHeader({
         </button>
 
         {hasOutput && (
-          <button
-            onClick={onDeploy}
-            className="flex items-center gap-1.5 bg-[#6366f1] hover:bg-[#5558e6] text-white text-[12px] font-medium rounded-md px-3 py-1.5 transition-colors"
-          >
-            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            Deploy
-          </button>
+          <>
+            <button
+              onClick={onToggleCode}
+              className={`flex items-center gap-1.5 border border-zinc-800 text-[12px] font-medium rounded-md px-3 py-1.5 transition-all ${
+                showCode
+                  ? 'bg-zinc-800 text-white border-zinc-700 font-semibold'
+                  : 'bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300'
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+              </svg>
+              {showCode ? 'Hide Code' : 'Code'}
+            </button>
+
+            <button
+              onClick={onDeploy}
+              className="flex items-center gap-1.5 bg-[#6366f1] hover:bg-[#5558e6] text-white text-[12px] font-medium rounded-md px-3 py-1.5 transition-colors"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              Deploy
+            </button>
+          </>
         )}
       </div>
     </div>

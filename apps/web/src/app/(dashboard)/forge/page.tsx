@@ -127,6 +127,7 @@ function ForgeWorkspace() {
   const [activeTab, setActiveTab] = useState<'preview' | 'database' | 'deploy'>('preview')
   const [showVersions, setShowVersions] = useState(false)
   const [inspectMode, setInspectMode] = useState(false)
+  const [showCode, setShowCode] = useState(false)
 
   // Config
   const [framework, setFramework] = useState('nextjs')
@@ -471,6 +472,8 @@ function ForgeWorkspace() {
         onDeploy={() => setActiveTab('deploy')}
         onToggleVersions={() => setShowVersions(!showVersions)}
         hasOutput={hasOutput}
+        showCode={showCode}
+        onToggleCode={() => setShowCode(!showCode)}
       />
 
       {/* Main workspace (Three-Column Layout) */}
@@ -515,71 +518,67 @@ function ForgeWorkspace() {
           </div>
         </div>
 
-        {/* Column 2: Code Editor */}
-        <div className="flex-[1.2] flex flex-col h-full min-w-[320px] bg-[#09090d]">
-          {hasOutput ? (
-            <CodePanel
-              files={builderOutput.files}
-              selectedFileIdx={selectedFileIdx}
-              onSelectFile={setSelectedFileIdx}
-            />
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-              {!loading && (
-                <div className="max-w-md">
-                  <ProjectLauncher
-                    onSelectTemplate={handleBuild}
-                    recentBuilds={pastBuilds}
-                    onLoadBuild={handleLoadBuild}
-                  />
-                </div>
-              )}
-              {loading && (
-                <div className="space-y-3">
-                  <div className="h-6 w-6 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mx-auto" />
-                  <p className="text-[12px] text-zinc-500">Preparing sandbox and generating MVP files...</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Column 3: Live Preview / DB Schema */}
-        <div className="flex-1 flex flex-col h-full min-w-[360px] bg-[#050505]">
-          <div className="flex-1 min-h-0 p-2 overflow-hidden">
-            {/* Preview Panel */}
-            {activeTab === 'preview' && (
-              <div className="h-full">
-                <PreviewPanel
-                  files={builderOutput?.files || []}
-                  inspectMode={inspectMode}
-                  onToggleInspect={() => setInspectMode(!inspectMode)}
-                  onSelectElement={(selector, text) => {
-                    appendChat('system', `Selected: ${selector} — "${text}"`)
-                  }}
-                  isBuilding={loading && !hasOutput}
-                  gitHubPrUrl={builderOutput?.pr_url}
-                />
-              </div>
-            )}
-
-            {/* Database Panel */}
-            {activeTab === 'database' && (
-              <div className="h-full">
-                {hasOutput ? (
-                  <SchemaVisualizer files={builderOutput.files} />
-                ) : (
-                  <div className="flex items-center justify-center h-full rounded-lg border border-dashed border-zinc-800">
-                    <span className="text-[12px] text-zinc-600">Run a build to view database schemas</span>
+        {/* Column 2: Code Editor (shown if showCode is true OR if we don't have output yet) */}
+        {(showCode || !hasOutput) && (
+          <div className="flex-[1.2] flex flex-col h-full min-w-[320px] bg-[#09090d]">
+            {hasOutput ? (
+              <CodePanel
+                files={builderOutput.files}
+                selectedFileIdx={selectedFileIdx}
+                onSelectFile={setSelectedFileIdx}
+              />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                {!loading && (
+                  <div className="max-w-md">
+                    <ProjectLauncher
+                      onSelectTemplate={handleBuild}
+                      recentBuilds={pastBuilds}
+                      onLoadBuild={handleLoadBuild}
+                    />
+                  </div>
+                )}
+                {loading && (
+                  <div className="space-y-3">
+                    <div className="h-6 w-6 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mx-auto" />
+                    <p className="text-[12px] text-zinc-500">Preparing sandbox and generating MVP files...</p>
                   </div>
                 )}
               </div>
             )}
+          </div>
+        )}
 
-            {/* Launch / Deploy Panel */}
-            {activeTab === 'deploy' && (
-              <div className="h-full overflow-y-auto forge-scroll rounded-lg border border-zinc-900 bg-[#0a0a0e] p-6">
-                {hasOutput ? (
+        {/* Column 3: Live Preview / DB Schema (only shown if we have output) */}
+        {hasOutput && (
+          <div className="flex-1 flex flex-col h-full min-w-[360px] bg-[#050505]">
+            <div className="flex-1 min-h-0 p-2 overflow-hidden">
+              {/* Preview Panel */}
+              {activeTab === 'preview' && (
+                <div className="h-full">
+                  <PreviewPanel
+                    files={builderOutput?.files || []}
+                    inspectMode={inspectMode}
+                    onToggleInspect={() => setInspectMode(!inspectMode)}
+                    onSelectElement={(selector, text) => {
+                      appendChat('system', `Selected: ${selector} — "${text}"`)
+                    }}
+                    isBuilding={loading && !hasOutput}
+                    gitHubPrUrl={builderOutput?.pr_url}
+                  />
+                </div>
+              )}
+
+              {/* Database Panel */}
+              {activeTab === 'database' && (
+                <div className="h-full">
+                  <SchemaVisualizer files={builderOutput.files} />
+                </div>
+              )}
+
+              {/* Launch / Deploy Panel */}
+              {activeTab === 'deploy' && (
+                <div className="h-full overflow-y-auto forge-scroll rounded-lg border border-zinc-900 bg-[#0a0a0e] p-6">
                   <div className="space-y-6">
                     {builderOutput.pr_url && (
                       <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-xl p-4 flex items-center justify-between">
@@ -626,15 +625,11 @@ function ForgeWorkspace() {
                       </ul>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <span className="text-[12px] text-zinc-600">Run a build to launch staging environment</span>
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 

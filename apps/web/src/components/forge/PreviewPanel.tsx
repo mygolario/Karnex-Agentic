@@ -97,10 +97,25 @@ const extractReturnBlock = (code: string): string => {
   if (mainFuncMatch && mainFuncMatch.index !== undefined) {
     searchArea = code.slice(mainFuncMatch.index);
   }
-  const returnMatch = searchArea.match(/return\s*\(\s*([\s\S]*?)\s*\)/);
-  if (returnMatch && returnMatch[1]) {
-    return returnMatch[1];
+  
+  const returnIdx = searchArea.search(/return\s*\(/);
+  if (returnIdx !== -1) {
+    const openParenIdx = searchArea.indexOf('(', returnIdx);
+    if (openParenIdx !== -1) {
+      let depth = 1;
+      let i = openParenIdx + 1;
+      for (; i < searchArea.length; i++) {
+        if (searchArea[i] === '(') depth++;
+        else if (searchArea[i] === ')') {
+          depth--;
+          if (depth === 0) {
+            return searchArea.slice(openParenIdx + 1, i);
+          }
+        }
+      }
+    }
   }
+
   const singleLineMatch = searchArea.match(/return\s+(<[\s\S]*?>);/);
   if (singleLineMatch && singleLineMatch[1]) {
     return singleLineMatch[1];
@@ -192,6 +207,143 @@ const extractLocalComponentReturn = (fileContent: string, componentName: string)
   return '';
 };
 
+interface JSXNode {
+  type: 'text' | 'tag';
+  content?: string;
+  tagName?: string;
+  attributes?: string;
+  children?: string;
+}
+
+const parseJSXNodes = (jsx: string): JSXNode[] => {
+  const nodes: JSXNode[] = [];
+  let i = 0;
+  
+  while (i < jsx.length) {
+    const nextTagIndex = jsx.indexOf('<', i);
+    if (nextTagIndex === -1) {
+      nodes.push({ type: 'text', content: jsx.slice(i) });
+      break;
+    }
+    
+    if (nextTagIndex > i) {
+      nodes.push({ type: 'text', content: jsx.slice(i, nextTagIndex) });
+      i = nextTagIndex;
+    }
+    
+    if (jsx.startsWith('<!--', i)) {
+      const commentEnd = jsx.indexOf('-->', i);
+      if (commentEnd === -1) {
+        nodes.push({ type: 'text', content: jsx.slice(i) });
+        break;
+      }
+      nodes.push({ type: 'text', content: jsx.slice(i, commentEnd + 3) });
+      i = commentEnd + 3;
+      continue;
+    }
+    
+    if (jsx[i + 1] === '/') {
+      const tagEnd = jsx.indexOf('>', i);
+      if (tagEnd === -1) {
+        nodes.push({ type: 'text', content: jsx.slice(i) });
+        break;
+      }
+      nodes.push({ type: 'text', content: jsx.slice(i, tagEnd + 1) });
+      i = tagEnd + 1;
+      continue;
+    }
+    
+    const tagMatch = jsx.slice(i).match(/^<([a-zA-Z0-9.:_-]+)/);
+    if (!tagMatch) {
+      nodes.push({ type: 'text', content: '<' });
+      i++;
+      continue;
+    }
+    
+    const tagName = tagMatch[1];
+    let tagStart = i;
+    i += tagMatch[0].length;
+    
+    let attributes = '';
+    let inQuote = false;
+    let quoteChar = '';
+    let braceDepth = 0;
+    let isSelfClosing = false;
+    
+    while (i < jsx.length) {
+      const char = jsx[i];
+      
+      if (!inQuote && braceDepth === 0) {
+        if (char === '"' || char === "'") {
+          inQuote = true;
+          quoteChar = char;
+        } else if (char === '{') {
+          braceDepth = 1;
+        } else if (char === '/' && jsx[i + 1] === '>') {
+          isSelfClosing = true;
+          i += 2;
+          break;
+        } else if (char === '>') {
+          i++;
+          break;
+        }
+      } else if (inQuote) {
+        if (char === quoteChar) {
+          inQuote = false;
+        }
+      } else if (braceDepth > 0) {
+        if (char === '{') braceDepth++;
+        else if (char === '}') braceDepth--;
+      }
+      
+      attributes += char;
+      i++;
+    }
+    
+    if (isSelfClosing) {
+      nodes.push({ type: 'tag', tagName, attributes, children: '' });
+      continue;
+    }
+    
+    let depth = 1;
+    let childrenStart = i;
+    let childrenEnd = i;
+    
+    while (i < jsx.length) {
+      if (jsx[i] === '<') {
+        if (jsx[i + 1] === '/') {
+          const closeMatch = jsx.slice(i).match(/^<\/([a-zA-Z0-9.:_-]+)>/);
+          if (closeMatch && closeMatch[1] === tagName) {
+            depth--;
+            if (depth === 0) {
+              childrenEnd = i;
+              i += closeMatch[0].length;
+              break;
+            }
+          }
+        } else {
+          const openMatch = jsx.slice(i).match(/^<([a-zA-Z0-9.:_-]+)\b/);
+          if (openMatch && openMatch[1] === tagName) {
+            depth++;
+          }
+        }
+      }
+      i++;
+    }
+    
+    if (depth > 0) {
+      nodes.push({ type: 'text', content: jsx.slice(tagStart, childrenStart) });
+      i = childrenStart;
+      continue;
+    }
+    
+    const children = jsx.slice(childrenStart, childrenEnd);
+    nodes.push({ type: 'tag', tagName, attributes, children });
+  }
+  
+  return nodes;
+};
+
 const resolveJSX = (
   jsx: string,
   currentFile: { path: string; content: string } | null,
@@ -262,8 +414,16 @@ const resolveJSX = (
   });
 
   // Resolve JSX components and HTML tags
-  const tagRegex = /<([a-zA-Z0-9.:_-]+)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/\1>)/g;
-  resolved = resolved.replace(tagRegex, (fullMatch: string, TagName: string, attributes: string, children: string | undefined) => {
+  const nodes = parseJSXNodes(resolved);
+  const resolvedNodes = nodes.map(node => {
+    if (node.type === 'text') {
+      return node.content;
+    }
+
+    const TagName = node.tagName!;
+    const attributes = node.attributes!;
+    const children = node.children!;
+
     // Strip Framer Motion prefix (motion.div -> div, motion.section -> section, etc.)
     let cleanTagName = TagName;
     if (TagName.startsWith('motion.')) {
@@ -287,7 +447,7 @@ const resolveJSX = (
 
     if (isStandardHtml) {
       const resolvedChildren = children ? resolveJSX(children, currentFile, files, depth + 1) : '';
-      const closedTag = fullMatch.endsWith('/>') ? ' />' : `>${resolvedChildren}</${cleanTagName}>`;
+      const closedTag = children === '' && !attributes.includes('children') ? ' />' : `>${resolvedChildren}</${cleanTagName}>`;
       const cleanedAttrs = attributes
         .replace(/className=/g, 'class=')
         .replace(/onClick=\{[^}]+\}/g, '')
@@ -371,6 +531,8 @@ const resolveJSX = (
 
     return resolvedChildren || `<div class="p-4 border border-zinc-800 text-zinc-500 rounded text-center text-xs font-mono">&lt;${cleanTagName} /&gt;</div>`;
   });
+
+  resolved = resolvedNodes.join('');
 
   // Resolve local variables from currentFile for final text elements
   if (currentFile) {
