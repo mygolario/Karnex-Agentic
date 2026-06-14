@@ -79,19 +79,19 @@
     {
       "id": "gemini-3.1-pro-low",
       "display_name": "Gemini 3.1 Pro",
-      "openrouter_model": "google/gemini-2.5-pro-preview",
+      "openrouter_model": "google/gemini-2.5-pro",
       "tier": "Low",
-      "max_tokens": 8000,
-      "step_max_tokens": { "classifier": 2000, "fast": 7000, "pro": 8000, "supervisor": 8000 },
+      "max_tokens": 16000,
+      "step_max_tokens": { "classifier": 2000, "fast": 12000, "pro": 16000, "supervisor": 16000 },
       "role": "pro"
     },
     {
       "id": "gemini-3.1-pro-high",
       "display_name": "Gemini 3.1 Pro",
-      "openrouter_model": "google/gemini-2.5-pro-preview",
+      "openrouter_model": "google/gemini-2.5-pro",
       "tier": "High",
-      "max_tokens": 14000,
-      "step_max_tokens": { "classifier": 2000, "fast": 9000, "pro": 14000, "supervisor": 14000 },
+      "max_tokens": 30000,
+      "step_max_tokens": { "classifier": 2000, "fast": 15000, "pro": 30000, "supervisor": 30000 },
       "role": "pro"
     },
     {
