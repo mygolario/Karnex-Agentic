@@ -41,11 +41,22 @@ class SeedRow(BaseModel):
     table_name: str = Field(..., description="Target database table")
     row_data: Dict[str, Any] = Field(..., description="Column key-value pairs")
 
+class ThemeStyleGuide(BaseModel):
+    primary_color: str = Field(..., description="Hex or Tailwind color name for primary branding (e.g. '#6366f1' or 'indigo-600')")
+    secondary_color: str = Field(..., description="Hex or Tailwind color name for secondary branding (e.g. '#10b981' or 'emerald-500')")
+    background_color: str = Field(..., description="Hex or Tailwind background color (e.g. '#09090b' or 'zinc-950')")
+    accent_color: str = Field(..., description="Hex or Tailwind accent color for glowing highlights (e.g. '#f43f5e' or 'rose-500')")
+    is_dark_mode: bool = Field(..., description="True if the visual aesthetic should be dark mode, False for light mode")
+    font_family_display: str = Field(..., description="Recommended Google Font for headings (e.g., 'Inter', 'Outfit', 'Plus Jakarta Sans')")
+    font_family_sans: str = Field(..., description="Recommended font for body text (e.g., 'Inter', 'Roboto')")
+    visual_vibe: str = Field(..., description="One-sentence description of the visual vibe (e.g., 'Clean futuristic cyber-grid with purple glows')")
+
 class ContentAssetManifest(BaseModel):
     copywriting: List[TextSection] = Field(..., description="Copy writing sections for the app")
     svgs: List[SVGIcon] = Field(..., description="SVG icons and logo illustrations")
     images: List[ImageSearchTerm] = Field(..., description="Keywords for Unsplash photo URLs")
     database_seeds: List[SeedRow] = Field(..., description="Realistic database seed records to insert")
+    style_guide: ThemeStyleGuide = Field(..., description="The color palette, typography, and visual styling theme matching the prompt specifications")
 
 
 class FileSpecification(BaseModel):
@@ -73,10 +84,22 @@ class SelfHealingEdits(BaseModel):
 
 UNSPLASH_CATALOG = {
     "dashboard": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
-    "collaboration": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80",
-    "ui": "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=800&q=80",
     "analytics": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
-    "profile": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
+    "collaboration": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80",
+    "meeting": "https://images.unsplash.com/photo-1531535934027-689615576dfb?auto=format&fit=crop&w=800&q=80",
+    "team": "https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=1200&q=80",
+    "woman": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&h=250&q=80",
+    "man": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&h=250&q=80",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&h=250&q=80",
+    "profile": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&h=250&q=80",
+    "user": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&h=250&q=80",
+    "code": "https://images.unsplash.com/photo-1605379399642-870262d3d051?auto=format&fit=crop&w=1200&q=80",
+    "coding": "https://images.unsplash.com/photo-1605379399642-870262d3d051?auto=format&fit=crop&w=1200&q=80",
+    "developer": "https://images.unsplash.com/photo-1605379399642-870262d3d051?auto=format&fit=crop&w=1200&q=80",
+    "programming": "https://images.unsplash.com/photo-1605379399642-870262d3d051?auto=format&fit=crop&w=1200&q=80",
+    "mockup": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80",
+    "laptop": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80",
+    "ui": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80",
     "startup": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
     "abstract": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
 }
@@ -87,9 +110,10 @@ def resolve_unsplash_url(keywords: str) -> str:
     for key, url in UNSPLASH_CATALOG.items():
         if key in kw:
             return url
-    # Fallback to search query placeholder
-    query_clean = keywords.replace(" ", ",").strip(",")
-    return f"https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=800&q=80"
+    # Fallback search query mapping or standard mockup
+    if "bg" in kw or "background" in kw:
+        return "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80"
+    return "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=800&q=80"
 
 
 # --- Stateful DAG Runner Class ---
@@ -121,6 +145,7 @@ class MultiAgentDAGRunner:
             "svgs": {},
             "images": {},
             "database_seeds": [],
+            "style_guide": {},
             "files_plan": [],
             "generated_files": {},
             "compilation_passed": False,
@@ -154,15 +179,16 @@ class MultiAgentDAGRunner:
     async def _run_phase_content(self):
         await emit_forge_event(
             self.supabase, self.run_id, event_type="subagent_spawn", sender="design",
-            message="Copywriting Agent generating marketing copy, visual SVGs, and database seed rows...",
+            message="Copywriting Agent generating marketing copy, visual SVGs, database seed rows, and style guide...",
         )
         
         system_prompt = """You are the Lead Creative Copywriter and UI Designer Agent for Karnex.
-Your goal is to prepare highly authentic copywriting, custom SVG logos/illustrations, and database seed records.
+Your goal is to prepare highly authentic copywriting, custom SVG logos/illustrations, database seed records, and a custom visual style guide (theme colors, typography, layout aesthetic) based on the user's specific product request.
 
 You must avoid any 'AI slop' or 'Lorem Ipsum' placeholders. Write real, engaging, conversion-optimized text copy.
 For visual graphics, output beautiful raw SVG code containing viewBox, path definitions, and custom gradients.
 For database seeds, outline 10-20 realistic rows representing mock data (e.g., actual products, orders, menu items, users).
+For the style guide, dynamically design a cohesive color palette (primary, secondary, background, accent colors), fonts, and visual vibe that matches the prompt (e.g., green/white minimal for organic food, dark neon/violet for developer tech, corporate blue/gray for enterprise B2B).
 """
         user_prompt = f"""Task Type: {self.input_data.task_type}
 Product Specification: {self.input_data.specification}
@@ -187,13 +213,14 @@ Context: {self.input_data.existing_codebase_context or 'New application'}
         self.state["svgs"] = {item.name: item.svg_code for item in manifest.svgs}
         self.state["images"] = {item.key: resolve_unsplash_url(item.query) for item in manifest.images}
         self.state["database_seeds"] = manifest.database_seeds
+        self.state["style_guide"] = manifest.style_guide.model_dump()
 
         # Log progress
         seed_summary = f"Generated {len(manifest.database_seeds)} database seed rows."
         copy_keys = ", ".join(self.state["copywriting"].keys())
         await emit_forge_event(
             self.supabase, self.run_id, event_type="subagent_progress", sender="design",
-            message=f"Copywriting and assets prepared. Copy blocks: [{copy_keys}]. {seed_summary}",
+            message=f"Copywriting and assets prepared with dynamic style guide. Copy blocks: [{copy_keys}]. {seed_summary}",
         )
 
     # --- Phase 2: Schema Planning & API Design ---
@@ -255,11 +282,29 @@ Pre-generated Seed Records: {seeds_str}
             
             # Setup context blocks
             copy_str = "\n".join([f"- {k}: {v}" for k, v in self.state["copywriting"].items()])
-            svg_str = "\n".join([f"- SVG '{k}': {v[:100]}..." for k, v in self.state["svgs"].items()])
+            svg_str = "\n".join([f"- SVG '{k}': {v}" for k, v in self.state["svgs"].items()])
             img_str = "\n".join([f"- Image '{k}': {v}" for k, v in self.state["images"].items()])
             seed_str = str([s.model_dump() for s in self.state["database_seeds"]])
             
-            content_ctx = f"Copywriting blocks:\n{copy_str}\n\nSVG Assets:\n{svg_str}\n\nImages:\n{img_str}\n\nDatabase Seed Rows:\n{seed_str}"
+            style_guide = self.state.get("style_guide", {})
+            style_guide_str = (
+                f"Primary Color: {style_guide.get('primary_color')}\n"
+                f"Secondary Color: {style_guide.get('secondary_color')}\n"
+                f"Background Color: {style_guide.get('background_color')}\n"
+                f"Accent Color: {style_guide.get('accent_color')}\n"
+                f"Dark Mode: {style_guide.get('is_dark_mode')}\n"
+                f"Display Font: {style_guide.get('font_family_display')}\n"
+                f"Body Font: {style_guide.get('font_family_sans')}\n"
+                f"Visual Vibe: {style_guide.get('visual_vibe')}"
+            )
+            
+            content_ctx = (
+                f"Style Guide (Use these color tokens and vibe explicitly!):\n{style_guide_str}\n\n"
+                f"Copywriting blocks:\n{copy_str}\n\n"
+                f"SVG Assets (Render/embed these raw SVGs where needed!):\n{svg_str}\n\n"
+                f"Images:\n{img_str}\n\n"
+                f"Database Seed Rows:\n{seed_str}"
+            )
 
             if role == "db_migration":
                 system_prompt = """You are the PostgreSQL Expert coder. Write a complete, valid PostgreSQL schema migration script.
@@ -270,13 +315,22 @@ Do not output markdown code blocks. Output raw SQL only.
             else:
                 system_prompt = f"""You are the Lead Visual UI Developer coder.
 Generate a complete, production-ready React (TypeScript) or Next.js App Router code file for path: '{file_spec.path}'.
-Ensure premium design styling:
-- Use Framer Motion (`import {{ motion }} from 'framer-motion'`) for smooth hover states, fade-ins, list animations, and page transitions.
-- Use Tailwind CSS with curated color schemes (gradients, glassmorphism, glowing borders, dark mode backgrounds) to exceed Webild.io quality.
-- Include custom inline SVGs (or use lucide-react icons).
-- Populate content using the copywriting blocks provided. Do not use 'Lorem Ipsum'.
-- Integrate fetching logic to call our Next.js API routes where appropriate to load seed data.
-- Ensure all imports compile, and always output complete code (no comments like '// Rest of the code...').
+Follow these strict layout guidelines to deliver an agency-level premium visual design:
+1. **Color & Vibe Theme**: Style your components using the style guide details (primary, secondary, background, accent colors, and dark/light mode preference). Use gradients (`bg-gradient-to-r`, `from-...`, `to-...`) to make headers and buttons look extremely modern.
+2. **Glassmorphism & Radial Glows**: Use backdrop blur effects (`backdrop-blur-md bg-opacity-70 border-white/[0.08]`) and radial light glows (`bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))]`) to create deep, immersive layouts.
+3. **Typography**: Ensure proper hierarchy with varying font sizes, weights, and leading. Pair display fonts for headings with clean sans fonts for body copy. Use gradient text (`bg-clip-text text-transparent bg-gradient-to-r...`) for hero headers.
+4. **Hero Section + Interactive Mockup**: The hero section must contain a visually striking layout with an interactive mockup (e.g. a simulated macOS browser window with active tabs, code line highlights, or dashboard cards containing fake analytical graphs built using Tailwind CSS).
+5. **Feature Cards with Animations**: Create a grid of feature cards. Each card must have:
+   - An icon (use one of the pre-generated SVGs, or custom Lucide/SVG designs).
+   - An elegant hovering scale/glow transition (`hover:-translate-y-1 hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300`).
+6. **Social Proof Section**: Display a grid of clean mock partner company logos using pre-generated SVGs or styled text-logo combinations.
+7. **Interactive Pricing Table**: Include a billing toggle (Monthly / Yearly) using React `useState` that dynamically updates pricing amounts and lists different perks. Highlight the 'Popular' plan with a distinct gradient border and scale-up styling.
+8. **Testimonial Grid**: Render testimonial quotes inside custom grid cards. Embed the pre-generated Unsplash headshot avatar images next to user names and titles.
+9. **Interactive Call-To-Action (CTA) / Waitlist**: Include a clean email subscription input box with visual focus rings, active submit state loader, and successful submission confirmation state.
+10. **Navigation Header & Footer**:
+    - Sticky Nav header with glassmorphic blur, logo, section links, and Action CTA.
+    - Footer with multiple column directories, newsletter signup, and social icons.
+Ensure all imports compile, and always output complete code (no comments like '// Rest of the code...').
 """
 
             user_prompt = f"""File Path: {file_spec.path}
