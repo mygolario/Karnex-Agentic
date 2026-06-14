@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { getAgentApiUrl, readAgentError } from '@/lib/agent-service'
+import { Calendar, Check, CornerDownLeft, Loader2, ArrowRight } from 'lucide-react'
 
 interface MorningStandupProps {
   founderId: string
@@ -38,15 +39,31 @@ export default function MorningStandup({
     }
   }, [step])
 
+  // Keyboard shortcut: Cmd/Ctrl + Enter to proceed
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault()
+        if (step === 1 && yesterday.trim()) {
+          setStep(2)
+        } else if (step === 2 && focus.trim()) {
+          setStep(3)
+        } else if (step === 3) {
+          handleSubmit()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [step, yesterday, focus, blockers])
+
   // Already done today
   if (hasStandupToday && !summary) {
     return (
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-3 py-1">
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-          Standup done
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-3 py-1 font-mono">
+          <Check className="h-3.5 w-3.5" />
+          STANDUP COMPLETED
         </span>
       </div>
     )
@@ -56,18 +73,18 @@ export default function MorningStandup({
   if (step === 'done' && summary) {
     return (
       <div
-        className={`border border-[#1a1a1a] bg-[#050505] rounded-2xl p-5 flex items-start gap-4 transition-all duration-500 ${
+        className={`border border-[#1a1a1f] bg-[#070709] rounded-2xl p-5 flex gap-4 items-start transition-all duration-500 ${
           slideOut ? 'opacity-0 -translate-y-4' : 'opacity-100 translate-y-0'
         }`}
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#6366f1]/10 text-[18px]">
-          💬
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-sm font-semibold font-mono">
+          AI
         </div>
         <div className="space-y-1 min-w-0">
-          <p className="text-[12px] font-bold tracking-[0.06em] uppercase text-[#525252]">
-            Karnex says
+          <p className="text-[10px] font-bold tracking-[0.08em] uppercase text-zinc-500 font-mono">
+            CO-FOUNDER INTELLIGENCE DIRECTIVE
           </p>
-          <p className="text-[14px] text-[#e5e5e5] leading-relaxed">
+          <p className="text-sm text-zinc-300 leading-relaxed font-sans mt-1">
             {summary}
           </p>
         </div>
@@ -122,7 +139,6 @@ export default function MorningStandup({
       onStandupComplete?.(feedback)
     } catch (err) {
       console.error('Standup submission error:', err)
-      // Graceful fallback
       const fallback = `Great work, ${founderName}. Keep pushing forward today!`
       setSummary(fallback)
       setStep('done')
@@ -133,32 +149,33 @@ export default function MorningStandup({
   // Submitting state
   if (step === 'submitting') {
     return (
-      <div className="border border-[#1a1a1a] border-l-2 border-l-[#6366f1] bg-[#050505] rounded-2xl p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="h-5 w-5 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[14px] text-[#a1a1a1]">Karnex is analyzing your update…</p>
-        </div>
-        <div className="h-1 rounded-full bg-[#1a1a1a] overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#6366f1] to-[#a855f7] animate-pulse w-2/3" />
+      <div className="border border-[#1a1a1f] bg-[#070709] rounded-2xl p-6 space-y-4 flex flex-col items-center justify-center py-10">
+        <Loader2 className="h-6 w-6 text-indigo-500 animate-spin" />
+        <div className="text-center space-y-1">
+          <p className="text-sm text-zinc-300 font-medium">Analyzing Daily Check-in</p>
+          <p className="text-xs text-zinc-500 font-mono">Running sentiment & goal alignment models...</p>
         </div>
       </div>
     )
   }
 
-  // Wizard steps
-  const questions: Record<1 | 2 | 3, { q: string; optional?: boolean; placeholder: string }> = {
+  // Wizard steps details
+  const questions: Record<1 | 2 | 3, { q: string; optional?: boolean; placeholder: string; label: string }> = {
     1: {
+      label: '01 / YESTERDAY',
       q: 'What did you get done yesterday?',
-      placeholder: 'e.g., Conducted 3 customer interviews and refined pricing specs...',
+      placeholder: 'Refined landing page copy, interviewed 3 freelance designers, mapped competitors...',
     },
     2: {
-      q: "What's your focus today?",
-      placeholder: 'e.g., Build the invoicing module and map 5 competitors...',
+      label: '02 / TODAY',
+      q: "What's your primary focus today?",
+      placeholder: 'Deploying the invoicing API schema, finishing design wireframes...',
     },
     3: {
-      q: 'Any blockers?',
+      label: '03 / BLOCKERS',
+      q: 'Are there any active blockers?',
       optional: true,
-      placeholder: 'e.g., Waiting on API keys from Stripe...',
+      placeholder: 'None. (or e.g., Waiting on Stripe API webhook keys...)',
     },
   }
 
@@ -167,33 +184,43 @@ export default function MorningStandup({
   const setCurrentValue = step === 1 ? setYesterday : step === 2 ? setFocus : setBlockers
 
   return (
-    <div className="border border-[#1a1a1a] border-l-2 border-l-[#6366f1] bg-[#050505] rounded-2xl p-6 space-y-5">
-      {/* Header + step dots */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-[12px] font-bold tracking-[0.06em] uppercase text-[#6366f1]">
-          Today&apos;s Standup
-        </h3>
+    <div className="border border-[#1a1a1f] bg-[#070709] rounded-2xl p-5 space-y-4">
+      {/* Header Info */}
+      <div className="flex items-center justify-between pb-3 border-b border-[#1a1a1f]/60">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-zinc-500" />
+          <h3 className="text-xs font-bold tracking-[0.06em] uppercase text-zinc-400 font-mono">
+            DAILY STANDUP CHECK-IN
+          </h3>
+        </div>
         <div className="flex items-center gap-1.5">
           {[1, 2, 3].map((s) => (
             <div
               key={s}
-              className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                s <= (step as number)
-                  ? 'bg-[#6366f1]'
-                  : 'bg-[#1a1a1a]'
+              className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                s === step
+                  ? 'bg-indigo-500 w-3'
+                  : s < (step as number)
+                  ? 'bg-zinc-700'
+                  : 'bg-zinc-900'
               }`}
             />
           ))}
         </div>
       </div>
 
-      {/* Question */}
-      <div className="space-y-3 transition-all duration-300">
-        <p className="text-[15px] text-white font-medium">
-          {currentQ.q}
+      {/* Input Form Area */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-mono font-bold text-indigo-400/80 tracking-wider">
+            {currentQ.label}
+          </span>
           {currentQ.optional && (
-            <span className="text-[13px] text-[#525252] font-normal ml-1.5">(optional)</span>
+            <span className="text-[10px] text-zinc-500 font-mono">OPTIONAL</span>
           )}
+        </div>
+        <p className="text-sm font-semibold text-white">
+          {currentQ.q}
         </p>
         <textarea
           ref={textareaRef}
@@ -201,30 +228,35 @@ export default function MorningStandup({
           onChange={(e) => setCurrentValue(e.target.value)}
           placeholder={currentQ.placeholder}
           rows={3}
-          className="w-full bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl px-4 py-3 text-[14px] text-[#e5e5e5] placeholder-[#525252] focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1] outline-none transition-colors resize-none"
+          className="w-full bg-black/40 border border-[#1a1a1f] hover:border-zinc-800 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 focus:ring-0 outline-none transition-all resize-none font-sans leading-relaxed"
         />
       </div>
 
-      {/* Error */}
+      {/* Errors */}
       {error && (
-        <p className="text-[13px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+        <p className="text-xs text-red-400 bg-red-950/20 border border-red-900/50 rounded-lg px-3.5 py-2 font-mono">
           {error}
         </p>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        {(step as number) > 1 ? (
-          <button
-            type="button"
-            onClick={() => setStep(((step as number) - 1) as 1 | 2 | 3)}
-            className="text-[13px] text-[#525252] hover:text-[#a1a1a1] transition-colors cursor-pointer"
-          >
-            ← Back
-          </button>
-        ) : (
-          <div />
-        )}
+      {/* Navigation Row */}
+      <div className="flex items-center justify-between pt-1">
+        <div>
+          {(step as number) > 1 ? (
+            <button
+              type="button"
+              onClick={() => setStep(((step as number) - 1) as 1 | 2 | 3)}
+              className="text-xs text-zinc-500 hover:text-zinc-300 font-medium transition-colors cursor-pointer"
+            >
+              ← Back
+            </button>
+          ) : (
+            <div className="text-[10px] font-mono text-zinc-600 flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-[9px]">Ctrl+Enter</kbd>
+              <span>to send</span>
+            </div>
+          )}
+        </div>
 
         {(step as number) < 3 ? (
           <button
@@ -235,17 +267,19 @@ export default function MorningStandup({
               setStep(((step as number) + 1) as 1 | 2 | 3)
             }}
             disabled={step === 1 ? !yesterday.trim() : step === 2 ? !focus.trim() : false}
-            className="text-[13px] font-medium text-white bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#262626] hover:bg-[#111] disabled:opacity-40 disabled:cursor-not-allowed px-5 py-2 rounded-xl transition-all cursor-pointer"
+            className="text-xs font-semibold text-zinc-300 hover:text-white bg-zinc-900 border border-zinc-800 hover:border-zinc-700 disabled:opacity-35 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1"
           >
-            Next →
+            Next
+            <ArrowRight className="w-3 h-3" />
           </button>
         ) : (
           <button
             type="button"
             onClick={handleSubmit}
-            className="text-[13px] font-medium text-white bg-[#6366f1] hover:bg-[#5558e6] px-5 py-2 rounded-xl transition-colors cursor-pointer"
+            className="text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
           >
-            Submit standup
+            Submit Standup
+            <CornerDownLeft className="w-3 h-3" />
           </button>
         )}
       </div>

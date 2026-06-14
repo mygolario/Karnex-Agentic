@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
+import { Bell, MessageSquare, Compass, ShieldAlert, Sparkles, Inbox } from 'lucide-react'
 
 interface OutreachReply {
   contact_name: string
@@ -16,18 +17,18 @@ interface CoachingInsightProps {
 const PHASE_TIPS: Record<1 | 2 | 3, string[]> = {
   1: [
     "Talk to 10 potential customers this week. Validation is about hearing 'I'd pay for this' — not just 'that sounds cool.'",
-    'Your hypothesis is only as strong as the evidence behind it. Ship your discovery interview script today.',
+    "Your hypothesis is only as strong as the evidence behind it. Ship your discovery interview script today.",
     "Competitor research isn't about copying — it's about finding the gap they all missed.",
   ],
   2: [
-    'Ship the ugliest version that works. Your first users care about function, not polish.',
-    'Every feature you add is a feature you have to maintain. Stay ruthlessly minimal.',
-    'Deploy early, deploy often. Feedback from real users beats internal testing every time.',
+    "Ship the ugliest version that works. Your first users care about function, not polish.",
+    "Every feature you add is a feature you have to maintain. Stay ruthlessly minimal.",
+    "Deploy early, deploy often. Feedback from real users beats internal testing every time.",
   ],
   3: [
-    'Your first 10 customers are worth more than your next 1,000. Give them white-glove treatment.',
+    "Your first 10 customers are worth more than your next 1,000. Give them white-glove treatment.",
     "Price higher than you think. You can always offer a discount — you can't easily raise prices.",
-    'Launch is a beginning, not an ending. The real work starts after Day 90.',
+    "Launch is a beginning, not an ending. The real work starts after Day 90.",
   ],
 }
 
@@ -51,35 +52,35 @@ export default function CoachingInsight({
     return tips[seed % tips.length]
   }, [phase])
 
+  const containerStyle = {
+    opacity: visible ? 1 : 0,
+    transform: visible ? 'translateY(0)' : 'translateY(8px)',
+  }
+
   // Priority 1: Outreach reply
   if (recentReplies.length > 0) {
     const reply = recentReplies[0]
     return (
       <div
-        className="forge-glass-card p-5 transition-all duration-500 shadow-2xl relative overflow-hidden"
-        style={{
-          opacity: visible ? 1 : 0,
-          transform: visible ? 'translateY(0)' : 'translateY(8px)',
-          borderLeft: '2.5px solid #10b981'
-        }}
+        className="border border-[#1a1a1f] bg-[#070709]/60 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-all duration-300 hover:border-zinc-800"
+        style={containerStyle}
       >
-        <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full blur pointer-events-none" />
-        
-        <div className="flex items-start gap-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            📬
+        <div className="absolute top-0 left-0 w-[3px] h-full bg-emerald-500" />
+        <div className="flex items-start gap-3.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <Inbox className="w-4 h-4" />
           </div>
-          <div className="min-w-0 space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#52525c]">
-              Outreach Intelligence
+          <div className="min-w-0 space-y-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500 font-mono">
+              OUTREACH INTELLIGENCE
             </p>
-            <p className="text-[13px] text-[#a1a1a1] leading-relaxed">
+            <p className="text-sm text-zinc-300 leading-relaxed font-sans">
               <span className="text-white font-semibold">{reply.contact_name}</span> responded to your campaign!
             </p>
-            <div className="pt-1.5">
+            <div className="pt-1">
               <a
                 href="/vault"
-                className="text-[12px] text-[#6366f1] hover:text-[#818cf8] font-bold inline-flex items-center gap-1 transition-colors"
+                className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold inline-flex items-center gap-1 transition-colors"
               >
                 Review client reply →
               </a>
@@ -94,24 +95,19 @@ export default function CoachingInsight({
   if (lastStandupSummary) {
     return (
       <div
-        className="forge-glass-card p-5 transition-all duration-500 shadow-2xl relative overflow-hidden"
-        style={{
-          opacity: visible ? 1 : 0,
-          transform: visible ? 'translateY(0)' : 'translateY(8px)',
-          borderLeft: '2.5px solid #6366f1'
-        }}
+        className="border border-[#1a1a1f] bg-[#070709]/60 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-all duration-300 hover:border-zinc-800"
+        style={containerStyle}
       >
-        <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/5 rounded-full blur pointer-events-none" />
-
-        <div className="flex items-start gap-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 border border-[#6366f1]/20">
-            💬
+        <div className="absolute top-0 left-0 w-[3px] h-full bg-indigo-500" />
+        <div className="flex items-start gap-3.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-[#6366f1]/20">
+            <MessageSquare className="w-4 h-4" />
           </div>
           <div className="min-w-0 space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#52525c]">
-              Co-Founder Feedback
+            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500 font-mono">
+              CO-FOUNDER MEMO DIRECTIVE
             </p>
-            <p className="text-[13px] text-[#e5e5e5] leading-relaxed font-sans">
+            <p className="text-sm text-zinc-300 leading-relaxed font-sans mt-1">
               {lastStandupSummary}
             </p>
           </div>
@@ -123,22 +119,19 @@ export default function CoachingInsight({
   // Priority 3: Phase-based contextual tip
   return (
     <div
-      className="forge-glass-card p-5 transition-all duration-500 shadow-2xl relative overflow-hidden animate-fade-in"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(8px)',
-        borderLeft: '2.5px solid #27272a'
-      }}
+      className="border border-[#1a1a1f] bg-[#070709]/60 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-all duration-300 hover:border-zinc-800"
+      style={containerStyle}
     >
-      <div className="flex items-start gap-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 border border-[#1a1a1f] text-zinc-400">
-          🧭
+      <div className="absolute top-0 left-0 w-[3px] h-full bg-zinc-700" />
+      <div className="flex items-start gap-3.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-950 border border-[#1a1a1f] text-zinc-500">
+          <Compass className="w-4 h-4" />
         </div>
         <div className="min-w-0 space-y-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#52525c]">
-            Phase {phase} Strategy Tip
+          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500 font-mono">
+            PHASE {phase} STRATEGY BRIEF
           </p>
-          <p className="text-[13px] text-[#a1a1a1] leading-relaxed">
+          <p className="text-sm text-zinc-300 leading-relaxed font-sans mt-1">
             {phaseTip}
           </p>
         </div>

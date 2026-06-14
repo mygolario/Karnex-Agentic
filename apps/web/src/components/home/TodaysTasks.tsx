@@ -5,81 +5,46 @@ import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import AgentExecutePanel from './AgentExecutePanel'
 import type { AgentTask } from './AgentExecutePanel'
+import { 
+  Code2, 
+  Search, 
+  Send, 
+  FileText, 
+  Palette, 
+  MoreHorizontal, 
+  CheckCircle2, 
+  Circle, 
+  Loader2, 
+  Check, 
+  ArrowRight,
+  Sparkles
+} from 'lucide-react'
 
 interface TodaysTasksProps {
   tasks: AgentTask[]
   founderId: string
 }
 
-function getCategoryTheme(category: string) {
+function getCategoryIcon(category: string) {
   switch (category) {
     case 'build':
-      return {
-        badge: 'bg-[#6366f1]/10 text-[#818cf8] border-[#6366f1]/20',
-        color: '#6366f1',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
-          </svg>
-        )
-      }
+      return <Code2 className="w-4 h-4 text-indigo-400" />
     case 'research':
-      return {
-        badge: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-        color: '#06b6d4',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M18 10.5a6 6 0 00-6-6" />
-          </svg>
-        )
-      }
+      return <Search className="w-4 h-4 text-cyan-400" />
     case 'outreach':
-      return {
-        badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-        color: '#10b981',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-          </svg>
-        )
-      }
+      return <Send className="w-4 h-4 text-emerald-400" />
     case 'content':
-      return {
-        badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-        color: '#f59e0b',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-          </svg>
-        )
-      }
+      return <FileText className="w-4 h-4 text-amber-400" />
     case 'design':
-      return {
-        badge: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-        color: '#ec4899',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-1.305-3.579M3 9.75h1.875c.621 0 1.125-.504 1.125-1.125V5.625c0-.621.504-1.125 1.125-1.125H9.75M3 9.75v6c0 .621.504 1.125 1.125 1.125H9.75M3 9.75h1.875c.621 0 1.125.504 1.125 1.125V18M9.75 4.5V3c0-.621.504-1.125 1.125-1.125h6c.621 0 1.125.504 1.125 1.125v1.5M9.75 4.5h1.875c.621 0 1.125.504 1.125 1.125V9.75m0-4.125h6c.621 0 1.125.504 1.125 1.125V9.75M9.75 9.75V18c0 .621.504 1.125 1.125 1.125h6c.621 0 1.125-.504 1.125-1.125V9.75M9.75 9.75h7.5" />
-          </svg>
-        )
-      }
+      return <Palette className="w-4 h-4 text-pink-400" />
     default:
-      return {
-        badge: 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20',
-        color: '#71717a',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
-        )
-      }
+      return <MoreHorizontal className="w-4 h-4 text-zinc-500" />
   }
 }
 
 function getStatusLabel(status: string) {
   switch (status) {
-    case 'todo': return 'To do'
+    case 'todo': return 'Backlog'
     case 'in_progress': return 'Executing'
     case 'done': return 'Completed'
     case 'pending_approval': return 'Review Draft'
@@ -219,108 +184,109 @@ export default function TodaysTasks({ tasks: initialTasks, founderId }: TodaysTa
     <>
       <div className="space-y-4">
         {/* Section Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-[14px] font-bold tracking-[0.06em] uppercase text-[#525252]">
-            Today&apos;s Launch Sprints
+        <div className="flex items-center justify-between pb-1 border-b border-[#1a1a1f]/60">
+          <h2 className="text-xs font-bold tracking-[0.06em] uppercase text-zinc-400 font-mono">
+            LAUNCH ROADMAP SPRINT
           </h2>
-          <span className="text-[12px] font-mono text-[#525252]">Active Priorities</span>
+          <span className="text-[10px] font-mono text-zinc-500">ACTIVE PRIORITIES</span>
         </div>
 
-        {/* Task Cards Grid */}
-        <div className="space-y-4">
+        {/* Task Cards Stack */}
+        <div className="space-y-2.5">
           {visibleTasks.map((task) => {
             const isDone = task.status === 'done'
             const needsApproval = task.status === 'pending_approval'
             const isRunning = runningTaskIds.has(task.id) || task.status === 'in_progress'
-            const theme = getCategoryTheme(task.category)
+            const categoryIcon = getCategoryIcon(task.category)
+            
+            const config = (task.agent_config || {}) as Record<string, unknown>
+            const duration = config.estimated_duration_seconds as number | undefined
 
             return (
               <div
                 key={task.id}
-                className={`group border border-[#1a1a1a] bg-[#050505]/75 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-5 transition-all duration-300 hover:border-zinc-800 ${
-                  isDone ? 'opacity-50' : 'hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]'
+                className={`group border border-[#1a1a1f] bg-[#070709]/60 hover:bg-zinc-900/10 hover:border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-200 ${
+                  isDone ? 'opacity-40' : ''
                 }`}
-                style={{
-                  borderLeft: isDone ? '1px solid #1a1a1a' : `2px solid ${theme.color}`
-                }}
               >
-                <div className="flex items-start gap-4 min-w-0">
-                  {/* Category Styled Visual Icon */}
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105"
-                    style={{
-                      background: isDone ? 'rgba(255,255,255,0.02)' : `${theme.color}0a`,
-                      border: `1px solid ${isDone ? 'rgba(255,255,255,0.04)' : `${theme.color}20`}`,
-                      color: isDone ? '#525252' : theme.color
-                    }}
-                  >
-                    {theme.icon}
+                <div className="flex items-start gap-3.5 min-w-0">
+                  {/* Status Check Icon */}
+                  <div className="mt-1 shrink-0">
+                    {isDone ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    ) : isRunning ? (
+                      <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                    ) : (
+                      <Circle className="w-5 h-5 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+                    )}
                   </div>
 
-                  <div className="space-y-1.5 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`border px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${theme.badge}`}>
+                  {/* Task Metadata & Text */}
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center flex-wrap gap-2 text-[10px] font-mono">
+                      <span className="text-zinc-400 flex items-center gap-1 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 uppercase font-bold">
+                        {categoryIcon}
                         {task.category}
                       </span>
-                      <span className="flex items-center gap-1.5 text-[11px] font-mono text-[#525252]">
-                        <span className={`h-1.5 w-1.5 rounded-full ${
-                          isDone 
-                            ? 'bg-emerald-400' 
-                            : isRunning 
-                            ? 'bg-indigo-400 animate-pulse' 
-                            : needsApproval 
-                            ? 'bg-amber-400' 
-                            : 'bg-neutral-600'
-                        }`} />
+                      <span className="text-zinc-600">•</span>
+                      <span className={`uppercase font-medium ${
+                        isDone ? 'text-emerald-500' : isRunning ? 'text-indigo-400' : 'text-zinc-500'
+                      }`}>
                         {getStatusLabel(task.status)}
                       </span>
+                      {duration && !isDone && (
+                        <>
+                          <span className="text-zinc-600">•</span>
+                          <span className="text-zinc-500">{duration}s execution</span>
+                        </>
+                      )}
                     </div>
 
-                    <h4 className={`text-[15px] font-semibold text-white truncate ${isDone ? 'line-through text-zinc-500' : ''}`}>
+                    <h4 className={`text-[14px] font-semibold text-white truncate ${isDone ? 'line-through text-zinc-500' : ''}`}>
                       {task.title}
                     </h4>
 
-                    <p className="text-[13px] text-[#737373] leading-relaxed line-clamp-1">
+                    <p className="text-xs text-zinc-500 leading-relaxed font-sans line-clamp-1 max-w-[500px]">
                       {task.description || 'Pre-configured sprint task generated by the roadmap spine.'}
                     </p>
                   </div>
                 </div>
 
-                {/* Right Actions */}
-                <div className="shrink-0 flex items-center justify-start sm:justify-end">
+                {/* Task Actions (slide/fade in on hover) */}
+                <div className="shrink-0 flex items-center justify-start md:justify-end md:opacity-85 group-hover:opacity-100 transition-opacity">
                   {isDone || needsApproval ? (
                     task.agent_output ? (
                       <a
                         href={needsApproval ? '/agents/outreach' : '/vault'}
-                        className="text-[13px] text-white hover:text-white bg-[#0a0a0c] hover:bg-[#121217] border border-[#1a1a1e] px-4 py-2 rounded-xl font-medium transition-all"
+                        className="text-xs text-zinc-200 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-1.5"
                       >
-                        {needsApproval ? 'Review Draft →' : 'View Output →'}
+                        {needsApproval ? 'Review Draft' : 'View Output'}
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </a>
                     ) : (
-                      <span className="text-[12px] font-mono text-zinc-600">No output logs</span>
+                      <span className="text-[10px] font-mono text-zinc-600">NO OUTPUT LOGS</span>
                     )
                   ) : isRunning ? (
-                    <div className="flex flex-col items-center gap-1.5 w-24">
-                      <div className="h-1 w-full rounded-full bg-[#141416] overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-[#6366f1] to-[#a855f7] animate-pulse w-2/3" />
+                    <div className="flex flex-col items-end gap-1 w-20">
+                      <div className="h-1 w-full rounded-full bg-zinc-900 overflow-hidden">
+                        <div className="h-full rounded-full bg-indigo-500 animate-[forgeTimelineGlowH_2s_infinite_linear] w-1/2" />
                       </div>
-                      <span className="text-[10px] font-mono text-[#525252] animate-pulse">Running...</span>
+                      <span className="text-[9px] font-mono text-indigo-400 animate-pulse uppercase">RUNNING</span>
                     </div>
                   ) : task.auto_executable ? (
                     <button
                       onClick={() => handleOpenPanel(task)}
-                      className="text-[13px] font-bold text-white bg-[#6366f1] hover:bg-[#5558e6] px-4 py-2.5 rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98] whitespace-nowrap"
+                      className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow"
                     >
-                      {task.execute_label || 'Let Karnex →'}
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {task.execute_label ? task.execute_label.replace('Let Karnex ', '') : 'Execute'}
                     </button>
                   ) : (
                     <button
                       onClick={() => handleMarkDone(task.id)}
-                      className="flex items-center gap-2 text-[13px] text-[#737373] hover:text-[#a1a1a1] border border-[#1a1a1e] bg-[#07070a] hover:bg-[#121217] px-4.5 py-2.5 rounded-xl transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-850 hover:border-zinc-700 bg-zinc-950 px-4 py-2 rounded-lg transition-all cursor-pointer"
                     >
-                      <svg className="w-4 h-4 text-[#525252] group-hover:text-[#a1a1a1]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
+                      <Check className="w-3.5 h-3.5 text-zinc-500" />
                       Mark Done
                     </button>
                   )}
@@ -330,19 +296,19 @@ export default function TodaysTasks({ tasks: initialTasks, founderId }: TodaysTa
           })}
 
           {visibleTasks.length === 0 && (
-            <div className="border border-[#1a1a1a] border-dashed p-10 text-center rounded-2xl text-[#525252] bg-black/10">
-              <p className="text-[14px]">All tasks completed! Check back tomorrow for the next sprint.</p>
+            <div className="border border-[#1a1a1f] border-dashed py-8 text-center rounded-xl text-zinc-500 bg-black/10 text-xs font-mono">
+              ALL TASKS COMPLETED. CHECK BACK TOMORROW.
             </div>
           )}
         </div>
 
-        {/* Sprints Navigation Link */}
+        {/* Bottom Navigation Link */}
         {tasks.length > 3 && (
           <a
             href="/warroom"
-            className="block text-center text-[12px] text-[#525252] hover:text-[#a1a1a1] transition-colors mt-2"
+            className="block text-center text-[11px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors pt-1"
           >
-            + View all {tasks.length} active sprint tasks
+            + VIEW ALL {tasks.length} ACTIVE SPRINT TASKS
           </a>
         )}
       </div>

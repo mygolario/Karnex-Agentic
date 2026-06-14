@@ -5,7 +5,7 @@ import MorningStandup from '@/components/home/MorningStandup'
 import TodaysTasks from '@/components/home/TodaysTasks'
 import MomentumStrip from '@/components/home/MomentumStrip'
 import CoachingInsight from '@/components/home/CoachingInsight'
-import AgentMap from '@/components/home/AgentMap'
+import AgentRoster from '@/components/home/AgentRoster'
 
 export const dynamic = 'force-dynamic'
 
@@ -275,9 +275,9 @@ export default async function HomePage() {
           />
         </div>
 
-        {/* Right Column: Visual Agent Node Map and Coaching Wisdom */}
+        {/* Right Column: Visual Agent Roster and Coaching Wisdom */}
         <div className="space-y-6">
-          <AgentMap />
+          <AgentRoster />
 
           <CoachingInsight
             phase={currentPhase}
