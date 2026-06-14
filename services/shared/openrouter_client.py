@@ -16,14 +16,43 @@ _DEFAULT_HEADERS = {
 }
 
 
+class OpenRouterChatModel(ChatOpenAI):
+    """Custom ChatOpenAI subclass to handle OpenRouter structured output compatibility."""
+
+    def with_structured_output(
+        self,
+        schema: Any,
+        *,
+        method: Optional[str] = None,
+        include_raw: bool = False,
+        **kwargs: Any,
+    ) -> Any:
+        # OpenRouter models often fail with strict=True or default json_schema.
+        # Force function_calling method and disable strict mode to maximize compatibility.
+        if "strict" in kwargs:
+            kwargs["strict"] = False
+        else:
+            kwargs["strict"] = False
+
+        if method is None or method == "json_schema":
+            method = "function_calling"
+
+        return super().with_structured_output(
+            schema,
+            method=method,
+            include_raw=include_raw,
+            **kwargs
+        )
+
+
 def create_chat_model(
     openrouter_model: str,
     *,
     max_tokens: int,
     temperature: float = 0.3,
-) -> ChatOpenAI:
+) -> OpenRouterChatModel:
     """Create a LangChain ChatOpenAI pointed at OpenRouter."""
-    return ChatOpenAI(
+    return OpenRouterChatModel(
         model=openrouter_model,
         openai_api_key=settings.OPENROUTER_API_KEY,
         openai_api_base=settings.OPENROUTER_BASE_URL,
