@@ -58,19 +58,20 @@ function highlightCode(code: string, language: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 
-  // Comments — // and /* */
-  escaped = escaped.replace(/(\/\/.*$)/gm, '<span class="syn-cmt">$1</span>')
-  escaped = escaped.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="syn-cmt">$1</span>')
+  // Use placeholders to prevent keywords or numbers from breaking html structures inside comments/strings
+  const placeholders: string[] = []
 
-  // Strings — double and single quotes and template literals
-  escaped = escaped.replace(/(&quot;.*?&quot;|'[^']*?'|`[^`]*?`)/g, '<span class="syn-str">$1</span>')
+  // Extract comments
+  escaped = escaped.replace(/(\/\*[\s\S]*?\*\/|\/\/.*$)/gm, (match) => {
+    placeholders.push(`<span class="syn-cmt">${match}</span>`)
+    return `___PLACEHOLDER_${placeholders.length - 1}___`
+  })
 
-  // Numbers
-  escaped = escaped.replace(/\b(\d+\.?\d*)\b/g, '<span class="syn-num">$1</span>')
-
-  // JSX/HTML tags
-  escaped = escaped.replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9]*)/g, '<span class="syn-tag">$1</span>')
-  escaped = escaped.replace(/(\/&gt;|&gt;)/g, '<span class="syn-tag">$1</span>')
+  // Extract strings
+  escaped = escaped.replace(/(&quot;.*?&quot;|'[^']*?'|`[^`]*?`|"[^"]*")/g, (match) => {
+    placeholders.push(`<span class="syn-str">${match}</span>`)
+    return `___PLACEHOLDER_${placeholders.length - 1}___`
+  })
 
   // Keywords
   const keywords = ['import', 'export', 'default', 'from', 'const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'interface', 'type', 'extends', 'implements', 'async', 'await', 'new', 'throw', 'try', 'catch', 'finally', 'switch', 'case', 'break', 'continue', 'typeof', 'instanceof', 'void', 'null', 'undefined', 'true', 'false', 'as', 'in', 'of']
@@ -80,10 +81,15 @@ function highlightCode(code: string, language: string): string {
   }
 
   const kwPattern = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g')
-  escaped = escaped.replace(kwPattern, (match) => {
-    // Don't re-wrap if already inside a span
-    return `<span class="syn-kw">${match}</span>`
-  })
+  escaped = escaped.replace(kwPattern, '<span class="syn-kw">$1</span>')
+
+  // Numbers
+  escaped = escaped.replace(/\b(\d+\.?\d*)\b/g, '<span class="syn-num">$1</span>')
+
+  // Restore placeholders in reverse order
+  for (let i = placeholders.length - 1; i >= 0; i--) {
+    escaped = escaped.replace(`___PLACEHOLDER_${i}___`, placeholders[i])
+  }
 
   return escaped
 }

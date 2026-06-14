@@ -546,35 +546,6 @@ function ForgeWorkspace() {
 
         {/* Column 3: Live Preview / DB Schema */}
         <div className="w-[480px] shrink-0 flex flex-col h-full bg-[#050505]">
-          <div className="flex items-center justify-between border-b border-zinc-900 px-4 h-10 shrink-0 bg-[#07070a]">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors ${
-                  activeTab === 'preview' ? 'text-white bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Live Preview
-              </button>
-              <button
-                onClick={() => setActiveTab('database')}
-                className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors ${
-                  activeTab === 'database' ? 'text-white bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Database Schema
-              </button>
-              <button
-                onClick={() => setActiveTab('deploy')}
-                className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors ${
-                  activeTab === 'deploy' ? 'text-white bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Launch Staging
-              </button>
-            </div>
-          </div>
-
           <div className="flex-1 min-h-0 p-2 overflow-hidden">
             {/* Preview Panel */}
             {activeTab === 'preview' && (

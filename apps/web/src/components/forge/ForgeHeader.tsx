@@ -4,18 +4,17 @@ import React, { useRef, useEffect } from 'react'
 
 interface ForgeHeaderProps {
   projectName: string
-  activeTab: 'preview' | 'code' | 'database' | 'deploy'
-  onTabChange: (tab: 'preview' | 'code' | 'database' | 'deploy') => void
+  activeTab: 'preview' | 'database' | 'deploy'
+  onTabChange: (tab: 'preview' | 'database' | 'deploy') => void
   onDeploy: () => void
   onToggleVersions: () => void
   hasOutput: boolean
 }
 
 const tabs = [
-  { id: 'preview' as const, label: 'Preview' },
-  { id: 'code' as const, label: 'Code' },
-  { id: 'database' as const, label: 'Database' },
-  { id: 'deploy' as const, label: 'Deploy' },
+  { id: 'preview' as const, label: 'Live Preview' },
+  { id: 'database' as const, label: 'Database Schema' },
+  { id: 'deploy' as const, label: 'Launch Staging' },
 ]
 
 export default function ForgeHeader({
