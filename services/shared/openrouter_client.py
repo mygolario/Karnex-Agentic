@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from typing import Any, Literal, Optional
 
+from langchain_core.runnables import RunnableLambda
 from langchain_openai import ChatOpenAI
 
 from shared.config import settings
@@ -24,61 +25,41 @@ _EMPTY_RESPONSE_PHRASES = (
 )
 
 
-class _RetryStructuredChain:
-    """Wraps a structured-output chain with retry + json_mode fallback.
+def _make_retry_runnable(primary_chain: Any, fallback_chain: Any, max_retries: int = 3) -> RunnableLambda:
+    """Return a RunnableLambda that retries *primary_chain* on empty OpenRouter responses.
 
     OpenRouter models (especially google/gemini-2.5-pro) occasionally return
     completely empty responses (content='', finish_reason=None, completion_tokens=0).
     LangChain's structured-output parser then raises a ValueError because it finds
     neither a 'parsed' nor a 'refusal' field in the empty message.
 
-    This wrapper:
-      1. Retries the primary (function_calling) chain up to ``max_retries`` times
-         with exponential backoff (1 s, 2 s, 4 s) when that specific error occurs.
-      2. If all retries are exhausted, falls back to a json_mode chain as a last
-         resort before re-raising.
+    The returned RunnableLambda is a genuine LangChain Runnable so it works
+    transparently with the pipe operator (prompt | llm.with_structured_output(...)).
+
+    Strategy:
+      1. Retry primary (function_calling) chain up to *max_retries* times with
+         exponential backoff (1 s → 2 s → 4 s) on the specific empty-response error.
+      2. Fall back to json_mode chain if all retries are exhausted.
     """
 
-    def __init__(self, chain: Any, fallback_chain: Any, max_retries: int = 3) -> None:
-        self._chain = chain
-        self._fallback_chain = fallback_chain
-        self._max_retries = max_retries
-
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _is_empty_response_error(exc: Exception) -> bool:
-        msg = str(exc)
-        return any(phrase in msg for phrase in _EMPTY_RESPONSE_PHRASES)
-
-    # ------------------------------------------------------------------
-    # Runnable interface — only invoke() is needed because all callers use
-    # asyncio.to_thread(lambda: chain.invoke(...)) (synchronous invocation).
-    # ------------------------------------------------------------------
-
-    def invoke(self, input_data: Any, config: Any = None, **kwargs: Any) -> Any:
+    def _invoke(input_data: Any) -> Any:
         from shared.logger import logger  # local import to avoid circular deps
-
-        def _call(chain: Any) -> Any:
-            if config is not None:
-                return chain.invoke(input_data, config, **kwargs)
-            return chain.invoke(input_data, **kwargs)
 
         last_err: Exception | None = None
 
         # ── Retry loop (function_calling) ───────────────────────────────
-        for attempt in range(self._max_retries):
+        for attempt in range(max_retries):
             try:
-                return _call(self._chain)
+                return primary_chain.invoke(input_data)
             except ValueError as exc:
-                if self._is_empty_response_error(exc):
+                msg = str(exc)
+                is_empty = any(phrase in msg for phrase in _EMPTY_RESPONSE_PHRASES)
+                if is_empty:
                     last_err = exc
                     wait = 2 ** attempt  # 1 s → 2 s → 4 s
                     logger.warning(
                         "[OpenRouter] Empty structured-output response "
-                        f"(attempt {attempt + 1}/{self._max_retries}). "
+                        f"(attempt {attempt + 1}/{max_retries}). "
                         f"Retrying in {wait}s…"
                     )
                     time.sleep(wait)
@@ -87,19 +68,16 @@ class _RetryStructuredChain:
 
         # ── json_mode fallback ──────────────────────────────────────────
         logger.warning(
-            "[OpenRouter] function_calling exhausted after "
-            f"{self._max_retries} retries. Falling back to json_mode."
+            f"[OpenRouter] function_calling exhausted after {max_retries} retries. "
+            "Falling back to json_mode."
         )
         try:
-            return _call(self._fallback_chain)
+            return fallback_chain.invoke(input_data)
         except Exception as fallback_exc:
             logger.error(f"[OpenRouter] json_mode fallback also failed: {fallback_exc}")
             raise last_err  # type: ignore[misc]
 
-    # Forward any other attribute access (e.g. .stream, .batch) to the
-    # underlying chain so callers that rely on other Runnable methods still work.
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._chain, name)
+    return RunnableLambda(_invoke)
 
 
 class OpenRouterChatModel(ChatOpenAI):
@@ -127,9 +105,8 @@ class OpenRouterChatModel(ChatOpenAI):
         )
 
         # Build a json_mode fallback chain used when function_calling keeps
-        # returning empty responses.  If json_mode itself is unsupported by the
-        # current model, we reuse the primary chain (the fallback will raise
-        # anyway, but at least it won't crash during setup).
+        # returning empty responses. If json_mode is unsupported by the model,
+        # reuse primary_chain so setup never crashes.
         try:
             fallback_chain = super().with_structured_output(
                 schema,
@@ -139,7 +116,8 @@ class OpenRouterChatModel(ChatOpenAI):
         except Exception:
             fallback_chain = primary_chain
 
-        return _RetryStructuredChain(primary_chain, fallback_chain)
+        # Return a genuine LangChain RunnableLambda so it works with | pipes.
+        return _make_retry_runnable(primary_chain, fallback_chain)
 
 
 def create_chat_model(
