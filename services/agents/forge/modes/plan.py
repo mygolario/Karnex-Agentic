@@ -14,7 +14,7 @@ from agents.forge.events import emit_forge_event, flush_all_forge_events
 from agents.forge.project_types import resolve_project_type, stack_prompt_suffix
 from shared.agent_run_logging import complete_agent_run
 from shared.agent_step_catalog import get_step_labels
-from shared.openrouter_client import model_from_catalog_entry, resolve_step_model
+from shared.openrouter_client import invoke_structured_with_retry, model_from_catalog_entry, resolve_step_model
 
 
 class PlanOutput(BaseModel):
@@ -67,12 +67,9 @@ async def run_plan_mode(
         ),
     ])
     chain = prompt | llm.with_structured_output(PlanOutput)
+    _plan_input = {"spec": input_data.specification, "ctx": context_block, "suffix": suffix}
     plan: PlanOutput = await asyncio.to_thread(
-        lambda: chain.invoke({
-            "spec": input_data.specification,
-            "ctx": context_block,
-            "suffix": suffix,
-        })
+        lambda: invoke_structured_with_retry(chain, _plan_input)
     )
 
     summary = (

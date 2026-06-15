@@ -15,7 +15,7 @@ from agents.forge.events import emit_forge_event, flush_all_forge_events
 from agents.forge.linter import run_forge_linter
 from shared.agent_run_logging import complete_agent_run
 from shared.agent_step_catalog import get_step_labels
-from shared.openrouter_client import model_from_catalog_entry, resolve_step_model
+from shared.openrouter_client import invoke_structured_with_retry, model_from_catalog_entry, resolve_step_model
 
 _STACK_RE = re.compile(r"Traceback|Error:|at .+\(.+:\d+", re.I)
 
@@ -103,12 +103,13 @@ async def run_debug_mode(
         ),
     ])
     chain = prompt | llm.with_structured_output(DebugPatchPlan)
+    _debug_input = {
+        "spec": input_data.specification,
+        "ctx": context_block,
+        "codebase": input_data.existing_codebase_context or "No local tree provided.",
+    }
     plan: DebugPatchPlan = await asyncio.to_thread(
-        lambda: chain.invoke({
-            "spec": input_data.specification,
-            "ctx": context_block,
-            "codebase": input_data.existing_codebase_context or "No local tree provided.",
-        })
+        lambda: invoke_structured_with_retry(chain, _debug_input)
     )
     diag = plan.diagnosis
     diag.debug_path = path

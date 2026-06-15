@@ -19,7 +19,7 @@ from agents.forge.events import emit_forge_event, flush_all_forge_events
 from shared.agent_run_logging import advance_step, complete_agent_run
 from shared.agent_step_catalog import BUILDER_STATUS_TO_STEP, get_step_labels
 from shared.logger import logger
-from shared.openrouter_client import model_from_catalog_entry, resolve_step_model
+from shared.openrouter_client import invoke_structured_with_retry, model_from_catalog_entry, resolve_step_model
 from shared.supabase_client import get_supabase_admin
 
 
@@ -304,15 +304,11 @@ class MultiAgentDAGRunner:
         visual_chain = visual_prompt | self.llm_fast.with_structured_output(VisualAssetManifest)
 
         # Run both concurrently — halves Phase 1 latency and token pressure
+        _copy_input = {"system_prompt": copy_system, "user_prompt": copy_user}
+        _visual_input = {"system_prompt": visual_system, "user_prompt": visual_user}
         copy_manifest, visual_manifest = await asyncio.gather(
-            asyncio.to_thread(lambda: copy_chain.invoke({
-                "system_prompt": copy_system,
-                "user_prompt": copy_user,
-            })),
-            asyncio.to_thread(lambda: visual_chain.invoke({
-                "system_prompt": visual_system,
-                "user_prompt": visual_user,
-            })),
+            asyncio.to_thread(lambda: invoke_structured_with_retry(copy_chain, _copy_input)),
+            asyncio.to_thread(lambda: invoke_structured_with_retry(visual_chain, _visual_input)),
         )
 
         self.state["copywriting"] = {item.key: item.text for item in copy_manifest.copywriting}
@@ -368,8 +364,9 @@ class MultiAgentDAGRunner:
 
         # Schema planning is a structured list task — fast model is sufficient
         chain = prompt | self.llm_fast.with_structured_output(SchemaPlanOutput)
+        _schema_input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
         plan: SchemaPlanOutput = await asyncio.to_thread(
-            lambda: chain.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
+            lambda: invoke_structured_with_retry(chain, _schema_input)
         )
 
         self.state["files_plan"] = plan.files_to_generate
@@ -460,8 +457,9 @@ class MultiAgentDAGRunner:
             ])
 
             chain = prompt | self.llm_fast.with_structured_output(CodeFileGeneration)
+            _file_input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
             res: CodeFileGeneration = await asyncio.to_thread(
-                lambda: chain.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
+                lambda: invoke_structured_with_retry(chain, _file_input)
             )
 
             lang = "sql" if file_spec.path.endswith(".sql") else "typescript"
@@ -546,8 +544,9 @@ class MultiAgentDAGRunner:
         ])
 
         chain = prompt | self.llm_pro.with_structured_output(SelfHealingEdits)
+        _heal_input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
         edits: SelfHealingEdits = await asyncio.to_thread(
-            lambda: chain.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
+            lambda: invoke_structured_with_retry(chain, _heal_input)
         )
 
         old_content = target_file.content
@@ -580,8 +579,9 @@ class MultiAgentDAGRunner:
         ])
 
         chain = prompt | self.llm_pro.with_structured_output(CodeFileGeneration)
+        _regen_input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
         res: CodeFileGeneration = await asyncio.to_thread(
-            lambda: chain.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
+            lambda: invoke_structured_with_retry(chain, _regen_input)
         )
 
         target_file.content = res.file_content

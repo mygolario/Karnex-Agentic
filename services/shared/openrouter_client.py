@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 from typing import Any, Literal, Optional
 
-from langchain_core.runnables import RunnableLambda
 from langchain_openai import ChatOpenAI
 
 from shared.config import settings
@@ -17,7 +16,7 @@ _DEFAULT_HEADERS = {
     "X-Title": "Karnex",
 }
 
-# Phrases that indicate an empty / unfinished response from the upstream model.
+# Error phrases that indicate an empty / unfinished response from the upstream model.
 # This happens when OpenRouter returns content='' with finish_reason=None.
 _EMPTY_RESPONSE_PHRASES = (
     "does not have a 'parsed' field",
@@ -25,59 +24,43 @@ _EMPTY_RESPONSE_PHRASES = (
 )
 
 
-def _make_retry_runnable(primary_chain: Any, fallback_chain: Any, max_retries: int = 3) -> RunnableLambda:
-    """Return a RunnableLambda that retries *primary_chain* on empty OpenRouter responses.
+def invoke_structured_with_retry(chain: Any, input_data: Any, max_retries: int = 3) -> Any:
+    """Invoke a LangChain structured-output chain with automatic retry.
 
     OpenRouter models (especially google/gemini-2.5-pro) occasionally return
     completely empty responses (content='', finish_reason=None, completion_tokens=0).
     LangChain's structured-output parser then raises a ValueError because it finds
     neither a 'parsed' nor a 'refusal' field in the empty message.
 
-    The returned RunnableLambda is a genuine LangChain Runnable so it works
-    transparently with the pipe operator (prompt | llm.with_structured_output(...)).
-
-    Strategy:
-      1. Retry primary (function_calling) chain up to *max_retries* times with
-         exponential backoff (1 s → 2 s → 4 s) on the specific empty-response error.
-      2. Fall back to json_mode chain if all retries are exhausted.
+    Use this instead of chain.invoke() everywhere a structured-output chain is called.
+    Retries up to max_retries times with exponential backoff (1s → 2s → 4s).
     """
+    from shared.logger import logger  # local import to avoid circular deps
 
-    def _invoke(input_data: Any) -> Any:
-        from shared.logger import logger  # local import to avoid circular deps
+    last_err: Exception | None = None
 
-        last_err: Exception | None = None
-
-        # ── Retry loop (function_calling) ───────────────────────────────
-        for attempt in range(max_retries):
-            try:
-                return primary_chain.invoke(input_data)
-            except ValueError as exc:
-                msg = str(exc)
-                is_empty = any(phrase in msg for phrase in _EMPTY_RESPONSE_PHRASES)
-                if is_empty:
-                    last_err = exc
-                    wait = 2 ** attempt  # 1 s → 2 s → 4 s
-                    logger.warning(
-                        "[OpenRouter] Empty structured-output response "
-                        f"(attempt {attempt + 1}/{max_retries}). "
-                        f"Retrying in {wait}s…"
-                    )
-                    time.sleep(wait)
-                else:
-                    raise  # unrelated ValueError — propagate immediately
-
-        # ── json_mode fallback ──────────────────────────────────────────
-        logger.warning(
-            f"[OpenRouter] function_calling exhausted after {max_retries} retries. "
-            "Falling back to json_mode."
-        )
+    for attempt in range(max_retries):
         try:
-            return fallback_chain.invoke(input_data)
-        except Exception as fallback_exc:
-            logger.error(f"[OpenRouter] json_mode fallback also failed: {fallback_exc}")
-            raise last_err  # type: ignore[misc]
+            return chain.invoke(input_data)
+        except ValueError as exc:
+            msg = str(exc)
+            if any(phrase in msg for phrase in _EMPTY_RESPONSE_PHRASES):
+                last_err = exc
+                wait = 2 ** attempt  # 1s → 2s → 4s
+                logger.warning(
+                    "[OpenRouter] Empty structured-output response "
+                    f"(attempt {attempt + 1}/{max_retries}). "
+                    f"Retrying in {wait}s…"
+                )
+                time.sleep(wait)
+            else:
+                raise  # unrelated ValueError — propagate immediately
 
-    return RunnableLambda(_invoke)
+    logger.error(
+        f"[OpenRouter] Structured output failed after {max_retries} retries. "
+        "Check OpenRouter quota / model availability."
+    )
+    raise last_err  # type: ignore[misc]
 
 
 class OpenRouterChatModel(ChatOpenAI):
@@ -92,32 +75,17 @@ class OpenRouterChatModel(ChatOpenAI):
         **kwargs: Any,
     ) -> Any:
         # OpenRouter models often fail with strict=True or default json_schema.
-        # Force function_calling method and disable strict mode to maximize compatibility.
+        # Force function_calling and disable strict mode for maximum compatibility.
         kwargs["strict"] = False
         if method is None or method == "json_schema":
             method = "function_calling"
 
-        primary_chain = super().with_structured_output(
+        return super().with_structured_output(
             schema,
             method=method,
             include_raw=include_raw,
             **kwargs,
         )
-
-        # Build a json_mode fallback chain used when function_calling keeps
-        # returning empty responses. If json_mode is unsupported by the model,
-        # reuse primary_chain so setup never crashes.
-        try:
-            fallback_chain = super().with_structured_output(
-                schema,
-                method="json_mode",
-                include_raw=include_raw,
-            )
-        except Exception:
-            fallback_chain = primary_chain
-
-        # Return a genuine LangChain RunnableLambda so it works with | pipes.
-        return _make_retry_runnable(primary_chain, fallback_chain)
 
 
 def create_chat_model(
@@ -199,5 +167,3 @@ def resolve_step_model(
 
     default_id = catalog.get("default_model_id", "karnex-forge-fast-high")
     return by_id.get(default_id) or models[0]
-
-
