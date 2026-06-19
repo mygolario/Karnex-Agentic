@@ -25,6 +25,8 @@ interface ChatPanelProps {
   onForgeModeChange: (v: 'auto' | 'build' | 'plan' | 'ask' | 'debug') => void
   maxMode: boolean
   onMaxModeChange: (v: boolean) => void
+  draft: string
+  onDraftChange: (v: string) => void
 }
 
 const senderConfig: Record<string, { label: string; color: string; iconBg: string }> = {
@@ -69,8 +71,9 @@ export default function ChatPanel({
   onForgeModeChange,
   maxMode,
   onMaxModeChange,
+  draft,
+  onDraftChange,
 }: ChatPanelProps) {
-  const [draft, setDraft] = useState('')
   const [showConfig, setShowConfig] = useState(false)
   const feedRef = useRef<HTMLDivElement>(null)
 
@@ -85,7 +88,7 @@ export default function ChatPanel({
     e.preventDefault()
     if (!draft.trim() || isBuilding) return
     onSendPrompt(draft.trim())
-    setDraft('')
+    onDraftChange('')
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -93,12 +96,12 @@ export default function ChatPanel({
       e.preventDefault()
       if (!draft.trim() || isBuilding) return
       onSendPrompt(draft.trim())
-      setDraft('')
+      onDraftChange('')
     }
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#09090b] border-r border-[#141417]">
+    <div className="flex flex-col h-full bg-[#09090b]/40 backdrop-blur-md border-r border-[#141417]/60">
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-10 border-b border-[#141417] shrink-0">
         <span className="text-[13px] font-semibold text-zinc-300">Forge</span>
@@ -270,7 +273,7 @@ export default function ChatPanel({
         <form onSubmit={handleSubmit}>
           <textarea
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => onDraftChange(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isBuilding}
             rows={2}

@@ -271,12 +271,13 @@ class MultiAgentDAGRunner:
         # ── Call A: Copywriting + Style Guide ───────────────────────────────
         copy_system = (
             "You are the Lead Creative Copywriter and Brand Designer for Karnex.\n"
-            "Write highly authentic, conversion-optimised marketing copy and design a cohesive visual style guide "
-            "(colour palette, typography, vibe) tailored to the specific product request.\n"
-            "Avoid Lorem Ipsum or generic AI filler. Write real, engaging text.\n"
-            "For the style guide, match colours/fonts to the product context "
-            "(e.g., green/white minimal for health apps, dark neon/violet for dev tools, "
-            "corporate blue/slate for enterprise B2B)."
+            "Your objective is to craft highly engaging, conversion-optimized, professional marketing copy and "
+            "design a cohesive visual style guide tailored specifically to the target product specification.\n\n"
+            "1. **Engaging Copywriting**: Write copy that is professional, benefit-driven, and addresses emotional pain points. "
+            "Ensure positioning is clear. Avoid 'Lorem Ipsum' or generic placeholders. Write real, compelling headers, paragraphs, and CTAs.\n"
+            "2. **Premium Visual Aesthetic**: By default, design style guides that embrace a modern, high-quality dark-mode aesthetic: "
+            "deep slate/zinc backgrounds (#09090b or #050505), with accent/glow colors like deep indigo, violet, or emerald to create depth. "
+            "Ensure the style guide specifies clear color tokens (primary, secondary, background, accent, text) and Google Font choices (e.g. display headings using 'Inter' or 'Outfit', body text using 'Inter')."
         )
         copy_user = f"Task Type: {task_type}\nProduct Specification: {spec}\nContext: {context}"
 
@@ -288,10 +289,12 @@ class MultiAgentDAGRunner:
         # ── Call B: SVG Icons + Images + Seeds ─────────────────────────────
         visual_system = (
             "You are the UI Asset Designer and Database Architect for Karnex.\n"
-            "Generate: (1) beautiful custom SVG icons/logos with viewBox, paths, and gradients, "
-            "(2) Unsplash image search keywords for hero/feature photos, "
-            "(3) 10-20 realistic database seed rows representing real product data "
-            "(actual product names, prices, users — NOT generic placeholders)."
+            "Your objective is to design custom visual assets and construct a robust database initial state:\n\n"
+            "1. **Custom SVG Assets**: Generate beautiful custom SVG icons/logos with viewBox, precise path tags, stroke/fill styling, and optional modern gradients.\n"
+            "2. **Image Curations**: Provide highly descriptive Unsplash search keywords to source relevant hero, feature, and avatar photos.\n"
+            "3. **High-Quality Database Seeds**: Generate 10-20 highly realistic, domain-specific database seed records with deep, rich attributes. "
+            "For example, mock users with realistic names, emails, signup dates, and membership status; SaaS products with actual names, detailed descriptions, tiered pricing, and features; or AI run logs with realistic JSON payloads, error logs, and metrics. "
+            "Do NOT use generic placeholders like 'User 1' or 'Test Product'. The seed rows must represent a production-ready initial database state that can be immediately rendered in the UI dashboard or tables."
         )
         visual_user = f"Product Specification: {spec}\nTask Type: {task_type}"
 
@@ -421,9 +424,10 @@ class MultiAgentDAGRunner:
                     f"You are a UI Component Developer coder. Focus on generating a reusable, scoped React TSX component file for '{file_spec.path}'.\n"
                     "Strict component guidelines:\n"
                     "1. **Component Focus**: Build a single modular, reusable UI component (e.g. navbar, modal, form input, widget) rather than a whole landing page.\n"
-                    "2. **TypeScript Interfaces**: Define clean TypeScript interfaces for component props.\n"
-                    "3. **State & Hooks**: Use React hooks (such as `useState`, `useEffect`, `useRef`) for internal interactivity.\n"
-                    "4. **Styles & Aesthetics**: Style the component cleanly with Tailwind CSS, keeping the visual styles scoped and aligned with the provided style guide.\n"
+                    "2. **Default Modern Dark-Mode Aesthetic**: Default to a high-quality, professional dark-mode design system: deep slate/zinc backgrounds (#09090b or #050505), radial indigo/violet glows (e.g., `bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))]`), thin subtle borders (`border-white/[0.05]`), and glassmorphic panels (`backdrop-blur-md bg-zinc-950/70`).\n"
+                    "3. **TypeScript Interfaces**: Define clean TypeScript interfaces for component props.\n"
+                    "4. **State & Hooks**: Use React hooks (such as `useState`, `useEffect`, `useRef`) for internal interactivity (e.g. monthly/yearly toggles, CTA waitlist input validation/states).\n"
+                    "5. **Lucide Icons & JSX Rendering**: Import clean icons from 'lucide-react' (e.g. `import { Mail, Check, ArrowRight } from 'lucide-react'`). Never render component names as literal text (e.g. writing '<ArrowRight />' in string literals). Always render them as actual JSX elements.\n"
                     "Output COMPLETE code — no '// rest of code...' comments. All imports must be valid."
                 )
             else:
@@ -431,17 +435,20 @@ class MultiAgentDAGRunner:
                     f"You are the Lead Visual UI Developer coder.\n"
                     f"Generate a complete, production-ready React TypeScript or Next.js App Router file for '{file_spec.path}'.\n"
                     "Strict visual guidelines:\n"
-                    "1. **Colour & Vibe**: Use the style guide (primary, secondary, background, accent, dark/light). "
-                    "Use Tailwind gradients (`bg-gradient-to-r from-... to-...`) on headers and CTAs.\n"
-                    "2. **Glassmorphism**: `backdrop-blur-md bg-opacity-70 border-white/[0.08]` on cards and nav.\n"
-                    "3. **Typography**: Gradient text (`bg-clip-text text-transparent bg-gradient-to-r...`) on hero headers.\n"
-                    "4. **Layout & Sections**: Include key sections aligned with the user's specification (e.g. Hero, Feature cards, email waitlist/CTA). "
-                    "Only include optional sections like Pricing, Testimonials, or Social Proof if they are directly relevant to the user request. "
-                    "Keep components clean and compact to fit within token limits.\n"
-                    "5. **Icons & SVGs**: Import standard icons from 'lucide-react' (e.g. `import { Mail, Check, ArrowRight } from 'lucide-react'`) "
-                    "where possible instead of embedding large raw inline SVGs. This is critical to prevent exceeding the model's output token limit. "
-                    "If you must use pre-generated SVGs from the context, keep them very simple or optimize/minify them.\n"
-                    "Output COMPLETE code — no '// rest of code...' comments. All imports must be valid."
+                    "1. **Default Modern Dark-Mode Aesthetic**: Default to a high-quality, professional dark-mode design system:\n"
+                    "   - Deep slate/zinc canvas: use background colors like #09090b or #050505.\n"
+                    "   - Radial indigo/violet glows: leverage gradient styling like `bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))]` to build depth.\n"
+                    "   - Thin subtle borders: use `border-white/[0.05]` to frame modules elegantly.\n"
+                    "   - Glassmorphic panels: apply backdrop effects like `backdrop-blur-md bg-zinc-950/70` for cards, navbars, and content panels.\n"
+                    "2. **Rich & Comprehensive Layout Sections**: Build full-featured sections, including:\n"
+                    "   - Hero section with premium heading typography, gradient text, and primary actions.\n"
+                    "   - Features grid featuring description paragraphs paired with clear Lucide icons.\n"
+                    "   - Testimonial blocks with professional details (avatar, name, company, review text).\n"
+                    "   - Pricing cards complete with a functioning monthly/yearly billing toggle state.\n"
+                    "   - Call-To-Action (CTA) waitlist component containing functional inputs, form validation, and success state handling.\n"
+                    "3. **Lucide Icons & JSX Rendering**: Import clean icons from 'lucide-react' (e.g. `import { Mail, Check, ArrowRight } from 'lucide-react'`).\n"
+                    "   - **CRITICAL**: Never render component names as literal text inside text content (e.g. do not write 'Click <ArrowRight /> here' or return raw '<ArrowRight />' text). Always render icons as actual JSX elements (e.g., `<ArrowRight className=\"w-4 h-4\" />`).\n"
+                    "4. **Interactive & Responsive Styling**: Style exclusively using Tailwind CSS. Leverage micro-animations, hover effects, and strict responsive scaling. Keep imports valid and avoid placeholder comments."
                 )
 
             user_prompt = (

@@ -128,6 +128,7 @@ function ForgeWorkspace() {
   const [showVersions, setShowVersions] = useState(false)
   const [inspectMode, setInspectMode] = useState(false)
   const [showCode, setShowCode] = useState(false)
+  const [draft, setDraft] = useState('')
 
   // Config
   const [framework, setFramework] = useState('nextjs')
@@ -498,7 +499,7 @@ function ForgeWorkspace() {
   const activeSteps = parseLogsToSteps(chatMessages, currentRunStatus)
 
   return (
-    <div className="flex flex-col h-screen bg-[#050505] text-white">
+    <div className="flex flex-col h-screen bg-[#050505] text-white dash-reveal">
       {/* Accent line */}
       <div className="forge-accent-bar shrink-0 h-1 bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-500" />
 
@@ -516,10 +517,10 @@ function ForgeWorkspace() {
       />
 
       {/* Main workspace (Three-Column Layout) */}
-      <div className="flex-1 flex min-h-0 divide-x divide-zinc-900 overflow-hidden">
+      <div className="flex-1 flex min-h-0 divide-x divide-zinc-900/50 overflow-hidden forge-grid-bg bg-[#050505]">
         
         {/* Column 1: Chat & Progress timeline */}
-        <div className="w-[300px] shrink-0 flex flex-col h-full bg-[#07070a]">
+        <div className="w-[300px] shrink-0 flex flex-col h-full bg-[#07070a]/60 backdrop-blur-md">
           {loading && (
             <div className="border-b border-zinc-900 bg-zinc-950/50 p-4 space-y-2">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400">Build Progress</span>
@@ -557,13 +558,15 @@ function ForgeWorkspace() {
               onForgeModeChange={setForgeMode}
               maxMode={maxMode}
               onMaxModeChange={setMaxMode}
+              draft={draft}
+              onDraftChange={setDraft}
             />
           </div>
         </div>
 
         {/* Column 2: Code Editor (shown if showCode is true OR if we don't have output yet) */}
         {(showCode || !hasOutput) && (
-          <div className="flex-[1.2] flex flex-col h-full min-w-[320px] bg-[#09090d]">
+          <div className="flex-[1.2] flex flex-col h-full min-w-[320px] bg-[#09090d]/60 backdrop-blur-md">
             {hasOutput ? (
               <CodePanel
                 files={builderOutput.files}
@@ -609,7 +612,7 @@ function ForgeWorkspace() {
 
         {/* Column 3: Live Preview / DB Schema (only shown if we have output) */}
         {hasOutput && (
-          <div className="flex-1 flex flex-col h-full min-w-[360px] bg-[#050505]">
+          <div className="flex-1 flex flex-col h-full min-w-[360px] bg-[#050505]/40 backdrop-blur-md">
             <div className="flex-1 min-h-0 p-2 overflow-hidden">
               {/* Preview Panel */}
               {activeTab === 'preview' && (
@@ -620,6 +623,57 @@ function ForgeWorkspace() {
                     onToggleInspect={() => setInspectMode(!inspectMode)}
                     onSelectElement={(selector, text) => {
                       appendChat('system', `Selected: ${selector} — "${text}"`)
+
+                      const tag = selector.split(/[.#]/)[0] || 'element'
+                      setDraft(`Selected: ${selector} - '${text}' -> Edit this ${tag}...`)
+
+                      setShowCode(true)
+
+                      if (builderOutput?.files && builderOutput.files.length > 0) {
+                        let bestIdx = 0
+                        let maxScore = -1
+                        const textLower = text.trim().toLowerCase()
+                        const tagLower = tag.toLowerCase()
+                        const classes = selector.split('.').slice(1).map(c => c.toLowerCase())
+
+                        builderOutput.files.forEach((file, idx) => {
+                          let score = 0
+                          const contentLower = file.content.toLowerCase()
+
+                          // 1. Text match (highest priority)
+                          if (textLower && contentLower.includes(textLower)) {
+                            score += 1000
+                          }
+
+                          // 2. Class name matches
+                          if (classes.length > 0) {
+                            let classMatches = 0
+                            classes.forEach(c => {
+                              if (contentLower.includes(c)) {
+                                classMatches++
+                              }
+                            })
+                            score += classMatches * 50
+                          }
+
+                          // 3. Tag match
+                          if (tagLower && contentLower.includes(`<${tagLower}`)) {
+                            score += 10
+                          }
+
+                          // 4. File name heuristic
+                          if (file.path.toLowerCase().endsWith('page.tsx') || file.path.toLowerCase().endsWith('index.html')) {
+                            score += 5
+                          }
+
+                          if (score > maxScore && score > 0) {
+                            maxScore = score
+                            bestIdx = idx
+                          }
+                        })
+
+                        setSelectedFileIdx(bestIdx)
+                      }
                     }}
                     isBuilding={loading && !hasOutput}
                     gitHubPrUrl={builderOutput?.pr_url}

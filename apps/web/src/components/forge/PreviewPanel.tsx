@@ -21,539 +21,6 @@ const viewportWidths: Record<Viewport, string> = {
 
 /* ── HTML / React Compiler Helpers ── */
 
-const extractClassName = (attrs: string): string => {
-  const match = attrs.match(/className=["']([^"']+)["']/);
-  return match ? match[1] : '';
-};
-
-const cleanAttrs = (attrs: string): string => {
-  return attrs
-    .replace(/className=["']([^"']+)["']/g, '')
-    .replace(/onClick=\{[^}]+\}/g, '')
-    .replace(/onChange=\{[^}]+\}/g, '')
-    .replace(/onSubmit=\{[^}]+\}/g, '');
-};
-
-const uiComponentsMap: Record<string, (attrs: string, children: string) => string> = {
-  Card: (attrs, children) => `<div class="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 ${extractClassName(attrs)}">${children}</div>`,
-  CardHeader: (attrs, children) => `<div class="mb-4 ${extractClassName(attrs)}">${children}</div>`,
-  CardTitle: (attrs, children) => `<h3 class="text-xl font-bold tracking-tight text-white ${extractClassName(attrs)}">${children}</h3>`,
-  CardDescription: (attrs, children) => `<p class="text-sm text-zinc-400 mt-1 ${extractClassName(attrs)}">${children}</p>`,
-  CardContent: (attrs, children) => `<div class="space-y-4 ${extractClassName(attrs)}">${children}</div>`,
-  CardFooter: (attrs, children) => `<div class="flex items-center pt-4 border-t border-zinc-800 mt-4 ${extractClassName(attrs)}">${children}</div>`,
-  Button: (attrs, children) => `<button class="inline-flex items-center justify-center rounded-lg text-xs font-semibold px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${extractClassName(attrs)}">${children}</button>`,
-  Input: (attrs, children) => `<input class="flex h-9 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 ${extractClassName(attrs)}" ${cleanAttrs(attrs)} />`,
-  Textarea: (attrs, children) => `<textarea class="flex min-h-[60px] w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 ${extractClassName(attrs)}" ${cleanAttrs(attrs)}>${children}</textarea>`,
-  CheckIcon: (attrs) => `<svg class="h-4 w-4 text-indigo-400 inline shrink-0 ${extractClassName(attrs)}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`,
-  XIcon: (attrs) => `<svg class="h-4 w-4 text-zinc-500 inline shrink-0 ${extractClassName(attrs)}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`,
-  XMarkIcon: (attrs) => `<svg class="h-4 w-4 text-zinc-500 inline shrink-0 ${extractClassName(attrs)}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`,
-};
-
-const parseArrayLiteral = (fileContent: string, arrayName: string): any[] | null => {
-  const regex = new RegExp(`const\\s+${arrayName}\\s*(?::\\s*[^=]+)?=\\s*(\\[[\\s\\S]*?\\])\\s*(?:;|\\n)`);
-  const match = fileContent.match(regex);
-  if (!match) return null;
-  const arrayStr = match[1].replace(/as\s+[a-zA-Z0-9_\[\]<>|\s]+/g, '');
-  try {
-    const evalFn = new Function(`return ${arrayStr}`);
-    return evalFn();
-  } catch (e) {
-    console.warn("Failed to parse array literal:", arrayName, e);
-    return null;
-  }
-};
-
-const findFileByImport = (importedSymbol: string, importPath: string, files: Array<{ path: string; content: string }>) => {
-  const cleanPath = importPath.replace(/^@\//, '').replace(/^\.+\//, '').toLowerCase();
-  const pathParts = cleanPath.split('/');
-  const lastPart = pathParts[pathParts.length - 1];
-
-  // 1. Direct path match
-  let matched = files.find(f => f.path.toLowerCase().includes(cleanPath));
-  if (matched) return matched;
-
-  // 2. Match last part of path
-  matched = files.find(f => {
-    const filename = f.path.split('/').pop()?.toLowerCase() || '';
-    return filename.includes(lastPart);
-  });
-  if (matched) return matched;
-
-  // 3. Match symbol name in file contents
-  matched = files.find(f => {
-    const content = f.content;
-    return content.includes(`export function ${importedSymbol}`) ||
-           content.includes(`export const ${importedSymbol}`) ||
-           content.includes(`export default function ${importedSymbol}`) ||
-           content.includes(`export default ${importedSymbol}`);
-  });
-  return matched;
-};
-
-const extractReturnBlock = (code: string): string => {
-  if (!code) return '';
-  const mainFuncMatch = code.match(/(?:export\s+default\s+function|export\s+function|export\s+const\s+[A-Z]\w+)/);
-  let searchArea = code;
-  if (mainFuncMatch && mainFuncMatch.index !== undefined) {
-    searchArea = code.slice(mainFuncMatch.index);
-  }
-  
-  const returnIdx = searchArea.search(/return\s*\(/);
-  if (returnIdx !== -1) {
-    const openParenIdx = searchArea.indexOf('(', returnIdx);
-    if (openParenIdx !== -1) {
-      let depth = 1;
-      let i = openParenIdx + 1;
-      for (; i < searchArea.length; i++) {
-        if (searchArea[i] === '(') depth++;
-        else if (searchArea[i] === ')') {
-          depth--;
-          if (depth === 0) {
-            return searchArea.slice(openParenIdx + 1, i);
-          }
-        }
-      }
-    }
-  }
-
-  const singleLineMatch = searchArea.match(/return\s+(<[\s\S]*?>);/);
-  if (singleLineMatch && singleLineMatch[1]) {
-    return singleLineMatch[1];
-  }
-  return '';
-};
-
-const extractProps = (attributes: string): Record<string, string> => {
-  const props: Record<string, string> = {};
-  if (!attributes) return props;
-  
-  // Match string props: title="Hello" or title='Hello'
-  const stringPropRegex = /([a-zA-Z0-9_]+)\s*=\s*["']([^"']*)["']/g;
-  let match;
-  while ((match = stringPropRegex.exec(attributes)) !== null) {
-    props[match[1]] = match[2];
-  }
-  
-  // Match expression props: icon={<IconFeature1SVG />} or isHighlighted={true}
-  const exprPropRegex = /([a-zA-Z0-9_]+)\s*=\s*\{([^}]+)\}/g;
-  while ((match = exprPropRegex.exec(attributes)) !== null) {
-    props[match[1]] = match[2].trim();
-  }
-
-  // Match boolean shorthand props: isHighlighted
-  const words = attributes.match(/\b[a-zA-Z0-9_]+\b/g);
-  if (words) {
-    words.forEach(w => {
-      const pattern = new RegExp(`\\b${w}\\b\\s*=`);
-      if (!pattern.test(attributes) && w !== 'class' && w !== 'className' && w !== 'style' && w !== 'id') {
-        props[w] = 'true';
-      }
-    });
-  }
-  
-  return props;
-};
-
-const extractLocalVariables = (fileContent: string): Record<string, string> => {
-  const vars: Record<string, string> = {};
-  if (!fileContent) return vars;
-  
-  // Match const name = "value"; or let name = 'value';
-  const varRegex = /(?:const|let|var)\s+([a-zA-Z0-9_]+)\s*=\s*["']([^"']*)["']/g;
-  let match;
-  while ((match = varRegex.exec(fileContent)) !== null) {
-    vars[match[1]] = match[2];
-  }
-  
-  return vars;
-};
-
-const extractLocalComponentReturn = (fileContent: string, componentName: string): string => {
-  const regex = new RegExp(`(?:function|const|let)\\s+${componentName}\\b`);
-  const match = fileContent.match(regex);
-  if (!match || match.index === undefined) return '';
-  
-  const searchArea = fileContent.slice(match.index);
-  
-  // Try to find standard return (...) block
-  const returnMatch = searchArea.match(/return\s*\(\s*([\s\S]*?)\s*\)/);
-  if (returnMatch) return returnMatch[1];
-  
-  // Try to find standard return ... without parens (single line)
-  const returnSingleLine = searchArea.match(/return\s+(<[\s\S]*?>);/);
-  if (returnSingleLine) return returnSingleLine[1];
-
-  // Try to find arrow function direct return: const Component = () => ( ... )
-  const arrowIndex = searchArea.indexOf('=>');
-  if (arrowIndex !== -1 && arrowIndex < 200) {
-    const postArrow = searchArea.slice(arrowIndex + 2).trim();
-    if (postArrow.startsWith('(')) {
-      let depth = 0;
-      let i = 0;
-      for (; i < postArrow.length; i++) {
-        if (postArrow[i] === '(') depth++;
-        else if (postArrow[i] === ')') {
-          depth--;
-          if (depth === 0) break;
-        }
-      }
-      return postArrow.slice(1, i).trim();
-    } else if (postArrow.startsWith('<')) {
-      const tagMatch = postArrow.match(/^(<[\s\S]*?>)(?:;|\n|$)/);
-      if (tagMatch) return tagMatch[1];
-    }
-  }
-  
-  return '';
-};
-
-interface JSXNode {
-  type: 'text' | 'tag';
-  content?: string;
-  tagName?: string;
-  attributes?: string;
-  children?: string;
-}
-
-const parseJSXNodes = (jsx: string): JSXNode[] => {
-  const nodes: JSXNode[] = [];
-  let i = 0;
-  
-  while (i < jsx.length) {
-    const nextTagIndex = jsx.indexOf('<', i);
-    if (nextTagIndex === -1) {
-      nodes.push({ type: 'text', content: jsx.slice(i) });
-      break;
-    }
-    
-    if (nextTagIndex > i) {
-      nodes.push({ type: 'text', content: jsx.slice(i, nextTagIndex) });
-      i = nextTagIndex;
-    }
-    
-    if (jsx.startsWith('<!--', i)) {
-      const commentEnd = jsx.indexOf('-->', i);
-      if (commentEnd === -1) {
-        nodes.push({ type: 'text', content: jsx.slice(i) });
-        break;
-      }
-      nodes.push({ type: 'text', content: jsx.slice(i, commentEnd + 3) });
-      i = commentEnd + 3;
-      continue;
-    }
-    
-    if (jsx[i + 1] === '/') {
-      const tagEnd = jsx.indexOf('>', i);
-      if (tagEnd === -1) {
-        nodes.push({ type: 'text', content: jsx.slice(i) });
-        break;
-      }
-      nodes.push({ type: 'text', content: jsx.slice(i, tagEnd + 1) });
-      i = tagEnd + 1;
-      continue;
-    }
-    
-    const tagMatch = jsx.slice(i).match(/^<([a-zA-Z0-9.:_-]+)/);
-    if (!tagMatch) {
-      nodes.push({ type: 'text', content: '<' });
-      i++;
-      continue;
-    }
-    
-    const tagName = tagMatch[1];
-    let tagStart = i;
-    i += tagMatch[0].length;
-    
-    let attributes = '';
-    let inQuote = false;
-    let quoteChar = '';
-    let braceDepth = 0;
-    let isSelfClosing = false;
-    
-    while (i < jsx.length) {
-      const char = jsx[i];
-      
-      if (!inQuote && braceDepth === 0) {
-        if (char === '"' || char === "'") {
-          inQuote = true;
-          quoteChar = char;
-        } else if (char === '{') {
-          braceDepth = 1;
-        } else if (char === '/' && jsx[i + 1] === '>') {
-          isSelfClosing = true;
-          i += 2;
-          break;
-        } else if (char === '>') {
-          i++;
-          break;
-        }
-      } else if (inQuote) {
-        if (char === quoteChar) {
-          inQuote = false;
-        }
-      } else if (braceDepth > 0) {
-        if (char === '{') braceDepth++;
-        else if (char === '}') braceDepth--;
-      }
-      
-      attributes += char;
-      i++;
-    }
-    
-    if (isSelfClosing) {
-      nodes.push({ type: 'tag', tagName, attributes, children: '' });
-      continue;
-    }
-    
-    let depth = 1;
-    let childrenStart = i;
-    let childrenEnd = i;
-    
-    while (i < jsx.length) {
-      if (jsx[i] === '<') {
-        if (jsx[i + 1] === '/') {
-          const closeMatch = jsx.slice(i).match(/^<\/([a-zA-Z0-9.:_-]+)>/);
-          if (closeMatch && closeMatch[1] === tagName) {
-            depth--;
-            if (depth === 0) {
-              childrenEnd = i;
-              i += closeMatch[0].length;
-              break;
-            }
-          }
-        } else {
-          const openMatch = jsx.slice(i).match(/^<([a-zA-Z0-9.:_-]+)\b/);
-          if (openMatch && openMatch[1] === tagName) {
-            depth++;
-          }
-        }
-      }
-      i++;
-    }
-    
-    if (depth > 0) {
-      nodes.push({ type: 'text', content: jsx.slice(tagStart, childrenStart) });
-      i = childrenStart;
-      continue;
-    }
-    
-    const children = jsx.slice(childrenStart, childrenEnd);
-    nodes.push({ type: 'tag', tagName, attributes, children });
-  }
-  
-  return nodes;
-};
-
-const resolveJSX = (
-  jsx: string,
-  currentFile: { path: string; content: string } | null,
-  files: Array<{ path: string; content: string }>,
-  depth = 0
-): string => {
-  if (depth > 6) return '';
-  if (!jsx) return '';
-
-  // Parse imports map
-  const importsMap: Record<string, string> = {};
-  if (currentFile) {
-    const importRegex = /import\s+([\w+\s*,{}]+)\s+from\s+['"]([^'"]+)['"]/g;
-    let match;
-    while ((match = importRegex.exec(currentFile.content)) !== null) {
-      const importSource = match[2];
-      const importSpecifier = match[1].trim();
-      if (importSpecifier.startsWith('{')) {
-        const names = importSpecifier.replace(/[{}]/g, '').split(',');
-        names.forEach(n => {
-          const name = n.trim().split(' as ')[0].trim();
-          if (name) importsMap[name] = importSource;
-        });
-      } else {
-        const name = importSpecifier.replace(/\*\s+as\s+/, '').split(',')[0].trim();
-        if (name) importsMap[name] = importSource;
-      }
-    }
-  }
-
-  // Handle map loops
-  let resolved = jsx;
-  const mapRegex = /\{\s*([a-zA-Z0-9_]+)\.map\(\s*\(\s*([a-zA-Z0-9_]+)\s*(?:,\s*([a-zA-Z0-9_]+)\s*)?\)\s*=>\s*(?:\(\s*([\s\S]*?)\s*\)|([\s\S]*?))\s*\)\s*\}/g;
-  resolved = resolved.replace(mapRegex, (fullMatch: string, arrayName: string, itemName: string, indexName: string | undefined, template1: string | undefined, template2: string | undefined) => {
-    const templateJSX = template1 || template2 || '';
-    const array = parseArrayLiteral(currentFile?.content || '', arrayName);
-    
-    if (!array || array.length === 0) {
-      return resolveJSX(templateJSX, currentFile, files, depth + 1);
-    }
-    
-    let result = '';
-    array.forEach((item: any, index: number) => {
-      let instance = templateJSX;
-      const fieldRegex = new RegExp(`\\{\\s*${itemName}\\.([a-zA-Z0-9_]+)\\s*\\}`, 'g');
-      instance = instance.replace(fieldRegex, (m: string, fieldName: string) => {
-        return item[fieldName] !== undefined ? item[fieldName] : '';
-      });
-
-      if (indexName) {
-        const idxRegex = new RegExp(`\\{\\s*${indexName}\\s*\\}`, 'g');
-        instance = instance.replace(idxRegex, String(index));
-      }
-
-      const ternaryRegex = new RegExp(`\\{\\s*${itemName}\\.([a-zA-Z0-9_]+)\\s*\\?\\s*['"]([^'"]*)['"]\\s*:\\s*['"]([^'"]*)['"]\\s*\\}`, 'g');
-      instance = instance.replace(ternaryRegex, (m: string, fieldName: string, val1: string, val2: string) => {
-        return item[fieldName] ? val1 : val2;
-      });
-
-      const conditionalRegex = new RegExp(`\\{\\s*${itemName}\\.([a-zA-Z0-9_]+)\\s*\\?\\s*([\\s\\S]*?)\\s*:\\s*(?:null|undefined)\\s*\\}`, 'g');
-      instance = instance.replace(conditionalRegex, (m: string, fieldName: string, trueBlock: string) => {
-        return item[fieldName] ? trueBlock : '';
-      });
-
-      result += resolveJSX(instance, currentFile, files, depth + 1);
-    });
-    return result;
-  });
-
-  // Resolve JSX components and HTML tags
-  const nodes = parseJSXNodes(resolved);
-  const resolvedNodes = nodes.map(node => {
-    if (node.type === 'text') {
-      return node.content;
-    }
-
-    const TagName = node.tagName!;
-    const attributes = node.attributes!;
-    const children = node.children!;
-
-    // Strip Framer Motion prefix (motion.div -> div, motion.section -> section, etc.)
-    let cleanTagName = TagName;
-    if (TagName.startsWith('motion.')) {
-      cleanTagName = TagName.slice(7);
-    }
-
-    // Convert Next.js Image component to standard img tag
-    if (cleanTagName === 'Image' || cleanTagName === 'img') {
-      const srcMatch = attributes.match(/src=\s*\{?["']?([^"'}]+)["']?\}?/);
-      const src = srcMatch ? srcMatch[1] : '';
-      const altMatch = attributes.match(/alt=\s*\{?["']?([^"'}]+)["']?\}?/);
-      const alt = altMatch ? altMatch[1] : '';
-      
-      const classNameMatch = attributes.match(/className=\s*\{?["']?([^"'}]+)["']?\}?/);
-      const cls = classNameMatch ? classNameMatch[1] : '';
-      
-      return `<img src="${src}" alt="${alt}" class="${cls}" style="object-fit: cover; width: 100%; height: 100%;" />`;
-    }
-
-    const isStandardHtml = cleanTagName[0] === cleanTagName[0].toLowerCase();
-
-    if (isStandardHtml) {
-      const resolvedChildren = children ? resolveJSX(children, currentFile, files, depth + 1) : '';
-      const closedTag = children === '' && !attributes.includes('children') ? ' />' : `>${resolvedChildren}</${cleanTagName}>`;
-      const cleanedAttrs = attributes
-        .replace(/className=/g, 'class=')
-        .replace(/onClick=\{[^}]+\}/g, '')
-        .replace(/onChange=\{[^}]+\}/g, '')
-        .replace(/onSubmit=\{[^}]+\}/g, '');
-      return `<${cleanTagName}${cleanedAttrs}${closedTag}`;
-    }
-
-    const resolvedChildren = children ? resolveJSX(children, currentFile, files, depth + 1) : '';
-
-    if (uiComponentsMap[cleanTagName]) {
-      return uiComponentsMap[cleanTagName](attributes, resolvedChildren);
-    }
-
-    if (importsMap[cleanTagName]) {
-      const matchedFile = findFileByImport(cleanTagName, importsMap[cleanTagName], files);
-      if (matchedFile) {
-        let returnBlock = extractReturnBlock(matchedFile.content);
-        if (resolvedChildren) {
-          returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, resolvedChildren);
-        } else {
-          returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, '');
-        }
-
-        // Pass props
-        const props = extractProps(attributes);
-        Object.keys(props).forEach(propName => {
-          const propValue = props[propName];
-          const resolvedVal = resolveJSX(propValue, currentFile, files, depth + 1);
-          const propRegex = new RegExp(`\\{\\s*(?:props\\.)?${propName}\\s*\\}`, 'g');
-          returnBlock = returnBlock.replace(propRegex, resolvedVal);
-        });
-
-        // Resolve local variables
-        const localVars = extractLocalVariables(matchedFile.content);
-        Object.keys(localVars).forEach(varName => {
-          const varValue = localVars[varName];
-          const varRegex = new RegExp(`\\{\\s*${varName}\\s*\\}`, 'g');
-          returnBlock = returnBlock.replace(varRegex, varValue);
-        });
-
-        return resolveJSX(returnBlock, matchedFile, files, depth + 1);
-      }
-    }
-
-    const isLocalComponent = currentFile && (
-      currentFile.content.includes(`function ${cleanTagName}`) ||
-      currentFile.content.includes(`const ${cleanTagName}`) ||
-      currentFile.content.includes(`let ${cleanTagName}`)
-    );
-
-    if (isLocalComponent) {
-      let returnBlock = extractLocalComponentReturn(currentFile.content, cleanTagName);
-      if (returnBlock) {
-        if (resolvedChildren) {
-          returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, resolvedChildren);
-        } else {
-          returnBlock = returnBlock.replace(/\{\s*children\s*\}/g, '');
-        }
-
-        // Pass props
-        const props = extractProps(attributes);
-        Object.keys(props).forEach(propName => {
-          const propValue = props[propName];
-          const resolvedVal = resolveJSX(propValue, currentFile, files, depth + 1);
-          const propRegex = new RegExp(`\\{\\s*(?:props\\.)?${propName}\\s*\\}`, 'g');
-          returnBlock = returnBlock.replace(propRegex, resolvedVal);
-        });
-
-        // Resolve local variables
-        const localVars = extractLocalVariables(currentFile.content);
-        Object.keys(localVars).forEach(varName => {
-          const varValue = localVars[varName];
-          const varRegex = new RegExp(`\\{\\s*${varName}\\s*\\}`, 'g');
-          returnBlock = returnBlock.replace(varRegex, varValue);
-        });
-
-        return resolveJSX(returnBlock, currentFile, files, depth + 1);
-      }
-    }
-
-    return resolvedChildren || `<div class="p-4 border border-zinc-800 text-zinc-500 rounded text-center text-xs font-mono">&lt;${cleanTagName} /&gt;</div>`;
-  });
-
-  resolved = resolvedNodes.join('');
-
-  // Resolve local variables from currentFile for final text elements
-  if (currentFile) {
-    const localVars = extractLocalVariables(currentFile.content);
-    Object.keys(localVars).forEach(varName => {
-      const varValue = localVars[varName];
-      const varRegex = new RegExp(`\\{\\s*${varName}\\s*\\}`, 'g');
-      resolved = resolved.replace(varRegex, varValue);
-    });
-  }
-
-  // Clean up remaining React/JS curly brace expressions
-  resolved = resolved.replace(/\{\s*new\s+Date\(\)\.getFullYear\(\)\s*\}/g, String(new Date().getFullYear()));
-  resolved = resolved.replace(/\{\s*[^?}]+\?\s*['"]([^'"]*)['"]\s*:\s*['"]([^'"]*)['"]\s*\}/g, '$2');
-  resolved = resolved.replace(/\{\s*[^}&&]+&&\s*([\s\S]*?)\s*\}/g, '');
-  resolved = resolved.replace(/\{\s*[a-zA-Z0-9_.]+(?:\?\.[a-zA-Z0-9_.]+)*\s*\}/g, '');
-  resolved = resolved.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
-
-  return resolved;
-};
-
 export default function PreviewPanel({
   files,
   inspectMode,
@@ -575,14 +42,10 @@ export default function PreviewPanel({
   }
 
   const compileToHTML = (code: string): string => {
-    if (!code) return ''
-
-    const primaryFile =
-      files.find(f => f.path.toLowerCase().endsWith('page.tsx') || f.path.toLowerCase().endsWith('page.html')) ||
-      files.find(f => f.path.toLowerCase().endsWith('index.html')) ||
-      files[0];
-
-    const resolvedBody = resolveJSX(extractReturnBlock(code), primaryFile || null, files);
+    // Escaped JSON serializer to inject files safely in the script tag without parsing errors
+    const escapedFilesJson = JSON.stringify(files)
+      .replace(/</g, '\\u003c')
+      .replace(/>/g, '\\u003e');
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -611,9 +74,514 @@ export default function PreviewPanel({
     body { background: #050505; color: #e5e5e5; font-family: 'Inter', sans-serif; margin: 0; }
     .inspect-hover { outline: 2px solid rgba(99,102,241,0.5) !important; outline-offset: -1px; cursor: crosshair !important; }
   </style>
+
+  <!-- Load React/ReactDOM 19 ESM from CDN, Babel Standalone, and Lucide Icons -->
+  <script type="module">
+    import React from 'https://esm.sh/react@19';
+    import * as ReactDOM from 'https://esm.sh/react-dom@19/client';
+    window.React = React;
+    window.ReactDOM = ReactDOM;
+  <\/script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin><\/script>
+  <script src="https://unpkg.com/lucide@latest"><\/script>
 </head>
 <body class="p-8 min-h-screen">
-  <div id="preview-root">${resolvedBody}</div>
+  <div id="preview-root">
+    <div class="flex flex-col items-center justify-center min-h-[200px] gap-2">
+      <div class="h-6 w-6 rounded-full border-2 border-zinc-850 border-t-indigo-500 animate-spin"><\/div>
+      <span class="text-xs text-zinc-500">Initializing preview environment...<\/span>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // 1. Files module registry
+      window.__files = ${escapedFilesJson};
+
+      // 2. Setup Mock Supabase Client backed by localStorage
+      function createMockSupabase() {
+        const getLocalStorageData = (table) => {
+          try {
+            const data = localStorage.getItem('supabase_mock_' + table);
+            return data ? JSON.parse(data) : [];
+          } catch (e) {
+            return [];
+          }
+        };
+
+        const setLocalStorageData = (table, data) => {
+          try {
+            localStorage.setItem('supabase_mock_' + table, JSON.stringify(data));
+          } catch (e) {}
+        };
+
+        const builder = (table, queryState = {}) => {
+          return {
+            select: function(columns = '*') {
+              if (queryState.action !== 'insert' && queryState.action !== 'update' && queryState.action !== 'delete') {
+                queryState.action = 'select';
+              }
+              return this;
+            },
+            insert: function(values) {
+              queryState.action = 'insert';
+              queryState.values = values;
+              return this;
+            },
+            update: function(values) {
+              queryState.action = 'update';
+              queryState.values = values;
+              return this;
+            },
+            delete: function() {
+              queryState.action = 'delete';
+              return this;
+            },
+            eq: function(column, value) {
+              queryState.filters = queryState.filters || [];
+              queryState.filters.push({ column, operator: 'eq', value });
+              return this;
+            },
+            match: function(queryMap) {
+              queryState.filters = queryState.filters || [];
+              Object.entries(queryMap).forEach(([column, value]) => {
+                queryState.filters.push({ column, operator: 'eq', value });
+              });
+              return this;
+            },
+            order: function(column, { ascending = true } = {}) {
+              queryState.order = { column, ascending };
+              return this;
+            },
+            limit: function(count) {
+              queryState.limit = count;
+              return this;
+            },
+            single: function() {
+              queryState.single = true;
+              return this;
+            },
+            then: function(onfulfilled, onrejected) {
+              let data = getLocalStorageData(table);
+              let error = null;
+
+              try {
+                if (queryState.action === 'select') {
+                  if (queryState.filters) {
+                    for (const filter of queryState.filters) {
+                      if (filter.operator === 'eq') {
+                        data = data.filter(row => row[filter.column] == filter.value);
+                      }
+                    }
+                  }
+                  if (queryState.order) {
+                    const { column, ascending } = queryState.order;
+                    data.sort((a, b) => {
+                      if (a[column] < b[column]) return ascending ? -1 : 1;
+                      if (a[column] > b[column]) return ascending ? 1 : -1;
+                      return 0;
+                    });
+                  }
+                  if (queryState.limit !== undefined) {
+                    data = data.slice(0, queryState.limit);
+                  }
+                } else if (queryState.action === 'insert') {
+                  const rowsToInsert = Array.isArray(queryState.values) ? queryState.values : [queryState.values];
+                  const newRows = rowsToInsert.map(row => ({
+                    id: Math.random().toString(36).substring(2, 11),
+                    created_at: new Date().toISOString(),
+                    ...row
+                  }));
+                  data = [...data, ...newRows];
+                  setLocalStorageData(table, data);
+                  data = newRows;
+                } else if (queryState.action === 'update') {
+                  data = data.map(row => {
+                    let match = true;
+                    if (queryState.filters) {
+                      for (const filter of queryState.filters) {
+                        if (filter.operator === 'eq' && row[filter.column] != filter.value) {
+                          match = false;
+                        }
+                      }
+                    }
+                    if (match) {
+                      return { ...row, ...queryState.values };
+                    }
+                    return row;
+                  });
+                  setLocalStorageData(table, data);
+                } else if (queryState.action === 'delete') {
+                  data = data.filter(row => {
+                    let match = true;
+                    if (queryState.filters) {
+                      for (const filter of queryState.filters) {
+                        if (filter.operator === 'eq' && row[filter.column] != filter.value) {
+                          match = false;
+                        }
+                      }
+                    }
+                    return !match;
+                  });
+                  setLocalStorageData(table, data);
+                }
+
+                if (queryState.single && Array.isArray(data)) {
+                  data = data[0] || null;
+                }
+              } catch (e) {
+                error = e;
+              }
+
+              const result = { data, error };
+              return Promise.resolve(result).then(onfulfilled, onrejected);
+            }
+          };
+        };
+
+        return {
+          from: (table) => builder(table),
+          auth: {
+            signUp: ({ email, password }) => {
+              return Promise.resolve({ data: { user: { email, id: 'mock-uid' } }, error: null });
+            },
+            signInWithPassword: ({ email, password }) => {
+              return Promise.resolve({ data: { user: { email, id: 'mock-uid' } }, error: null });
+            },
+            signOut: () => Promise.resolve({ error: null }),
+            getUser: () => Promise.resolve({ data: { user: { email: 'mock@example.com', id: 'mock-uid' } }, error: null }),
+            onAuthStateChange: (callback) => {
+              callback('SIGNED_IN', { email: 'mock@example.com', id: 'mock-uid' });
+              return { data: { subscription: { unsubscribe: () => {} } } };
+            }
+          }
+        };
+      }
+      window.createMockSupabase = createMockSupabase;
+
+      // 3. Setup dynamic loader for lucide-react (mapping components to native SVGs)
+      const LucideReactMock = new Proxy({}, {
+        get(target, name) {
+          if (name === '__esModule') return true;
+          return React.forwardRef((props, ref) => {
+            const { size = 24, stroke = 'currentColor', color, strokeWidth = 2, fill = 'none', className, children, ...rest } = props;
+            const finalStroke = color || stroke;
+
+            const getIconData = (iconName) => {
+              if (!window.lucide) return null;
+              if (window.lucide[iconName]) return window.lucide[iconName];
+
+              const camelName = iconName.charAt(0).toUpperCase() + iconName.slice(1);
+              if (window.lucide[camelName]) return window.lucide[camelName];
+
+              const lowerName = iconName.toLowerCase();
+              if (window.lucide[lowerName]) return window.lucide[lowerName];
+
+              const kebabName = iconName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+              if (window.lucide[kebabName]) return window.lucide[kebabName];
+
+              if (window.lucide.icons) {
+                if (window.lucide.icons[iconName]) return window.lucide.icons[iconName];
+                if (window.lucide.icons[camelName]) return window.lucide.icons[camelName];
+                if (window.lucide.icons[lowerName]) return window.lucide.icons[lowerName];
+                if (window.lucide.icons[kebabName]) return window.lucide.icons[kebabName];
+              }
+              return null;
+            };
+
+            const iconData = getIconData(name);
+            if (!iconData) {
+              return React.createElement(
+                'svg',
+                {
+                  ref,
+                  width: size,
+                  height: size,
+                  viewBox: '0 0 24 24',
+                  fill: fill,
+                  stroke: finalStroke,
+                  strokeWidth: strokeWidth,
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                  className: 'lucide lucide-fallback ' + (className || ''),
+                  ...rest
+                },
+                React.createElement('circle', { cx: '12', cy: '12', r: '10' }),
+                React.createElement('line', { x1: '12', y1: '8', x2: '12', y2: '12' }),
+                React.createElement('line', { x1: '12', y1: '16', x2: '12.01', y2: '16' })
+              );
+            }
+
+            const reactChildren = iconData.map((node, index) => {
+              const [tagName, attributes] = node;
+              const cleanAttrs = { ...attributes };
+              if (cleanAttrs.class) {
+                cleanAttrs.className = cleanAttrs.class;
+                delete cleanAttrs.class;
+              }
+              return React.createElement(tagName, { ...cleanAttrs, key: index });
+            });
+
+            return React.createElement(
+              'svg',
+              {
+                ref,
+                width: size,
+                height: size,
+                viewBox: '0 0 24 24',
+                fill: fill,
+                stroke: finalStroke,
+                strokeWidth: strokeWidth,
+                strokeLinecap: 'round',
+                strokeLinejoin: 'round',
+                className: 'lucide lucide-' + name.toLowerCase() + ' ' + (className || ''),
+                ...rest
+              },
+              ...reactChildren,
+              ...(children ? (Array.isArray(children) ? children : [children]) : [])
+            );
+          });
+        }
+      });
+      window.LucideReactMock = LucideReactMock;
+
+      // 4. Setup mock for framer-motion to avoid heavy UMD bundle dependency
+      const motionMock = new Proxy({}, {
+        get(target, prop) {
+          return React.forwardRef((props, ref) => {
+            const { animate, initial, exit, transition, variants, ...rest } = props;
+            return React.createElement(prop, { ...rest, ref });
+          });
+        }
+      });
+
+      // 5. Client-side Module Registry and Path Resolver
+      function resolvePath(currentPath, importPath) {
+        if (!importPath.startsWith('.') && !importPath.startsWith('/') && !importPath.startsWith('@/')) {
+          return importPath;
+        }
+        if (importPath.startsWith('@/')) {
+          return importPath.slice(2);
+        }
+        const parts = currentPath.split('/');
+        parts.pop(); // remove file name
+        
+        const importParts = importPath.split('/');
+        for (const part of importParts) {
+          if (part === '.') {
+            continue;
+          } else if (part === '..') {
+            parts.pop();
+          } else {
+            parts.push(part);
+          }
+        }
+        return parts.join('/');
+      }
+
+      function findFile(resolvedPath) {
+        const cleanPath = resolvedPath.replace(/^\/+/, '');
+        const extensions = ['', '.tsx', '.ts', '.jsx', '.js', '/index.tsx', '/index.ts', '/index.jsx', '/index.js'];
+        for (const ext of extensions) {
+          const target = (cleanPath + ext).toLowerCase();
+          let found = window.__files.find(f => {
+            const p = f.path.replace(/^\/+/, '').toLowerCase();
+            if (p === target) return true;
+            const pNoSrc = p.replace(/^src\//, '');
+            const targetNoSrc = target.replace(/^src\//, '');
+            if (pNoSrc === targetNoSrc) return true;
+            if (p.endsWith(targetNoSrc)) return true;
+            return false;
+          });
+          if (found) return found;
+        }
+        return null;
+      }
+
+      const moduleCache = {};
+
+      function requireModule(importPath, currentPath) {
+        if (importPath === 'react') {
+          return window.React;
+        }
+        if (importPath === 'react-dom') {
+          return window.ReactDOM;
+        }
+        if (importPath === 'react-dom/client') {
+          return {
+            createRoot: window.ReactDOM.createRoot,
+            hydrateRoot: window.ReactDOM.hydrateRoot
+          };
+        }
+        if (importPath === 'lucide-react') {
+          return window.LucideReactMock;
+        }
+        if (importPath === '@supabase/supabase-js') {
+          return {
+            createClient: (url, key) => window.createMockSupabase()
+          };
+        }
+        if (importPath === 'framer-motion') {
+          return {
+            motion: motionMock,
+            AnimatePresence: ({ children }) => children,
+            LayoutGroup: ({ children }) => children
+          };
+        }
+        if (importPath === 'canvas-confetti') {
+          return () => console.log('Confetti burst!');
+        }
+
+        const resolved = resolvePath(currentPath, importPath);
+
+        if (importPath.endsWith('.css')) {
+          const cssFile = findFile(resolved);
+          if (cssFile) {
+            const style = document.createElement('style');
+            style.innerHTML = cssFile.content;
+            document.head.appendChild(style);
+          }
+          return {};
+        }
+
+        if (moduleCache[resolved]) {
+          return moduleCache[resolved].exports;
+        }
+
+        const file = findFile(resolved);
+        if (!file) {
+          console.warn('Module not found:', importPath, 'resolved as:', resolved);
+          return new Proxy({}, {
+            get(target, prop) {
+              if (prop === '$$typeof') return undefined;
+              if (typeof prop === 'string' && prop[0] === prop[0].toUpperCase()) {
+                return function DummyComponent(props) {
+                  return React.createElement('div', { style: { border: '1px dashed #ef4444', padding: '8px', color: '#ef4444', margin: '4px', fontSize: '12px' } }, prop + ' not found');
+                };
+              }
+              return undefined;
+            }
+          });
+        }
+
+        // Setup jsx/runtime fallback in case Babel transforms JSX to use automatic imports
+        if (importPath === 'react/jsx-runtime' || importPath === 'react/jsx-dev-runtime') {
+          return {
+            jsx: (type, props, key) => window.React.createElement(type, { ...props, key }),
+            jsxs: (type, props, key) => window.React.createElement(type, { ...props, key }),
+            jsxDEV: (type, props, key) => window.React.createElement(type, { ...props, key }),
+          };
+        }
+
+        let compiled;
+        try {
+          compiled = Babel.transform(file.content, {
+            presets: [
+              ['env', { modules: 'commonjs' }],
+              ['react', { runtime: 'classic' }],
+              'typescript'
+            ],
+            filename: file.path
+          }).code;
+        } catch (err) {
+          console.error('Babel compilation error in ' + file.path + ':', err);
+          throw err;
+        }
+
+        const module = { exports: {} };
+        const exports = module.exports;
+        const localRequire = (p) => requireModule(p, file.path);
+
+        try {
+          const run = new Function(
+            'require',
+            'module',
+            'exports',
+            'React',
+            'useState',
+            'useEffect',
+            'useRef',
+            'useMemo',
+            'useCallback',
+            compiled
+          );
+          run(
+            localRequire,
+            module,
+            exports,
+            window.React,
+            window.React.useState,
+            window.React.useEffect,
+            window.React.useRef,
+            window.React.useMemo,
+            window.React.useCallback
+          );
+        } catch (err) {
+          console.error('Runtime error in module ' + file.path + ':', err);
+          throw err;
+        }
+
+        moduleCache[resolved] = module;
+        return module.exports;
+      }
+
+      // 6. Mount primary component to #preview-root when environment is fully loaded
+      function startRunner() {
+        if (!window.React || !window.ReactDOM || !window.Babel || !window.lucide) {
+          setTimeout(startRunner, 50);
+          return;
+        }
+
+        const primaryFile = window.__files.find(f => 
+          f.path.toLowerCase().endsWith('page.tsx') || 
+          f.path.toLowerCase().endsWith('page.jsx') || 
+          f.path.toLowerCase().endsWith('page.js') || 
+          f.path.toLowerCase().endsWith('app.tsx') || 
+          f.path.toLowerCase().endsWith('app.jsx') || 
+          f.path.toLowerCase().endsWith('app.js')
+        ) || window.__files[0];
+
+        if (!primaryFile) {
+          const container = document.getElementById('preview-root');
+          if (container) {
+            container.innerHTML = '<div style="padding: 20px; color: #ef4444;">No entry files found.<\/div>';
+          }
+          return;
+        }
+
+        try {
+          const exports = requireModule(primaryFile.path, '');
+          const Component = exports.default || exports.App || exports.Page || Object.values(exports).find(val => typeof val === 'function');
+          
+          if (Component) {
+            const container = document.getElementById('preview-root');
+            container.innerHTML = '';
+            const root = ReactDOM.createRoot(container);
+            root.render(React.createElement(Component));
+          } else {
+            throw new Error('No default or functional component exported from ' + primaryFile.path);
+          }
+        } catch (err) {
+          console.error('Error mounting primary component:', err);
+          const container = document.getElementById('preview-root');
+          if (container) {
+            container.innerHTML = 
+              '<div style="padding: 20px; color: #ef4444; font-family: monospace; background: #1a1a1a; border-radius: 8px; border: 1px solid #ef4444; margin: 16px;">' +
+                '<h3 style="margin-top: 0; font-size: 14px; font-weight: bold;">Failed to compile or mount preview:<\/h3>' +
+                '<pre style="white-space: pre-wrap; font-size: 11px; margin-top: 8px;">' + (err.stack || err.message || err) + '<\/pre>' +
+              '<\/div>';
+          }
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startRunner);
+      } else {
+        startRunner();
+      }
+    })();
+  <\/script>
+
   <script>
     if (${inspectMode}) {
       document.addEventListener('mouseover', function(e) {
@@ -667,7 +635,7 @@ export default function PreviewPanel({
   const showBuilding = isBuilding && !hasFiles
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0e] rounded-lg overflow-hidden border border-[#141417]">
+    <div className="flex flex-col h-full bg-[#0a0a0e]/60 backdrop-blur-md rounded-lg overflow-hidden border border-[#141417]/80 shadow-[0_0_20px_rgba(99,102,241,0.03)] hover:shadow-[0_0_30px_rgba(99,102,241,0.07)] transition-all duration-300">
       {/* Browser chrome */}
       <div className="flex items-center justify-between px-4 h-9 bg-[#0d0d11] border-b border-[#141417] shrink-0">
         {/* Traffic lights */}
@@ -787,7 +755,7 @@ export default function PreviewPanel({
               ref={iframeRef}
               title="Karnex Forge Preview"
               className="w-full h-full border-0"
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-same-origin"
             />
           </div>
         )}

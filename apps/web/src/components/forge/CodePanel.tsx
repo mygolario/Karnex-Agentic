@@ -122,7 +122,7 @@ export default function CodePanel({ files, selectedFileIdx, onSelectFile }: Code
   }
 
   return (
-    <div className="flex h-full bg-[#0a0a0e] rounded-lg overflow-hidden border border-[#141417]">
+    <div className="flex h-full bg-[#0a0a0e]/60 backdrop-blur-md rounded-lg overflow-hidden border border-[#141417]/80 shadow-[0_0_20px_rgba(99,102,241,0.03)] hover:shadow-[0_0_30px_rgba(99,102,241,0.07)] transition-all duration-300">
       {/* File tree sidebar */}
       <div className="w-[160px] bg-[#09090b] border-r border-[#141417] flex flex-col shrink-0">
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#141417]">
