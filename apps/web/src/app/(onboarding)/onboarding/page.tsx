@@ -52,34 +52,23 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
 
   const savedContext = contextMemory?.value as { pain_description?: string, industry_context?: string } | null
 
-  // Fetch selected hypothesis to verify if they can access step 3
-  const { data: hypothesisMemory } = await supabase
+  // Fetch onboarding progress state from founder_memory
+  const { data: progressMemory } = await supabase
     .from('founder_memory')
     .select('value')
     .eq('founder_id', user.id)
     .eq('namespace', 'onboarding')
-    .eq('key', 'selected_hypothesis')
+    .eq('key', 'onboarding_progress_state')
     .maybeSingle()
-  const hasSelectedHypothesis = !!hypothesisMemory?.value
 
-  // Fetch roadmap data to verify if they can access step 4
-  const { data: roadmapMemory } = await supabase
-    .from('founder_memory')
-    .select('value')
-    .eq('founder_id', user.id)
-    .eq('namespace', 'onboarding')
-    .eq('key', 'roadmap_data')
-    .maybeSingle()
-  const hasRoadmap = !!roadmapMemory?.value
+  const progress = progressMemory?.value as { currentStep?: number } | null
+  const combinedSavedStep = Math.max(
+    savedStepValue?.step || 1,
+    progress?.currentStep || 1
+  )
 
   // Determine max allowed step based on completed stages data
-  let maxAllowedStep = 1
-  if (savedContext?.pain_description) {
-    maxAllowedStep = 2
-  }
-  if (hasSelectedHypothesis) {
-    maxAllowedStep = 4 // Allowed to access up to step 4 (roadmap execution) once hypothesis is selected
-  }
+  const maxAllowedStep = Math.max(combinedSavedStep, 1)
 
   const urlStep = params.step ? parseInt(params.step, 10) : undefined
   const urlRunId = params.run_id
@@ -90,7 +79,7 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
 
   if (targetStep === undefined) {
     // If no step is in the URL, redirect to the saved step (bounded by max allowed step)
-    const activeStep = Math.min(savedStep, maxAllowedStep)
+    const activeStep = Math.min(combinedSavedStep, maxAllowedStep)
     redirect(`/onboarding?step=${activeStep}${targetRunId ? `&run_id=${targetRunId}` : ''}`)
   }
 

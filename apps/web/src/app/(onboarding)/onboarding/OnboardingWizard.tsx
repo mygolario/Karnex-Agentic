@@ -27,24 +27,38 @@ export default function OnboardingWizard({ initialName, savedStep, savedContext 
   const [whyContent, setWhyContent] = useState('Personalize your workspace to configure AI agents.')
   const [isSyncing, setIsSyncing] = useState(true)
 
-  // Rehydrate state on mount
+  // Rehydrate state on mount and sync with URL step
+  const isFirstMount = React.useRef(true)
+
   useEffect(() => {
     const init = async () => {
-      setIsSyncing(true)
-      const loaded = await loadProgressFromDb()
-      if (!loaded && initialName) {
-        updateProfile({
-          identity: {
-            ...profile.identity,
-            fullName: initialName,
-            displayName: initialName.split(' ')[0]
-          } as any
-        })
+      if (isFirstMount.current) {
+        setIsSyncing(true)
+        const loaded = await loadProgressFromDb()
+        
+        // If a step is specified in the URL (savedStep), prioritize it!
+        if (savedStep) {
+          setStep(savedStep)
+        } else if (!loaded && initialName) {
+          updateProfile({
+            identity: {
+              ...profile.identity,
+              fullName: initialName,
+              displayName: initialName.split(' ')[0]
+            } as any
+          })
+        }
+        isFirstMount.current = false
+        setIsSyncing(false)
+      } else {
+        // Subsequent URL changes: just sync store step with URL step
+        if (savedStep && savedStep !== currentStep) {
+          setStep(savedStep)
+        }
       }
-      setIsSyncing(false)
     }
     init()
-  }, [initialName])
+  }, [savedStep, initialName])
 
   // Sync URL search params with store step
   useEffect(() => {
