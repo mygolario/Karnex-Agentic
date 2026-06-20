@@ -75,15 +75,11 @@ export default function PreviewPanel({
     .inspect-hover { outline: 2px solid rgba(99,102,241,0.5) !important; outline-offset: -1px; cursor: crosshair !important; }
   </style>
 
-  <!-- Load React/ReactDOM 19 ESM from CDN, Babel Standalone, and Lucide Icons -->
-  <script type="module">
-    import React from 'https://esm.sh/react@19';
-    import * as ReactDOM from 'https://esm.sh/react-dom@19/client';
-    window.React = React;
-    window.ReactDOM = ReactDOM;
-  <\/script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin><\/script>
-  <script src="https://unpkg.com/lucide@latest"><\/script>
+  <!-- Load React/ReactDOM 18 UMD from CDN, Babel Standalone, and Lucide Icons UMD -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body class="p-8 min-h-screen">
   <div id="preview-root">
