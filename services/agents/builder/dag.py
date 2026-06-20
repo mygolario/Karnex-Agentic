@@ -668,7 +668,7 @@ class MultiAgentDAGRunner:
         )
 
         old_content = target_file.content
-        target_str = edits.target_content.strip()
+        target_str = edits.target_content.strip() if (edits and getattr(edits, "target_content", None)) else ""
 
         if target_str and target_str in old_content:
             target_file.content = old_content.replace(edits.target_content, edits.replacement_content)
@@ -678,7 +678,7 @@ class MultiAgentDAGRunner:
                 message=f"QA patched '{offending_file_path}': {edits.explanation}",
             )
         else:
-            logger.warning(f"Heal target not found in {offending_file_path}. Falling back to full regeneration.")
+            logger.warning(f"Heal target not found or invalid in {offending_file_path}. Falling back to full regeneration.")
             await self._regenerate_offending_file(offending_file_path, error_log)
 
     async def _regenerate_offending_file(self, file_path: str, error_log: str):
