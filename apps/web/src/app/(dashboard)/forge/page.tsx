@@ -12,6 +12,8 @@ import SchemaVisualizer from '@/components/forge/SchemaVisualizer'
 import ProjectLauncher from '@/components/forge/ProjectLauncher'
 import ForgeStatusBar from '@/components/forge/ForgeStatusBar'
 import VersionTimeline from '@/components/forge/VersionTimeline'
+import VisualEditModal from '@/components/forge/VisualEditModal'
+
 
 /* ── Types ── */
 
@@ -57,11 +59,12 @@ interface StepState {
 
 function parseLogsToSteps(logs: ChatMessage[], status: string): StepState[] {
   const steps: StepState[] = [
-    { id: 'content', label: 'Phase 1: Content & Copywriting Asset Generation', state: 'pending' },
-    { id: 'schema', label: 'Phase 2: Relational Schema & API Scaffolding', state: 'pending' },
-    { id: 'coding', label: 'Phase 3: Visual UI Coding (Framer Motion + Tailwind)', state: 'pending' },
-    { id: 'compilation', label: 'Phase 4: Sandboxed Compiler & QA Self-Healing', state: 'pending' },
-    { id: 'deploy', label: 'Phase 5: GitHub Sync & Vercel Preview Deploy', state: 'pending' },
+    { id: 'intent', label: 'Stage 1: Intent Crystallization', state: 'pending' },
+    { id: 'architecture', label: 'Stage 2: Architecture Blueprint', state: 'pending' },
+    { id: 'assets', label: 'Stage 3: Visual Asset Pre-Generation', state: 'pending' },
+    { id: 'coding', label: 'Stage 4: Modular Code Scaffolding', state: 'pending' },
+    { id: 'compilation', label: 'Stage 5: Autonomous Compiler Sandbox', state: 'pending' },
+    { id: 'deploy', label: 'Stage 6: Deployment & Git Sync', state: 'pending' },
   ]
 
   if (status === 'error') {
@@ -78,26 +81,33 @@ function parseLogsToSteps(logs: ChatMessage[], status: string): StepState[] {
   let activeIdx = 0
   for (const log of logs) {
     const msg = log.message.toLowerCase()
-    if (msg.includes('copywriting') || msg.includes('asset')) {
+    if (msg.includes('crystallization') || msg.includes('intent spec')) {
       activeIdx = 0
-    } else if (msg.includes('database architect') || msg.includes('architecture plan')) {
+    } else if (msg.includes('architecture blueprint') || msg.includes('designing schema')) {
       steps[0].state = 'done'
       activeIdx = 1
-    } else if (msg.includes('visual ui coder') || msg.includes('scaffolded')) {
+    } else if (msg.includes('asset injection') || msg.includes('brand tokens')) {
       steps[0].state = 'done'
       steps[1].state = 'done'
       activeIdx = 2
-    } else if (msg.includes('sandbox') || msg.includes('compiler') || msg.includes('heal')) {
+    } else if (msg.includes('code generation') || msg.includes('scaffolded')) {
       steps[0].state = 'done'
       steps[1].state = 'done'
       steps[2].state = 'done'
       activeIdx = 3
-    } else if (msg.includes('committing') || msg.includes('github') || msg.includes('deploying')) {
+    } else if (msg.includes('autonomous testing') || msg.includes('compilation') || msg.includes('heal')) {
       steps[0].state = 'done'
       steps[1].state = 'done'
       steps[2].state = 'done'
       steps[3].state = 'done'
       activeIdx = 4
+    } else if (msg.includes('deployment') || msg.includes('committing') || msg.includes('github') || msg.includes('deploying')) {
+      steps[0].state = 'done'
+      steps[1].state = 'done'
+      steps[2].state = 'done'
+      steps[3].state = 'done'
+      steps[4].state = 'done'
+      activeIdx = 5
     }
   }
 
@@ -129,6 +139,9 @@ function ForgeWorkspace() {
   const [inspectMode, setInspectMode] = useState(false)
   const [showCode, setShowCode] = useState(false)
   const [draft, setDraft] = useState('')
+  const [selectedElement, setSelectedElement] = useState<{ selector: string; text: string } | null>(null)
+  const [isVisualEditOpen, setIsVisualEditOpen] = useState(false)
+
 
   // Config
   const [framework, setFramework] = useState('nextjs')
@@ -492,6 +505,19 @@ function ForgeWorkspace() {
     setShowCode(false)
   }
 
+  const handleSaveVisualEdit = (selector: string, updates: { text?: string; bg?: string; color?: string; border?: string }) => {
+    if (!builderOutput) return
+
+    let userPrompt = `Modify element '${selector}'`
+    if (updates.text) userPrompt += ` to have text content: "${updates.text}"`
+    if (updates.bg) userPrompt += ` with background styles: "${updates.bg}"`
+    if (updates.color) userPrompt += ` with text color classes: "${updates.color}"`
+    if (updates.border) userPrompt += ` with border styling: "${updates.border}"`
+
+    handleBuild(userPrompt)
+  }
+
+
   // Computed
   const hasOutput = builderOutput !== null && builderOutput.files.length > 0
   const buildProgress = loading ? 50 : 0
@@ -626,6 +652,8 @@ function ForgeWorkspace() {
 
                       const tag = selector.split(/[.#]/)[0] || 'element'
                       setDraft(`Selected: ${selector} - '${text}' -> Edit this ${tag}...`)
+                      setSelectedElement({ selector, text })
+                      setIsVisualEditOpen(true)
 
                       setShowCode(true)
 
@@ -753,6 +781,15 @@ function ForgeWorkspace() {
         onSelectVersion={(id) => handleLoadBuild(id)}
         onClose={() => setShowVersions(false)}
       />
+
+      {/* Click-to-Select Visual Edit Modal */}
+      <VisualEditModal
+        isOpen={isVisualEditOpen}
+        onClose={() => setIsVisualEditOpen(false)}
+        selectedElement={selectedElement}
+        onSave={handleSaveVisualEdit}
+      />
+
 
       {/* Status bar */}
       <ForgeStatusBar

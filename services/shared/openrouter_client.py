@@ -9,7 +9,10 @@ from langchain_openai import ChatOpenAI
 
 from shared.config import settings
 
-StepRole = Literal["classifier", "fast", "pro", "supervisor"]
+StepRole = Literal[
+    "classifier", "fast", "pro", "supervisor",
+    "intent", "visual", "scaffold", "complex_logic", "debug", "deploy"
+]
 
 _DEFAULT_HEADERS = {
     "HTTP-Referer": "https://karnex.ai",
@@ -120,7 +123,14 @@ def model_from_catalog_entry(
 
     if step_role:
         step_caps: dict = entry.get("step_max_tokens") or {}
-        max_tokens = int(step_caps.get(step_role, global_max))
+        mapped_role = step_role
+        if step_role in ("intent", "supervisor"):
+            mapped_role = "supervisor"
+        elif step_role in ("visual", "complex_logic", "debug", "pro"):
+            mapped_role = "pro"
+        elif step_role in ("scaffold", "deploy", "fast"):
+            mapped_role = "fast"
+        max_tokens = int(step_caps.get(mapped_role, global_max))
     else:
         max_tokens = global_max
 
@@ -145,11 +155,38 @@ def resolve_step_model(
 
     if model_id and model_id in by_id and not auto_model:
         selected = by_id[model_id]
-        if step_role in ("classifier", "fast") and selected.get("role") == "pro" and not max_mode:
+        if step_role in ("classifier", "fast", "scaffold", "deploy") and selected.get("role") == "pro" and not max_mode:
             pass  # fall through to auto-select a cheaper model for fast steps
         else:
             return selected
 
+    # Dynamic routing overrides based on requested stage role
+    if step_role == "intent":
+        for prefer in ("claude-sonnet-4.6-thinking", "gemini-3.1-pro-high"):
+            if prefer in by_id:
+                return by_id[prefer]
+    elif step_role == "visual":
+        for prefer in ("gemini-3.1-pro-high", "claude-sonnet-4.6-thinking"):
+            if prefer in by_id:
+                return by_id[prefer]
+    elif step_role == "complex_logic":
+        for prefer in ("claude-opus-4.6-thinking", "claude-sonnet-4.6-thinking", "gemini-3.1-pro-high"):
+            if prefer in by_id:
+                return by_id[prefer]
+    elif step_role == "debug":
+        for prefer in ("claude-sonnet-4.6-thinking", "gemini-3.1-pro-high"):
+            if prefer in by_id:
+                return by_id[prefer]
+    elif step_role == "scaffold":
+        for prefer in ("karnex-forge-fast-high", "gemini-3.5-flash-high"):
+            if prefer in by_id:
+                return by_id[prefer]
+    elif step_role == "deploy":
+        for prefer in ("karnex-forge-fast-medium", "gemini-3.5-flash-medium"):
+            if prefer in by_id:
+                return by_id[prefer]
+
+    # Fallbacks for standard roles
     if max_mode or step_role in ("supervisor", "pro"):
         for prefer in ("gemini-3.1-pro-high", "claude-sonnet-4.6-thinking", "karnex-forge-fast-high"):
             if prefer in by_id:

@@ -12,7 +12,7 @@ from agents.builder.schemas import BuilderInput, TechStack
 from shared.supabase_client import get_supabase_admin
 
 
-async def test():
+async def run_test():
     print("Testing run_builder...")
     supabase = get_supabase_admin()
 
@@ -65,4 +65,4 @@ async def test():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    asyncio.run(test())
+    asyncio.run(run_test())

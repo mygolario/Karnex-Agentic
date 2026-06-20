@@ -93,6 +93,16 @@ class SelfHealingEdits(BaseModel):
     explanation: str = Field(..., description="Explanation of why this fix solves the compile error.")
 
 
+class IntentSpecification(BaseModel):
+    app_type: str = Field(..., description="Type of app: saas, marketplace, dashboard, etc.")
+    core_features: List[str] = Field(..., description="Key features to build")
+    user_types: List[str] = Field(..., description="Types of users")
+    data_entities: List[str] = Field(..., description="Primary database entities")
+    acceptance_criteria: List[str] = Field(..., description="Testable criteria of done")
+    constraints: List[str] = Field(..., description="What NOT to build in MVP")
+
+
+
 # ---------------------------------------------------------------------------
 # Unsplash Visual Assets Helper
 # ---------------------------------------------------------------------------
@@ -243,17 +253,118 @@ class MultiAgentDAGRunner:
         }
 
     async def run(self) -> BuilderOutput:
-        """Execute the Multi-Agent DAG sequence."""
+        """Execute the 6-Stage Multi-Agent generation sequence."""
         try:
-            await self._run_phase_content()
-            await self._run_phase_schema_planning()
-            await self._run_phase_visual_coding()
-            await self._run_phase_compile_and_heal()
-            output = await self._run_phase_deploy()
+            # Stage 1: Intent Crystallization
+            await self._run_stage_intent_crystallization()
+            # Stage 2: Architecture Blueprint
+            await self._run_stage_architecture_blueprint()
+            # Stage 3: Visual Asset Pre-Generation & Injection
+            await self._run_stage_asset_injection()
+            # Stage 4: Code Generation (Foundation, Data, UI, Integration, Quality)
+            await self._run_stage_code_generation()
+            # Stage 5: Autonomous Testing & QA checks
+            await self._run_stage_autonomous_testing()
+            # Stage 6: Deployment
+            output = await self._run_stage_deploy()
             return output
         except Exception as e:
             logger.exception(f"DAG Execution failed: {e}")
             raise
+
+    async def _run_stage_intent_crystallization(self):
+        await emit_forge_event(
+            self.supabase, self.run_id, event_type="subagent_spawn", sender="system",
+            message="Stage 1/6: Intent Crystallization — Parsing and specifying startup requirements...",
+        )
+        system_prompt = (
+            "You are the Lead Analyst at Karnex. Specialize the user specifications into a detailed Intent spec.\n"
+            "Identify the app type, core features list, user roles, database entities, acceptance criteria, and constraints."
+        )
+        user_prompt = f"Raw Prompt: {self.input_data.specification}\nTask Type: {self.input_data.task_type}"
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("user", user_prompt),
+        ])
+        chain = prompt | self.llm_pro.with_structured_output(IntentSpecification)
+        _input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
+        intent_spec: IntentSpecification = await asyncio.to_thread(
+            lambda: invoke_structured_with_retry(chain, _input)
+        )
+        self.state["intent_spec"] = intent_spec.model_dump()
+        await emit_forge_event(
+            self.supabase, self.run_id, event_type="subagent_progress", sender="system",
+            message=f"Intent spec generated: App Type = {intent_spec.app_type}, Core Features = {', '.join(intent_spec.core_features[:3])}.",
+        )
+
+    async def _run_stage_architecture_blueprint(self):
+        await emit_forge_event(
+            self.supabase, self.run_id, event_type="subagent_spawn", sender="database",
+            message="Stage 2/6: Architecture Blueprint — Designing schema structures and route maps...",
+        )
+        await self._run_phase_schema_planning()
+
+    async def _run_stage_asset_injection(self):
+        await emit_forge_event(
+            self.supabase, self.run_id, event_type="subagent_spawn", sender="design",
+            message="Stage 3/6: Asset Injection — Generating brand tokens, style guides, layout maps, and copywriting...",
+        )
+        from agents.forge.assets_generator import pre_generate_visual_assets
+        from agents.forge.context_memory import get_forge_context_summary
+        
+        ctx_summary = get_forge_context_summary(self.input_data.founder_id, self.supabase)
+        icp_context = str(ctx_summary.get("icp_personas", ""))
+        
+        assets = await pre_generate_visual_assets(
+            specification=self.input_data.specification,
+            task_type=self.input_data.task_type,
+            icp_personas_context=icp_context,
+            model_id=getattr(self.input_data, "model_id", None),
+        )
+        
+        # Populate copy maps
+        self.state["copywriting"] = {item.get("key", ""): item.get("text", "") for item in assets.copy_map.features_copy} if assets.copy_map.features_copy else {}
+        self.state["copywriting"]["headline"] = assets.copy_map.headline
+        self.state["copywriting"]["subheadline"] = assets.copy_map.subheadline
+        self.state["copywriting"]["call_to_action"] = assets.copy_map.call_to_action
+        self.state["copywriting"]["footer_copy"] = assets.copy_map.footer_copy
+        
+        # Style guide and brand tokens
+        self.state["style_guide"] = assets.brand_tokens.model_dump()
+        self.state["svgs"] = {}
+        self.state["images"] = {}
+        
+        # Build list of seeds
+        self.state["database_seeds"] = [
+            {"table_name": "products", "row_data": {"name": "Basic SaaS Plan", "price": 29.00}},
+            {"table_name": "products", "row_data": {"name": "Enterprise Plan", "price": 149.00}}
+        ]
+        
+        await emit_forge_event(
+            self.supabase, self.run_id, event_type="subagent_progress", sender="design",
+            message=f"Brand tokens and layouts injected. Theme: {assets.brand_tokens.visual_vibe}.",
+        )
+
+    async def _run_stage_code_generation(self):
+        await emit_forge_event(
+            self.supabase, self.run_id, event_type="subagent_spawn", sender="builder",
+            message="Stage 4/6: Code Generation — Initiating 5 scaffolding substages...",
+        )
+        await self._run_phase_visual_coding()
+
+    async def _run_stage_autonomous_testing(self):
+        await emit_forge_event(
+            self.supabase, self.run_id, event_type="subagent_spawn", sender="system",
+            message="Stage 5/6: Autonomous Testing — Validating TypeScript and self-healing...",
+        )
+        await self._run_phase_compile_and_heal()
+
+    async def _run_stage_deploy(self) -> BuilderOutput:
+        await emit_forge_event(
+            self.supabase, self.run_id, event_type="subagent_spawn", sender="github",
+            message="Stage 6/6: Deployment — Committing branch and pushing to GitHub...",
+        )
+        return await self._run_phase_deploy()
 
     # -----------------------------------------------------------------------
     # Phase 1: Copywriting + Visual Assets — TWO parallel focused calls
