@@ -17,7 +17,9 @@
     "posthog-js": "^1.378.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^4.5.0",
+    "framer-motion": "^11.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
