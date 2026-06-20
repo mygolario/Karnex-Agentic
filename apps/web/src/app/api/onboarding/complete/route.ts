@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     if (existingStartup) {
       startupId = existingStartup.id
-      await supabase
+      const { error: startupUpdateErr } = await supabase
         .from('startups')
         .update({
           name: finalStartupName,
@@ -71,6 +71,11 @@ export async function POST(request: NextRequest) {
           stage: finalStage,
         })
         .eq('id', startupId)
+
+      if (startupUpdateErr) {
+        console.error('Failed to update startup:', startupUpdateErr)
+        return NextResponse.json({ error: `Failed to update startup: ${startupUpdateErr.message}` }, { status: 500 })
+      }
     } else {
       const { data: newStartup, error: startupInsertErr } = await supabase
         .from('startups')
@@ -103,7 +108,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (existingIdea) {
-      await supabase
+      const { error: ideaUpdateErr } = await supabase
         .from('ideas')
         .update({
           title: finalStartupName,
@@ -123,8 +128,13 @@ export async function POST(request: NextRequest) {
           selected_at: new Date().toISOString()
         })
         .eq('id', existingIdea.id)
+
+      if (ideaUpdateErr) {
+        console.error('Failed to update idea:', ideaUpdateErr)
+        return NextResponse.json({ error: `Failed to update startup concept idea: ${ideaUpdateErr.message}` }, { status: 500 })
+      }
     } else {
-      await supabase
+      const { error: ideaInsertErr } = await supabase
         .from('ideas')
         .insert({
           startup_id: startupId,
@@ -147,14 +157,29 @@ export async function POST(request: NextRequest) {
           selected_at: new Date().toISOString(),
           generated_by: 'onboarding-v2'
         })
+
+      if (ideaInsertErr) {
+        console.error('Failed to insert idea:', ideaInsertErr)
+        return NextResponse.json({ error: `Failed to create startup concept idea: ${ideaInsertErr.message}` }, { status: 500 })
+      }
+    }
+
+    // Map client technical level to database check constraint values ('beginner', 'intermediate', 'advanced')
+    let mappedTechLevel: 'beginner' | 'intermediate' | 'advanced' = 'intermediate'
+    if (technicalLevel === 'technical' || technicalLevel === 'advanced') {
+      mappedTechLevel = 'advanced'
+    } else if (technicalLevel === 'non-technical' || technicalLevel === 'beginner') {
+      mappedTechLevel = 'beginner'
+    } else {
+      mappedTechLevel = 'intermediate'
     }
 
     // 2. Update structural founder record
-    await supabase
+    const { error: founderUpdateErr } = await supabase
       .from('founders')
       .update({
         display_name: displayName || user.user_metadata?.full_name || 'Founder',
-        technical_level: technicalLevel || 'intermediate',
+        technical_level: mappedTechLevel,
         weekly_hours_available: weeklyHoursAvailable || 20,
         communication_tone: communicationTone || 'direct',
         preferred_agent_speed: preferredAgentSpeed || 'thorough',
@@ -162,9 +187,14 @@ export async function POST(request: NextRequest) {
         current_startup_id: startupId,
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
-        onboarding_step: 4
+        onboarding_step: 6
       })
       .eq('id', user.id)
+
+    if (founderUpdateErr) {
+      console.error('Failed to update founder profile:', founderUpdateErr)
+      return NextResponse.json({ error: `Failed to finalize founder profile: ${founderUpdateErr.message}` }, { status: 500 })
+    }
 
     // 3. Save roadmap if provided
     let finalRoadmap = roadmap
