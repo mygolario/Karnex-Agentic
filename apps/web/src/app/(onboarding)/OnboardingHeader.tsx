@@ -5,10 +5,12 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Suspense } from 'react'
 
 const STEPS = [
-  { number: 1, label: 'Analyze Pain', desc: 'Identify critical frustration' },
-  { number: 2, label: 'Hypotheses', desc: 'Distill startup concepts' },
-  { number: 3, label: 'Preferences', desc: 'Configure founder profile' },
-  { number: 4, label: 'Roadmap', desc: 'Review weekly execution' }
+  { number: 1, label: 'Identity', desc: 'About yourself' },
+  { number: 2, label: 'Venture', desc: 'Startup concept' },
+  { number: 3, label: 'Market', desc: 'Target customer' },
+  { number: 4, label: 'Execution', desc: 'Bottlenecks & tools' },
+  { number: 5, label: 'Voice', desc: 'Outreach persona' },
+  { number: 6, label: 'Workspace', desc: 'Review & launch' }
 ]
 
 function HeaderContent() {
@@ -38,7 +40,7 @@ function HeaderContent() {
         </div>
 
         {/* Progress Tracker */}
-        <nav className="hidden md:flex items-center gap-8 lg:gap-12">
+        <nav className="hidden md:flex items-center gap-4 lg:gap-6">
           {STEPS.map((step, idx) => {
             const isActive = currentStep === step.number
             const isCompleted = currentStep > step.number
@@ -96,7 +98,7 @@ function HeaderContent() {
       <div className="w-full h-0.5 bg-[#161616] relative overflow-hidden">
         <div
           className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 transition-all duration-500 ease-out"
-          style={{ width: `${(currentStep / 4) * 100}%` }}
+          style={{ width: `${(currentStep / 6) * 100}%` }}
         />
       </div>
     </header>

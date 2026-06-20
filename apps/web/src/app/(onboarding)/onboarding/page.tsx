@@ -78,14 +78,15 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
   let targetRunId = urlRunId || savedRunId
 
   if (targetStep === undefined) {
-    // If no step is in the URL, redirect to the saved step (bounded by max allowed step)
-    const activeStep = Math.min(combinedSavedStep, maxAllowedStep)
+    // If no step is in the URL, redirect to the saved step (bounded by 6)
+    const activeStep = Math.min(combinedSavedStep, 6)
     redirect(`/onboarding?step=${activeStep}${targetRunId ? `&run_id=${targetRunId}` : ''}`)
   }
 
-  if (targetStep > maxAllowedStep) {
-    // If attempting to bypass steps, redirect to max allowed step
-    redirect(`/onboarding?step=${maxAllowedStep}${targetRunId ? `&run_id=${targetRunId}` : ''}`)
+  if (targetStep < 1 || targetStep > 6) {
+    // Redirect if step is out of valid range (1 to 6)
+    const activeStep = Math.min(combinedSavedStep, 6)
+    redirect(`/onboarding?step=${activeStep}${targetRunId ? `&run_id=${targetRunId}` : ''}`)
   }
 
   const initialName = founder?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Founder'
