@@ -376,15 +376,15 @@ export default function PreviewPanel({
       }
 
       function findFile(resolvedPath) {
-        const cleanPath = resolvedPath.replace(/^\/+/, '');
+        const cleanPath = resolvedPath.replace(/^\\/+/, '');
         const extensions = ['', '.tsx', '.ts', '.jsx', '.js', '/index.tsx', '/index.ts', '/index.jsx', '/index.js'];
         for (const ext of extensions) {
           const target = (cleanPath + ext).toLowerCase();
           let found = window.__files.find(f => {
-            const p = f.path.replace(/^\/+/, '').toLowerCase();
+            const p = f.path.replace(/^\\/+/, '').toLowerCase();
             if (p === target) return true;
-            const pNoSrc = p.replace(/^src\//, '');
-            const targetNoSrc = target.replace(/^src\//, '');
+            const pNoSrc = p.replace(/^src\\//, '');
+            const targetNoSrc = target.replace(/^src\\//, '');
             if (pNoSrc === targetNoSrc) return true;
             if (p.endsWith(targetNoSrc)) return true;
             return false;
