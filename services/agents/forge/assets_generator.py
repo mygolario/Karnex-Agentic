@@ -28,6 +28,8 @@ class BrandTokens(BaseModel):
     border_radius: str = Field(..., description="Tailwind border radius class (e.g., rounded-xl, rounded-md)")
     spacing_scale: Dict[str, str] = Field(..., description="Standard spacing tokens mapping names to rems")
     shadow_tokens: Dict[str, str] = Field(..., description="CSS shadow configurations")
+    visual_vibe: str = Field(..., description="One-sentence visual vibe (e.g., 'Clean futuristic cyber-grid with purple glows')")
+
 
 
 class ComponentItem(BaseModel):
