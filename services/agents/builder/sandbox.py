@@ -166,9 +166,24 @@ def create_sandbox_run(run_id: str, files: List[dict]) -> Path:
 def run_compilation_check(run_dir: Path) -> Tuple[bool, str]:
     """Run TypeScript compiler checks on the sandbox workspace and return (success, log)."""
     try:
+        # Determine robust command for local tsc execution
+        tsc_cmd = "npx tsc --noEmit"
+        if sys.platform == "win32":
+            local_tsc = run_dir / "node_modules" / ".bin" / "tsc.cmd"
+            if local_tsc.exists():
+                tsc_cmd = f'"{local_tsc}" --noEmit'
+            else:
+                node_tsc = run_dir / "node_modules" / "typescript" / "bin" / "tsc"
+                if node_tsc.exists():
+                    tsc_cmd = f'node "{node_tsc}" --noEmit'
+        else:
+            local_tsc = run_dir / "node_modules" / ".bin" / "tsc"
+            if local_tsc.exists():
+                tsc_cmd = f'"{local_tsc}" --noEmit'
+
         # Run tsc compiler check
         res = subprocess.run(
-            "npx tsc --noEmit",
+            tsc_cmd,
             shell=True,
             cwd=str(run_dir),
             capture_output=True,
