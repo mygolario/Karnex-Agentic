@@ -427,6 +427,57 @@ export default function PreviewPanel({
         if (importPath === 'canvas-confetti') {
           return () => console.log('Confetti burst!');
         }
+        if (importPath === 'next/image' || importPath === 'next/legacy/image') {
+          return {
+            default: function MockImage({ src, alt, className, style, ...rest }) {
+              return React.createElement('img', {
+                src,
+                alt,
+                className,
+                style: { objectFit: 'cover', ...style },
+                ...rest
+              });
+            }
+          };
+        }
+        if (importPath === 'next/link') {
+          return {
+            default: function MockLink({ href, children, className, ...rest }) {
+              return React.createElement('a', {
+                href,
+                className,
+                onClick: (e) => {
+                  e.preventDefault();
+                  console.log('Navigating to:', href);
+                },
+                ...rest
+              }, children);
+            }
+          };
+        }
+        if (importPath === 'next/navigation') {
+          return {
+            useRouter: () => ({
+              push: (url) => console.log('Router.push:', url),
+              replace: (url) => console.log('Router.replace:', url),
+              prefetch: () => {},
+              back: () => console.log('Router.back'),
+              forward: () => console.log('Router.forward'),
+              refresh: () => {}
+            }),
+            usePathname: () => '/',
+            useSearchParams: () => new URLSearchParams(),
+            useParams: () => ({})
+          };
+        }
+        if (importPath.startsWith('next/font/')) {
+          const dummyFont = () => ({ className: '' });
+          return new Proxy(dummyFont, {
+            get(target, prop) {
+              return dummyFont;
+            }
+          });
+        }
 
         const resolved = resolvePath(currentPath, importPath);
 
@@ -450,12 +501,23 @@ export default function PreviewPanel({
           return new Proxy({}, {
             get(target, prop) {
               if (prop === '$$typeof') return undefined;
-              if (typeof prop === 'string' && prop[0] === prop[0].toUpperCase()) {
-                return function DummyComponent(props) {
-                  return React.createElement('div', { style: { border: '1px dashed #ef4444', padding: '8px', color: '#ef4444', margin: '4px', fontSize: '12px' } }, prop + ' not found');
+              if (prop === 'default') {
+                return function DummyDefaultComponent(props) {
+                  return React.createElement('div', { style: { border: '1px dashed #ef4444', padding: '8px', color: '#ef4444', margin: '4px', fontSize: '12px' } }, importPath + ' default export not found');
                 };
               }
-              return undefined;
+              if (typeof prop === 'string' && prop[0] === prop[0].toUpperCase()) {
+                return function DummyComponent(props) {
+                  return React.createElement('div', { style: { border: '1px dashed #ef4444', padding: '8px', color: '#ef4444', margin: '4px', fontSize: '12px' } }, prop + ' not found in ' + importPath);
+                };
+              }
+              const dummyFunc = () => new Proxy({ className: '' }, {
+                get(t, p) {
+                  if (p === 'className') return '';
+                  return dummyFunc;
+                }
+              });
+              return dummyFunc;
             }
           });
         }
