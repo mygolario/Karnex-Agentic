@@ -11,6 +11,7 @@ ProjectType = Literal[
     "api_service",
     "infra_devops",
     "fullstack_monorepo",
+    "chrome_extension",
     "auto",
 ]
 
@@ -20,6 +21,7 @@ _VALID_TYPES = {
     "api_service",
     "infra_devops",
     "fullstack_monorepo",
+    "chrome_extension",
 }
 
 
@@ -30,16 +32,20 @@ def normalize_project_type(value: Optional[str]) -> ProjectType:
 
 
 def detect_project_type(specification: str, task_type: str) -> str:
-    """Infer project type from spec and task_type."""
+    """Infer project type from spec and task_type with improved heuristics."""
     text = f"{task_type} {specification}".lower()
-    if any(k in text for k in ("expo", "react native", "react-native", "mobile app", "ios", "android")):
+    
+    if any(k in text for k in ("chrome extension", "chrome-extension", "browser extension", "firefox extension", "manifest.json")):
+        return "chrome_extension"
+    if any(k in text for k in ("expo", "react native", "react-native", "mobile app", "ios app", "android app", "swift", "kotlin")):
         return "mobile_expo"
-    if any(k in text for k in ("dockerfile", "ci/cd", "github actions", "railway", "terraform", "kubernetes")):
+    if any(k in text for k in ("dockerfile", "ci/cd", "github actions", "railway", "terraform", "kubernetes", "ansible", "nginx config", "deployment script")):
         return "infra_devops"
-    if any(k in text for k in ("fastapi only", "api service", "rest api", "graphql api", "backend only")):
+    if any(k in text for k in ("fastapi only", "api service", "rest api", "graphql api", "backend only", "express.js", "django api")):
         return "api_service"
-    if any(k in text for k in ("monorepo", "full stack", "fullstack", "web and mobile")):
+    if any(k in text for k in ("monorepo", "full stack", "fullstack", "web and mobile", "lerna", "pnpm workspaces")):
         return "fullstack_monorepo"
+        
     return "web_nextjs"
 
 
@@ -57,6 +63,7 @@ def get_subagent_roster(project_type: str) -> List[str]:
         "api_service": ["supervisor", "api_route_coder", "db_designer", "openapi", "github"],
         "infra_devops": ["supervisor", "docker_coder", "ci_coder", "railway_config"],
         "fullstack_monorepo": ["supervisor", "db_designer", "ui_coder", "api_route_coder", "linter", "github"],
+        "chrome_extension": ["supervisor", "manifest_coder", "popup_coder", "background_worker", "github"]
     }
     return rosters.get(project_type, rosters["web_nextjs"])
 
@@ -68,6 +75,7 @@ def file_role_hints(project_type: str) -> str:
         "api_service": "Use roles: api_route, db_migration, openapi. Python FastAPI or Node preferred.",
         "infra_devops": "Use roles: dockerfile, ci_workflow, railway_config. No frontend pages.",
         "fullstack_monorepo": "Use roles: db_migration, frontend_page, api_route, component, expo_config if mobile mentioned.",
+        "chrome_extension": "Use roles: extension_manifest, popup_page, background_script, content_script."
     }
     return hints.get(project_type, hints["web_nextjs"])
 
@@ -86,5 +94,7 @@ def stack_prompt_suffix(project_type: str, tech_stack: Optional[dict]) -> str:
     elif project_type == "api_service":
         base += " Prefer FastAPI or Next.js API routes with clear OpenAPI comments."
     elif project_type == "infra_devops":
-        base += re.sub(r"frontend_page|component", "config", base)
+        base = re.sub(r"frontend_page|component", "config", base)
+    elif project_type == "chrome_extension":
+        base += " Generate popup UI using Tailwind and background service worker logic."
     return base

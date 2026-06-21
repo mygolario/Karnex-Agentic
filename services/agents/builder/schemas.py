@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional
 
+
 from pydantic import BaseModel, Field
 
 from shared.schemas.agent_envelope import AgentInputBase, AgentOutputBase
@@ -16,7 +17,7 @@ class GeneratedFile(BaseModel):
     language: str = Field(..., description="Coding language of the file (e.g., 'typescript', 'sql', 'css').")
     description: str = Field(..., description="A short summary of what this file does.")
 
-ForgeMode = Literal["plan", "ask", "debug", "build", "auto"]
+ForgeMode = Literal["plan", "ask", "debug", "build", "refine", "auto"]
 ForgeAutonomy = Literal["founder", "developer"]
 ForgeProjectType = Literal[
     "web_nextjs",
@@ -24,6 +25,7 @@ ForgeProjectType = Literal[
     "api_service",
     "infra_devops",
     "fullstack_monorepo",
+    "chrome_extension",
     "auto",
 ]
 
@@ -47,6 +49,8 @@ class BuilderInput(AgentInputBase):
     use_selected_model_all_steps: bool = Field(False, description="Developer: use selected model for subagents too.")
     skip_github_push: bool = Field(False, description="Developer: generate files without pushing to GitHub.")
     estimated_cost_usd: Optional[List[float]] = Field(None, description="Client-side cost estimate range [low, high].")
+    forge_project_id: Optional[str] = Field(None, description="Forge project ID for session tracking.")
+    forge_session_id: Optional[str] = Field(None, description="Active forge session ID.")
 
 class BuilderOutput(AgentOutputBase):
     files: List[GeneratedFile] = Field(..., description="Generated file artifacts.")
@@ -67,3 +71,8 @@ class BuilderOutput(AgentOutputBase):
         default_factory=list,
         description="Let Karnex suggested next agents e.g. research-v1, outreach-v1.",
     )
+    qa_score: Optional[int] = Field(None, description="QA benchmark score 0-10.")
+    test_report: Optional[Dict[str, Any]] = Field(None, description="Automated test results.")
+    deployment_url: Optional[str] = Field(None, description="Live deployment URL.")
+    vault_export_id: Optional[str] = Field(None, description="Vault export reference ID.")
+    version_number: Optional[int] = Field(None, description="Version number in forge_versions.")

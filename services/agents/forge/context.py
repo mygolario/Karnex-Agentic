@@ -1,13 +1,23 @@
-"""Karnex context injection — Memory, ICP, War Room / sprint tasks."""
+"""Karnex context injection — Memory, ICP, War Room / sprint tasks.
+
+Three-tier context stack:
+  1. Storage: Pull from forge_projects.project_context, founder_memory, forge_conversations
+  2. Processor: Format and enrich context with ICP, roadmap phase, past decisions
+  3. Compiled: Build optimized context dict for each pipeline stage
+"""
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from agents.pain_transformer.tools import karnex_memory_read
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
 
+
+# ---------------------------------------------------------------------------
+# Tier 1 — Storage: raw data loaders
+# ---------------------------------------------------------------------------
 
 def load_karnex_context(
     founder_id: str,
@@ -40,20 +50,23 @@ def load_karnex_context(
     except Exception as e:
         logger.warning(f"Forge context: roadmap unavailable: {e}")
 
+    # Fixed: query 'tasks' table joined with 'sprints' instead of the non-existent 'sprint_tasks'
     sprint_id = task_id or war_room_task_id
     if sprint_id:
         try:
             sb = supabase or get_supabase_admin()
             res = (
-                sb.table("sprint_tasks")
-                .select("id, title, description, category, agent_config")
+                sb.table("tasks")
+                .select("id, title, description, category, agent_config, sprint_id, sprints(id, name, phase)")
                 .eq("id", sprint_id)
                 .maybe_single()
                 .execute()
             )
             if res.data:
                 ctx["sprint_task"] = res.data
-                ctx["lineage_label"] = f"Sprint: {res.data.get('title', sprint_id)}"
+                sprint_info = res.data.get("sprints") or {}
+                sprint_name = sprint_info.get("name", "")
+                ctx["lineage_label"] = f"Sprint: {sprint_name or res.data.get('title', sprint_id)}"
         except Exception as e:
             logger.warning(f"Forge context: sprint task {sprint_id}: {e}")
 
@@ -67,6 +80,75 @@ def load_karnex_context(
 
     return ctx
 
+
+async def load_forge_project_context(
+    founder_id: str,
+    project_id: str,
+    supabase: Any = None,
+) -> Dict[str, Any]:
+    """Load full project context from forge_projects table.
+
+    Combines:
+      - forge_projects.project_context (stored JSON blob)
+      - founder_memory keyed under forge namespace
+      - forge_conversations summary
+    """
+    sb = supabase or get_supabase_admin()
+    context: Dict[str, Any] = {
+        "project_context": None,
+        "icp_snapshot": None,
+        "roadmap_phase": None,
+        "forge_decisions": None,
+        "conversation_summary": None,
+    }
+
+    # Pull project record
+    try:
+        res = (
+            sb.table("forge_projects")
+            .select("project_context, icp_snapshot, roadmap_phase, current_version, status")
+            .eq("id", project_id)
+            .eq("founder_id", founder_id)
+            .maybe_single()
+            .execute()
+        )
+        if res.data:
+            context["project_context"] = res.data.get("project_context")
+            context["icp_snapshot"] = res.data.get("icp_snapshot")
+            context["roadmap_phase"] = res.data.get("roadmap_phase")
+    except Exception as e:
+        logger.warning(f"Could not load forge_project context for {project_id}: {e}")
+
+    # Pull decision journal from founder_memory
+    try:
+        decisions = karnex_memory_read(founder_id, "forge", "decision_journal")
+        if decisions and isinstance(decisions, dict):
+            entries = decisions.get("entries", [])
+            context["forge_decisions"] = entries[-10:]  # Last 10 decisions
+    except Exception as e:
+        logger.warning(f"Could not load forge decisions: {e}")
+
+    # Pull conversation summary
+    try:
+        conv_res = (
+            sb.table("forge_conversations")
+            .select("summary, message_count, context_window_tokens")
+            .eq("project_id", project_id)
+            .order("compressed_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if conv_res.data and len(conv_res.data) > 0:
+            context["conversation_summary"] = conv_res.data[0].get("summary")
+    except Exception as e:
+        logger.warning(f"Could not load forge conversation summary: {e}")
+
+    return context
+
+
+# ---------------------------------------------------------------------------
+# Tier 2 — Processor: format and enrich context
+# ---------------------------------------------------------------------------
 
 def format_context_block(ctx: Dict[str, Any]) -> str:
     parts = []
@@ -104,6 +186,53 @@ def _integration_recipes_hint(ctx: Dict[str, Any]) -> str:
     if not stack_hints:
         return ""
     return "Integration recipes:\n- " + "\n- ".join(stack_hints)
+
+
+# ---------------------------------------------------------------------------
+# Tier 3 — Compiled: build optimized context dict for specific pipeline stages
+# ---------------------------------------------------------------------------
+
+def compile_stage_context(
+    karnex_ctx: Dict[str, Any],
+    project_ctx: Optional[Dict[str, Any]] = None,
+    stage: str = "build",
+) -> Dict[str, Any]:
+    """Build an optimized context dict tailored to a specific pipeline stage.
+
+    Stages: crystallize, blueprint, assets, scaffold, build, integrate, qa, deploy
+    """
+    compiled: Dict[str, Any] = {
+        "context_block": format_context_block(karnex_ctx),
+        "stage": stage,
+    }
+
+    if project_ctx:
+        compiled["project_context"] = project_ctx.get("project_context")
+        compiled["icp_snapshot"] = project_ctx.get("icp_snapshot")
+        compiled["roadmap_phase"] = project_ctx.get("roadmap_phase")
+        compiled["past_decisions"] = project_ctx.get("forge_decisions", [])
+        compiled["conversation_summary"] = project_ctx.get("conversation_summary")
+
+    # Stage-specific context trimming for token efficiency
+    if stage in ("crystallize", "blueprint"):
+        # These stages need full ICP and roadmap
+        compiled["include_icp"] = True
+        compiled["include_roadmap"] = True
+    elif stage == "assets":
+        # Assets need ICP for copy but not full roadmap
+        compiled["include_icp"] = True
+        compiled["include_roadmap"] = False
+    elif stage in ("build", "scaffold"):
+        # Build stages need past decisions to avoid contradictions
+        compiled["include_icp"] = False
+        compiled["include_roadmap"] = False
+    elif stage in ("qa", "deploy"):
+        # QA and deploy need minimal context
+        compiled["include_icp"] = False
+        compiled["include_roadmap"] = False
+        compiled.pop("past_decisions", None)
+
+    return compiled
 
 
 def build_run_manifest(

@@ -1,15 +1,17 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useForgeStore } from '@/lib/studio/forge-store'
+import { useForgeContext } from '@/lib/studio/forge-context'
+import { X } from 'lucide-react'
 
-interface VisualEditModalProps {
-  isOpen: boolean
-  onClose: () => void
-  selectedElement: { selector: string; text: string } | null
-  onSave: (selector: string, updates: { text?: string; bg?: string; color?: string; border?: string }) => void
-}
+export default function VisualEditPanel() {
+  const selectedElement = useForgeStore((s) => s.selectedElement)
+  const setSelectedElement = useForgeStore((s) => s.setSelectedElement)
+  const showVisualEdit = useForgeStore((s) => s.showVisualEdit)
+  const setShowVisualEdit = useForgeStore((s) => s.setShowVisualEdit)
+  const { triggerBuild } = useForgeContext()
 
-export default function VisualEditModal({ isOpen, onClose, selectedElement, onSave }: VisualEditModalProps) {
   const [text, setText] = useState('')
   const [bg, setBg] = useState('')
   const [color, setColor] = useState('')
@@ -24,50 +26,62 @@ export default function VisualEditModal({ isOpen, onClose, selectedElement, onSa
     }
   }, [selectedElement])
 
-  if (!isOpen || !selectedElement) return null
+  if (!showVisualEdit || !selectedElement) return null
 
   const handleSave = () => {
-    onSave(selectedElement.selector, {
-      text: text !== selectedElement.text ? text : undefined,
-      bg: bg || undefined,
-      color: color || undefined,
-      border: border || undefined,
-    })
-    onClose()
+    let userPrompt = `Modify element '${selectedElement.selector}'`
+    if (text !== selectedElement.text) userPrompt += ` to have text content: "${text}"`
+    if (bg) userPrompt += ` with background styles: "${bg}"`
+    if (color) userPrompt += ` with text color classes: "${color}"`
+    if (border) userPrompt += ` with border styling: "${border}"`
+
+    // Close panel
+    setShowVisualEdit(false)
+    setSelectedElement(null)
+
+    // Run build
+    void triggerBuild(userPrompt)
+  }
+
+  const handleClose = () => {
+    setShowVisualEdit(false)
+    setSelectedElement(null)
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-[#0c0c12]/95 border-l border-zinc-900 shadow-2xl p-6 flex flex-col z-50 animate-in slide-in-from-right duration-250">
-      <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
+    <div className="w-80 bg-[#0c0c12]/95 border-l border-zinc-900 shadow-2xl p-4 flex flex-col h-full animate-in slide-in-from-right duration-250 z-30 shrink-0">
+      <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
         <div className="space-y-0.5">
-          <h3 className="text-[13px] font-semibold text-white">Visual Edit Panel</h3>
-          <p className="text-[10px] text-zinc-500 font-mono truncate max-w-[200px]">{selectedElement.selector}</p>
+          <h3 className="text-[12px] font-semibold text-white">Visual Edit Panel</h3>
+          <p className="text-[9px] text-zinc-500 font-mono truncate max-w-[200px]" title={selectedElement.selector}>
+            {selectedElement.selector}
+          </p>
         </div>
         <button 
-          onClick={onClose}
-          className="text-zinc-500 hover:text-white transition-colors cursor-pointer text-sm font-semibold"
+          onClick={handleClose}
+          className="p-1 rounded text-zinc-500 hover:text-white hover:bg-white/[0.03] transition-colors cursor-pointer"
         >
-          ✕
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-6 space-y-5">
+      <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0 forge-scroll">
         {/* Text Input */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-medium text-zinc-400">Element Content Text</label>
+          <label className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Content Text</label>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
-            className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 text-[12px] text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+            className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-2 text-[12px] text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
             placeholder="Edit text content..."
           />
         </div>
 
         {/* Color Palette */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-medium text-zinc-400">Background Tint</label>
-          <div className="grid grid-cols-5 gap-2">
+          <label className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Background Tint</label>
+          <div className="grid grid-cols-5 gap-1.5">
             {[
               { label: 'Indigo', value: 'bg-indigo-500/10 border-indigo-500/30' },
               { label: 'Emerald', value: 'bg-emerald-500/10 border-emerald-500/30' },
@@ -79,7 +93,7 @@ export default function VisualEditModal({ isOpen, onClose, selectedElement, onSa
                 key={opt.label}
                 onClick={() => setBg(opt.value)}
                 className={`h-7 rounded border text-[9px] text-zinc-400 flex items-center justify-center transition-all cursor-pointer ${opt.value} ${
-                  bg === opt.value ? 'ring-2 ring-indigo-500 border-transparent text-white' : 'hover:text-zinc-200'
+                  bg === opt.value ? 'ring-2 ring-indigo-500 border-transparent text-white font-semibold' : 'hover:text-zinc-200'
                 }`}
               >
                 {opt.label[0]}
@@ -90,8 +104,8 @@ export default function VisualEditModal({ isOpen, onClose, selectedElement, onSa
 
         {/* Text Color */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-medium text-zinc-400">Text Accent</label>
-          <div className="grid grid-cols-4 gap-2">
+          <label className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Text Accent</label>
+          <div className="grid grid-cols-4 gap-1.5">
             {[
               { label: 'White', value: 'text-white' },
               { label: 'Gray', value: 'text-zinc-400' },
@@ -113,7 +127,7 @@ export default function VisualEditModal({ isOpen, onClose, selectedElement, onSa
 
         {/* Border radius */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-medium text-zinc-400">Border Styling</label>
+          <label className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">Border Styling</label>
           <select
             value={border}
             onChange={(e) => setBorder(e.target.value)}
@@ -127,9 +141,9 @@ export default function VisualEditModal({ isOpen, onClose, selectedElement, onSa
         </div>
       </div>
 
-      <div className="border-t border-zinc-900 pt-4 flex gap-3">
+      <div className="border-t border-zinc-900 pt-4 flex gap-3 shrink-0">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="flex-1 h-9 rounded-lg border border-zinc-900 hover:bg-zinc-950 text-[12px] font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer"
         >
           Cancel

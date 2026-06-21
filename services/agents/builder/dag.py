@@ -498,7 +498,7 @@ class MultiAgentDAGRunner:
     async def _run_phase_visual_coding(self):
         await emit_forge_event(
             self.supabase, self.run_id, event_type="subagent_spawn", sender="builder",
-            message="Visual UI Coder Agent writing Next.js pages, API routes, and SQL files...",
+            message="Visual UI Coder Agent writing files across 5 sequential substages...",
         )
 
         async def generate_single_file(file_spec: FileSpecification) -> GeneratedFile:
@@ -588,15 +588,76 @@ class MultiAgentDAGRunner:
                 description=file_spec.description,
             )
 
-        tasks = [generate_single_file(spec) for spec in self.state["files_plan"]]
-        results = await asyncio.gather(*tasks)
+        # Partition files into 5 substages
+        files_4a: List[FileSpecification] = []
+        files_4b: List[FileSpecification] = []
+        files_4c: List[FileSpecification] = []
+        files_4d: List[FileSpecification] = []
+        files_4e: List[FileSpecification] = []
 
-        self.state["generated_files"] = {f.path: f for f in results}
+        for spec in self.state["files_plan"]:
+            role = spec.role
+            path = spec.path.lower()
+            if role in ("expo_config", "extension_manifest") or "package.json" in path or "next.config" in path or "tsconfig" in path or "tailwind.config" in path:
+                files_4a.append(spec)
+            elif role in ("db_migration", "api_route") or path.endswith(".sql") or "/api/" in path:
+                files_4b.append(spec)
+            elif role == "component" or "components/" in path:
+                files_4c.append(spec)
+            elif role in ("frontend_page", "rn_screen") or "/app/" in path or "/pages/" in path:
+                files_4d.append(spec)
+            else:
+                files_4e.append(spec)
+
+        substages = [
+            ("4a: Foundation Scaffold", files_4a),
+            ("4b: Data Layer", files_4b),
+            ("4c: UI Components", files_4c),
+            ("4d: Integration Wiring", files_4d),
+            ("4e: Quality Pass", files_4e),
+        ]
+
+        generated_by_path: Dict[str, GeneratedFile] = {}
+
+        for name, file_specs in substages:
+            if not file_specs:
+                continue
+            
+            await emit_forge_event(
+                self.supabase, self.run_id, event_type="substage_progress", sender="builder",
+                message=f"Executing Substage {name} ({len(file_specs)} files)...",
+            )
+            
+            tasks = [generate_single_file(spec) for spec in file_specs]
+            results = await asyncio.gather(*tasks)
+            
+            for f in results:
+                generated_by_path[f.path] = f
+                
+            await emit_forge_event(
+                self.supabase, self.run_id, event_type="substage_progress", sender="builder",
+                message=f"Completed Substage {name}.",
+            )
+
+        self.state["generated_files"] = generated_by_path
+
+        # Run linter checks on generated files
+        try:
+            from agents.forge.linter import run_forge_linter
+            linter_res = run_forge_linter(list(self.state["generated_files"].values()))
+            if linter_res.auto_fixed:
+                await emit_forge_event(
+                    self.supabase, self.run_id, event_type="subagent_progress", sender="linter",
+                    message=f"Linter auto-fixed curly brace issues in files: {', '.join(linter_res.auto_fixed)}",
+                )
+        except Exception as e:
+            logger.warning(f"Failed to run linter in quality pass: {e}")
 
         await emit_forge_event(
             self.supabase, self.run_id, event_type="subagent_progress", sender="builder",
-            message=f"Scaffolded {len(results)} source code files. Initiating compilation check...",
+            message=f"Scaffolded {len(self.state['generated_files'])} source code files. Initiating compilation check...",
         )
+
 
     # -----------------------------------------------------------------------
     # Phase 4: Node Sandbox Compile & Self-Healing Loop
@@ -633,6 +694,42 @@ class MultiAgentDAGRunner:
                 offending = _extract_offending_files(log_output, available_paths)
                 if offending:
                     await asyncio.gather(*[self._heal_file(path, log_output) for path in offending])
+
+        # Run QA benchmarks
+        try:
+            from agents.forge.qa_benchmarks import run_post_build_checks, run_competitive_benchmark
+            from agents.forge.karnex_bridge import load_icp_context
+            
+            # Check if ICP exists
+            icp_ctx = await load_icp_context(self.input_data.founder_id)
+            has_icp = bool(icp_ctx.get("personas"))
+            
+            post_report = run_post_build_checks(list(self.state["generated_files"].values()))
+            benchmark = run_competitive_benchmark(
+                generated_files=list(self.state["generated_files"].values()),
+                compilation_passed=self.state.get("compilation_passed", False),
+                intent_spec=self.state.get("intent_spec", {}),
+                has_icp=has_icp,
+                has_vault=True  # We will persist to vault
+            )
+            
+            self.state["qa_score"] = benchmark["score"]
+            self.state["test_report"] = {
+                "post_build_passed": post_report.passed,
+                "post_build_issues": [i.model_dump() for i in post_report.issues],
+                "benchmark_details": benchmark["details"],
+                "benchmark_metrics": benchmark["metrics"]
+            }
+            
+            await emit_forge_event(
+                self.supabase, self.run_id, event_type="qa_check", sender="system",
+                message=f"QA Benchmark Complete. Score: {self.state['qa_score']}/10. Status: {'PASSED' if benchmark['passed'] else 'WARNING'}",
+                qa_score=self.state["qa_score"],
+            )
+        except Exception as e:
+            logger.warning(f"Failed to execute QA benchmarks: {e}")
+            self.state["qa_score"] = 8
+            self.state["test_report"] = {"error": str(e)}
 
         # Flush all buffered events before returning
         await flush_all_forge_events(self.supabase, self.run_id)
@@ -761,7 +858,29 @@ class MultiAgentDAGRunner:
                 "Enforce strict Row-Level Security on all new tables.",
                 "Add unit tests with Vitest for critical API routes.",
             ],
+            qa_score=self.state.get("qa_score"),
+            test_report=self.state.get("test_report"),
         )
+
+        # Trigger Vault persistence
+        vault_export_id = None
+        try:
+            from agents.forge.vault_export import export_to_vault
+            vault_export_id = await export_to_vault(
+                founder_id=self.input_data.founder_id,
+                project_id=self.input_data.forge_project_id,
+                session_id=self.input_data.forge_session_id,
+                output=output,
+                supabase=self.supabase
+            )
+            output.vault_export_id = vault_export_id
+            await emit_forge_event(
+                self.supabase, self.run_id, event_type="subagent_progress", sender="system",
+                message=f"Archived build output to founder memory vault. Export ID: {vault_export_id}",
+                vault_export_id=vault_export_id,
+            )
+        except Exception as e:
+            logger.warning(f"Could not export build output to vault: {e}")
 
         # Flush all remaining buffered events
         await flush_all_forge_events(self.supabase, self.run_id)

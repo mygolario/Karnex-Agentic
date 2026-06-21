@@ -1,159 +1,261 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useForgeStore } from '@/lib/studio/forge-store'
+import { useForgeContext } from '@/lib/studio/forge-context'
+import { Sparkles, Hammer, Clock, Code2, Layers, Compass, Target } from 'lucide-react'
 
-interface ProjectLauncherProps {
-  onSelectTemplate: (prompt: string) => void
-  recentBuilds: Array<{ id: string; spec: string; created_at: string }>
-  onLoadBuild: (id: string) => void
-}
-
-const templates = [
+// Default fallback templates
+const DEFAULT_TEMPLATES = [
   {
-    title: 'SaaS Landing Page',
-    desc: 'Hero, features, pricing, CTA sections',
-    prompt: 'Create a dark-themed SaaS landing page with a bold hero section, feature cards grid, testimonial section, pricing comparison table, and an email waitlist form. Use modern typography and subtle gradients.',
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-      </svg>
-    ),
+    name: 'SaaS Starter',
+    description: 'Full-featured SaaS application with auth, billing, dashboard, and settings. Ideal for B2B products.',
+    category: 'saas',
+    tech_stack: { framework: 'nextjs', styling: 'tailwind', database: 'supabase' },
+    prompt: 'Create a dark-themed SaaS landing page with a bold hero section, feature cards grid, testimonial section, pricing comparison table, and an email waitlist form. Use modern typography and subtle gradients.'
   },
   {
-    title: 'Admin Dashboard',
-    desc: 'Charts, data tables, sidebar nav',
-    prompt: 'Build an admin dashboard with a collapsible sidebar, top stats cards showing revenue/users/conversions, a line chart for weekly trends, a data table with sortable columns, and a recent activity feed. Dark theme.',
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-      </svg>
-    ),
+    name: 'Landing Page',
+    description: 'High-converting landing page with hero, features, pricing, testimonials, and CTA sections.',
+    category: 'landing',
+    tech_stack: { framework: 'nextjs', styling: 'tailwind', database: 'none' },
+    prompt: 'Build a landing page for a creative agency. Include a navigation bar, a high-impact hero section with smooth animations, portfolio grid showcasing project cards, service lists, pricing options, and a contact form with active inputs. Dark mode styled.'
   },
   {
-    title: 'Auth Flow',
-    desc: 'Login, register, password reset',
-    prompt: 'Create authentication pages: a login form with email/password and social login buttons, a registration form with name/email/password/confirm fields, and a password reset page. Include form validation states. Dark theme with indigo accents.',
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'REST API',
-    desc: 'Endpoints, database schema, CRUD',
-    prompt: 'Generate a REST API with user management endpoints (CRUD), a PostgreSQL schema with users, posts, and comments tables with foreign keys, and a Supabase Row Level Security policy. Include API documentation comments.',
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'E-Commerce',
-    desc: 'Product grid, cart, checkout',
-    prompt: 'Build an e-commerce storefront with a product grid showing cards with image, title, price, and add-to-cart button. Include a slide-out cart sidebar with quantity controls and total, and a checkout form with shipping and payment fields. Dark theme.',
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Blog',
-    desc: 'Posts, categories, SEO-ready',
-    prompt: 'Create a blog with a posts listing page showing cards with title, excerpt, date, and category badge. Include a single post page with rich typography, author info, and a related posts section. Dark theme with clean reading experience.',
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-      </svg>
-    ),
-  },
+    name: 'Admin Dashboard',
+    description: 'Data-rich admin dashboard with charts, tables, filters, and user management.',
+    category: 'dashboard',
+    tech_stack: { framework: 'nextjs', styling: 'tailwind', database: 'supabase' },
+    prompt: 'Build an admin dashboard with a collapsible sidebar, top stats cards showing revenue/users/conversions, a line chart for weekly trends, a data table with sortable columns, and a recent activity feed. Dark theme.'
+  }
 ]
 
-export default function ProjectLauncher({ onSelectTemplate, recentBuilds, onLoadBuild }: ProjectLauncherProps) {
-  const [prompt, setPrompt] = useState('')
+export default function ProjectLauncher() {
+  const store = useForgeStore()
+  const { triggerBuild, refreshKarnexContext, supabase } = useForgeContext()
+  
+  const [draft, setDraft] = useState('')
+  const [templates, setTemplates] = useState<any[]>(DEFAULT_TEMPLATES)
+  const [recentProjects, setRecentProjects] = useState<any[]>([])
+  const [loadingProjects, setLoadingProjects] = useState(false)
+
+  const icp = useForgeStore((s) => s.projectName) // fallback
+
+  // Fetch templates and projects on mount
+  useEffect(() => {
+    async function loadLauncherData() {
+      setLoadingProjects(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          // Load templates
+          const { data: dbTemplates } = await supabase
+            .from('forge_templates')
+            .select('*')
+            .order('usage_count', { ascending: false })
+          
+          if (dbTemplates && dbTemplates.length > 0) {
+            setTemplates(dbTemplates.map(t => ({
+              ...t,
+              // Map prompt heuristic fallback if not present
+              prompt: t.name === 'SaaS Starter' ? DEFAULT_TEMPLATES[0].prompt :
+                      t.name === 'Landing Page' ? DEFAULT_TEMPLATES[1].prompt :
+                      t.name === 'Admin Dashboard' ? DEFAULT_TEMPLATES[2].prompt :
+                      `Build a ${t.name} using ${t.tech_stack?.framework || 'Next.js'}. ${t.description}`
+            })))
+          }
+
+          // Load recent projects
+          const { data: dbProjects } = await supabase
+            .from('forge_projects')
+            .select('*')
+            .eq('founder_id', session.user.id)
+            .order('updated_at', { ascending: false })
+            .limit(5)
+          
+          if (dbProjects) {
+            setRecentProjects(dbProjects)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load launcher data:', err)
+      } finally {
+        setLoadingProjects(false)
+      }
+    }
+    void loadLauncherData()
+  }, [supabase])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!prompt.trim()) return
-    onSelectTemplate(prompt.trim())
-    setPrompt('')
+    if (!draft.trim()) return
+    void triggerBuild(draft.trim())
+    setDraft('')
+  }
+
+  const handleSelectTemplate = (prompt: string, name: string) => {
+    store.setProjectName(name)
+    store.setDraft(prompt)
+    void triggerBuild(prompt)
+  }
+
+  const handleLoadProject = async (proj: any) => {
+    store.setProject(proj)
+    store.setProjectName(proj.name)
+    // Find latest run for this project
+    try {
+      const { data: runs } = await supabase
+        .from('agent_runs')
+        .select('id, status, input')
+        .eq('agent_id', 'builder-v1')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (runs && runs.length > 0) {
+        const run = runs[0]
+        store.setCurrentRun(run.id, run.status)
+        if (run.status === 'success') {
+          // Load outputs
+          const { data: out } = await supabase
+            .from('agent_outputs')
+            .select('output')
+            .eq('agent_run_id', run.id)
+            .maybeSingle()
+          
+          if (out && out.output) {
+            store.setBuilderOutput(out.output as any)
+            store.setSelectedFileIdx(0)
+          }
+        } else {
+          store.setLoading(true)
+        }
+      }
+    } catch (err) {
+      console.error('Error loading project run:', err)
+    }
+  }
+
+  // Load ICP data if available to display a prominent button
+  const { karnexContext } = useForgeContext()
+  const hasICP = !!karnexContext.icp
+
+  const handleBuildFromICP = () => {
+    if (!karnexContext.icp) return
+    const prompt = `Build a web application for: ${karnexContext.icp.targetAudience}. ` +
+      `Key pain points: ${karnexContext.icp.painPoints.join(', ')}. ` +
+      `Value proposition: ${karnexContext.icp.positioning}. ` +
+      `Design layout must be modern dashboard/SaaS with responsive navigation.`
+    store.setProjectName(`${karnexContext.icp.targetAudience.slice(0, 20)} Platform`)
+    store.setDraft(prompt)
+    void triggerBuild(prompt)
   }
 
   return (
     <div className="h-full overflow-y-auto forge-scroll forge-grid-bg">
-      <div className="max-w-2xl mx-auto px-6 py-16">
+      <div className="max-w-3xl mx-auto px-6 py-12 space-y-12">
         {/* Hero */}
-        <div className="text-center">
-          <h1 className="font-display text-[28px] font-bold text-white tracking-[-0.02em]">
-            What do you want to build?
+        <div className="text-center space-y-2">
+          <h1 className="font-display text-[26px] font-bold text-white tracking-[-0.02em] leading-tight">
+            Launch Your Next Venture
           </h1>
-          <p className="text-[14px] text-zinc-500 mt-2">
-            Describe your idea in plain English. Karnex agents will handle the rest.
+          <p className="text-[13px] text-zinc-550 max-w-md mx-auto">
+            Describe your software vision in natural language. The Karnex pipeline will orchestrate, scaffold, design, and deploy it.
           </p>
         </div>
 
-        {/* Main prompt */}
-        <form onSubmit={handleSubmit} className="mt-8">
+        {/* Prompt Input Area */}
+        <form onSubmit={handleSubmit} className="space-y-3 bg-[#0a0a0f]/60 backdrop-blur-md rounded-xl p-4 border border-zinc-900 shadow-xl max-w-2xl mx-auto">
           <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
             rows={4}
-            placeholder="Build a waitlist landing page with email capture, social proof section, and dark theme..."
-            className="w-full bg-[#0a0a0e] border border-[#1a1a1a] hover:border-[#262626] focus:border-indigo-500/30 rounded-xl text-[14px] text-zinc-200 placeholder-zinc-700 p-4 resize-none focus:outline-none transition-colors"
+            placeholder="Build an AI meeting summarizer with dashboard analytics, weekly status grids, Stripe billing gateway, and Supabase database..."
+            className="w-full bg-[#050508]/80 text-[13px] text-zinc-200 placeholder-zinc-700 rounded-lg border border-zinc-900 focus:border-indigo-500/35 p-3.5 resize-none focus:outline-none transition-colors"
           />
-          <button
-            type="submit"
-            disabled={!prompt.trim()}
-            className="w-full mt-3 flex items-center justify-center gap-2 bg-[#6366f1] hover:bg-[#5558e6] disabled:opacity-40 text-white text-[13px] font-medium rounded-lg px-5 py-2.5 transition-colors"
-          >
-            Start Building
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </button>
+          <div className="flex justify-between items-center">
+            {hasICP ? (
+              <button
+                type="button"
+                onClick={handleBuildFromICP}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/25 bg-purple-500/5 hover:bg-purple-500/10 text-purple-300 text-[11px] font-medium transition-all"
+              >
+                <Target className="h-3.5 w-3.5" />
+                Build from my ICP
+              </button>
+            ) : (
+              <div />
+            )}
+
+            <button
+              type="submit"
+              disabled={!draft.trim()}
+              className="flex items-center justify-center gap-2 bg-[#6366f1] hover:bg-[#5558e6] disabled:opacity-30 disabled:hover:bg-[#6366f1] text-white text-[12px] font-semibold rounded-lg px-5 py-2 transition-all shadow-lg shadow-indigo-600/10"
+            >
+              <Hammer className="h-3.5 w-3.5" />
+              Build Application
+            </button>
+          </div>
         </form>
 
-        {/* Templates */}
-        <div className="mt-12">
-          <p className="text-[11px] uppercase tracking-wider text-zinc-600 font-medium text-center">
-            Or start from a template
-          </p>
-          <div className="grid grid-cols-3 gap-3 mt-4">
-            {templates.map((tmpl) => (
+        {/* Templates Grid */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-zinc-900/60 pb-2">
+            <Layers className="h-4 w-4 text-zinc-550" />
+            <h2 className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">
+              Or start from a structured template
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {templates.slice(0, 3).map((tmpl, idx) => (
               <button
-                key={tmpl.title}
-                onClick={() => onSelectTemplate(tmpl.prompt)}
-                className="text-left bg-[#0a0a0e] border border-[#141417] hover:border-[#262626] rounded-lg p-4 transition-colors group"
+                key={tmpl.id || idx}
+                onClick={() => handleSelectTemplate(tmpl.prompt, tmpl.name)}
+                className="text-left bg-[#0a0a0f]/40 hover:bg-[#0f0f16]/40 border border-zinc-900/60 hover:border-zinc-800 rounded-lg p-4 transition-all group hover:scale-[1.01] flex flex-col justify-between"
               >
-                <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors">
-                  {tmpl.icon}
-                </span>
-                <p className="text-[13px] font-medium text-zinc-300 mt-2.5">{tmpl.title}</p>
-                <p className="text-[11px] text-zinc-600 mt-1">{tmpl.desc}</p>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-400 bg-indigo-500/5 px-1.5 py-0.5 rounded border border-indigo-500/10">
+                      {tmpl.category || 'startup'}
+                    </span>
+                    <Code2 className="h-3.5 w-3.5 text-zinc-700 group-hover:text-zinc-550 transition-colors" />
+                  </div>
+                  <h3 className="text-[13px] font-semibold text-zinc-200 mt-2 group-hover:text-white">{tmpl.name}</h3>
+                  <p className="text-[11px] text-zinc-600 leading-normal line-clamp-2 mt-1">{tmpl.description}</p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-zinc-900/40 flex items-center justify-between text-[9px] text-zinc-550 font-mono">
+                  <span>{tmpl.tech_stack?.framework || 'NextJS'}</span>
+                  <span>{tmpl.tech_stack?.database || 'Supabase'}</span>
+                </div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Recent builds */}
-        {recentBuilds.length > 0 && (
-          <div className="mt-10">
-            <p className="text-[11px] uppercase tracking-wider text-zinc-600 font-medium">
-              Recent projects
-            </p>
-            <div className="flex gap-3 mt-3 overflow-x-auto forge-scroll pb-2">
-              {recentBuilds.slice(0, 5).map((build) => (
+        {/* Recent Projects */}
+        {recentProjects.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-zinc-900/60 pb-2">
+              <Clock className="h-4 w-4 text-zinc-550" />
+              <h2 className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">
+                Recent Projects
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {recentProjects.map((proj) => (
                 <button
-                  key={build.id}
-                  onClick={() => onLoadBuild(build.id)}
-                  className="shrink-0 text-left bg-[#0a0a0e] border border-[#141417] hover:border-[#262626] rounded-lg p-3 min-w-[200px] max-w-[240px] transition-colors"
+                  key={proj.id}
+                  onClick={() => handleLoadProject(proj)}
+                  className="text-left bg-[#0a0a0f]/20 hover:bg-[#0f0f16]/30 border border-zinc-900/40 hover:border-zinc-800 rounded-lg p-3.5 flex items-center justify-between transition-all group"
                 >
-                  <p className="text-[12px] text-zinc-400 line-clamp-2">{build.spec}</p>
-                  <p className="text-[10px] text-zinc-600 mt-1.5">
-                    {new Date(build.created_at).toLocaleDateString()}
-                  </p>
+                  <div className="space-y-0.5 min-w-0">
+                    <h3 className="text-[12.5px] font-medium text-zinc-300 group-hover:text-zinc-200 truncate pr-4">
+                      {proj.name}
+                    </h3>
+                    <p className="text-[10px] text-zinc-650 font-mono">
+                      Last edited {new Date(proj.updated_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Compass className="h-4 w-4 text-zinc-700 group-hover:text-zinc-500 transition-colors shrink-0" />
                 </button>
               ))}
             </div>

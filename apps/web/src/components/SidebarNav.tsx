@@ -29,7 +29,7 @@ export default function SidebarNav({ user }: SidebarNavProps) {
 
   const navItems = [
     { href: '/home', label: 'Home', icon: 'ti-home' },
-    { href: '/studio', label: 'Studio', icon: 'ti-code' },
+    { href: '/forge', label: 'Forge', icon: 'ti-code' },
     { href: '/integrations', label: 'Integrations', icon: 'ti-plug' },
     { href: '/vault', label: 'Vault', icon: 'ti-lock' },
     { href: '/settings', label: 'Settings', icon: 'ti-settings' }

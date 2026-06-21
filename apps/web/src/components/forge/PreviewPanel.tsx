@@ -1,15 +1,8 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
-
-interface PreviewPanelProps {
-  files: Array<{ path: string; content: string; language: string }>
-  inspectMode: boolean
-  onToggleInspect: () => void
-  onSelectElement: (selector: string, text: string) => void
-  isBuilding: boolean
-  gitHubPrUrl?: string
-}
+import React, { useEffect, useRef } from 'react'
+import { useForgeStore } from '@/lib/studio/forge-store'
+import { Monitor, Smartphone, Tablet, ExternalLink } from 'lucide-react'
 
 type Viewport = 'desktop' | 'tablet' | 'mobile'
 
@@ -19,18 +12,22 @@ const viewportWidths: Record<Viewport, string> = {
   mobile: '375px',
 }
 
-/* ── HTML / React Compiler Helpers ── */
-
-export default function PreviewPanel({
-  files,
-  inspectMode,
-  onToggleInspect,
-  onSelectElement,
-  isBuilding,
-  gitHubPrUrl,
-}: PreviewPanelProps) {
+export default function PreviewPanel() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const [viewport, setViewport] = useState<Viewport>('desktop')
+  
+  // Zustand State
+  const builderOutput = useForgeStore((s) => s.builderOutput)
+  const inspectMode = useForgeStore((s) => s.inspectMode)
+  const setInspectMode = useForgeStore((s) => s.setInspectMode)
+  const previewViewport = useForgeStore((s) => s.previewViewport)
+  const setPreviewViewport = useForgeStore((s) => s.setPreviewViewport)
+  const loading = useForgeStore((s) => s.loading)
+  const setSelectedElement = useForgeStore((s) => s.setSelectedElement)
+  const setShowVisualEdit = useForgeStore((s) => s.setShowVisualEdit)
+  const setSelectedFileIdx = useForgeStore((s) => s.setSelectedFileIdx)
+
+  const files = builderOutput?.files || []
+  const gitHubPrUrl = builderOutput?.pr_url
 
   const getRenderableCode = () => {
     if (!files || files.length === 0) return ''
@@ -42,7 +39,6 @@ export default function PreviewPanel({
   }
 
   const compileToHTML = (code: string): string => {
-    // Escaped JSON serializer to inject files safely in the script tag without parsing errors
     const escapedFilesJson = JSON.stringify(files)
       .replace(/</g, '\\u003c')
       .replace(/>/g, '\\u003e');
@@ -75,7 +71,6 @@ export default function PreviewPanel({
     .inspect-hover { outline: 2px solid rgba(99,102,241,0.5) !important; outline-offset: -1px; cursor: crosshair !important; }
   </style>
 
-  <!-- Load React/ReactDOM 18 UMD from CDN, Babel Standalone, and Lucide Icons UMD -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
@@ -91,10 +86,8 @@ export default function PreviewPanel({
 
   <script>
     (function() {
-      // 1. Files module registry
       window.__files = ${escapedFilesJson};
 
-      // 2. Setup Mock Supabase Client backed by localStorage
       function createMockSupabase() {
         const getLocalStorageData = (table) => {
           try {
@@ -255,7 +248,6 @@ export default function PreviewPanel({
       }
       window.createMockSupabase = createMockSupabase;
 
-      // 3. Setup dynamic loader for lucide-react (mapping components to native SVGs)
       const LucideReactMock = new Proxy({}, {
         get(target, name) {
           if (name === '__esModule') return true;
@@ -341,7 +333,6 @@ export default function PreviewPanel({
       });
       window.LucideReactMock = LucideReactMock;
 
-      // 4. Setup mock for framer-motion to avoid heavy UMD bundle dependency
       const motionMock = new Proxy({}, {
         get(target, prop) {
           return React.forwardRef((props, ref) => {
@@ -351,7 +342,6 @@ export default function PreviewPanel({
         }
       });
 
-      // 5. Client-side Module Registry and Path Resolver
       function resolvePath(currentPath, importPath) {
         if (!importPath.startsWith('.') && !importPath.startsWith('/') && !importPath.startsWith('@/')) {
           return importPath;
@@ -360,7 +350,7 @@ export default function PreviewPanel({
           return importPath.slice(2);
         }
         const parts = currentPath.split('/');
-        parts.pop(); // remove file name
+        parts.pop(); 
         
         const importParts = importPath.split('/');
         for (const part of importParts) {
@@ -522,7 +512,6 @@ export default function PreviewPanel({
           });
         }
 
-        // Setup jsx/runtime fallback in case Babel transforms JSX to use automatic imports
         if (importPath === 'react/jsx-runtime' || importPath === 'react/jsx-dev-runtime') {
           return {
             jsx: (type, props, key) => window.React.createElement(type, { ...props, key }),
@@ -583,7 +572,6 @@ export default function PreviewPanel({
         return module.exports;
       }
 
-      // 6. Mount primary component to #preview-root when environment is fully loaded
       function startRunner() {
         if (!window.React || !window.ReactDOM || !window.Babel || !window.lucide) {
           setTimeout(startRunner, 50);
@@ -680,17 +668,57 @@ export default function PreviewPanel({
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'FORGE_ELEMENT_CLICK' && onSelectElement) {
-        onSelectElement(event.data.selector, event.data.text)
+      if (event.data?.type === 'FORGE_ELEMENT_CLICK') {
+        const { selector, text } = event.data
+        setSelectedElement({ selector, text })
+        setShowVisualEdit(true)
+
+        // Switch active file heuristic (try to find the file containing this text or tag)
+        if (files.length > 0) {
+          let bestIdx = 0
+          let maxScore = -1
+          const textLower = text.trim().toLowerCase()
+          const tag = selector.split(/[.#]/)[0] || 'element'
+          const tagLower = tag.toLowerCase()
+          const classes = selector.split('.').slice(1).map((c: string) => c.toLowerCase())
+
+          files.forEach((file, idx) => {
+            let score = 0
+            const contentLower = file.content.toLowerCase()
+
+            if (textLower && contentLower.includes(textLower)) {
+              score += 1000
+            }
+            if (classes.length > 0) {
+              let classMatches = 0
+              classes.forEach((c: string) => {
+                if (contentLower.includes(c)) classMatches++
+              })
+              score += classMatches * 50
+            }
+            if (tagLower && contentLower.includes(`<${tagLower}`)) {
+              score += 10
+            }
+            if (file.path.toLowerCase().endsWith('page.tsx') || file.path.toLowerCase().endsWith('index.html')) {
+              score += 5
+            }
+
+            if (score > maxScore && score > 0) {
+              maxScore = score
+              bestIdx = idx
+            }
+          })
+          setSelectedFileIdx(bestIdx)
+        }
       }
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [onSelectElement])
+  }, [files, setSelectedElement, setShowVisualEdit, setSelectedFileIdx])
 
-  const hasFiles = files && files.length > 0
-  const showEmpty = !hasFiles && !isBuilding
-  const showBuilding = isBuilding && !hasFiles
+  const hasFiles = files.length > 0
+  const showEmpty = !hasFiles && !loading
+  const showBuilding = loading && !hasFiles
 
   return (
     <div className="flex flex-col h-full bg-[#0a0a0e]/60 backdrop-blur-md rounded-lg overflow-hidden border border-[#141417]/80 shadow-[0_0_20px_rgba(99,102,241,0.03)] hover:shadow-[0_0_30px_rgba(99,102,241,0.07)] transition-all duration-300">
@@ -698,9 +726,9 @@ export default function PreviewPanel({
       <div className="flex items-center justify-between px-4 h-9 bg-[#0d0d11] border-b border-[#141417] shrink-0">
         {/* Traffic lights */}
         <div className="flex items-center gap-[6px]">
-          <div className="h-[10px] w-[10px] rounded-full forge-dot-red opacity-80" />
-          <div className="h-[10px] w-[10px] rounded-full forge-dot-yellow opacity-80" />
-          <div className="h-[10px] w-[10px] rounded-full forge-dot-green opacity-80" />
+          <div className="h-[10px] w-[10px] rounded-full bg-rose-500/80 opacity-80" />
+          <div className="h-[10px] w-[10px] rounded-full bg-amber-500/80 opacity-80" />
+          <div className="h-[10px] w-[10px] rounded-full bg-emerald-500/80 opacity-80" />
         </div>
 
         {/* URL bar */}
@@ -719,27 +747,15 @@ export default function PreviewPanel({
           {(['desktop', 'tablet', 'mobile'] as Viewport[]).map((vp) => (
             <button
               key={vp}
-              onClick={() => setViewport(vp)}
+              onClick={() => setPreviewViewport(vp)}
               className={`p-1.5 rounded transition-colors ${
-                viewport === vp ? 'text-zinc-300 bg-white/[0.04]' : 'text-zinc-600 hover:text-zinc-400'
+                previewViewport === vp ? 'text-zinc-300 bg-white/[0.04]' : 'text-zinc-600 hover:text-zinc-400'
               }`}
               title={vp}
             >
-              {vp === 'desktop' && (
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
-                </svg>
-              )}
-              {vp === 'tablet' && (
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5h3m-6.75 2.25h10.5a2.25 2.25 0 002.25-2.25V4.5a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 4.5v15a2.25 2.25 0 002.25 2.25z" />
-                </svg>
-              )}
-              {vp === 'mobile' && (
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-                </svg>
-              )}
+              {vp === 'desktop' && <Monitor className="h-3.5 w-3.5" />}
+              {vp === 'tablet' && <Tablet className="h-3.5 w-3.5" />}
+              {vp === 'mobile' && <Smartphone className="h-3.5 w-3.5" />}
             </button>
           ))}
 
@@ -748,7 +764,7 @@ export default function PreviewPanel({
 
           {/* Inspect toggle */}
           <button
-            onClick={onToggleInspect}
+            onClick={() => setInspectMode(!inspectMode)}
             className={`p-1.5 rounded transition-colors ${
               inspectMode ? 'text-indigo-400 bg-indigo-500/10' : 'text-zinc-600 hover:text-zinc-400'
             }`}
@@ -761,7 +777,6 @@ export default function PreviewPanel({
 
           {gitHubPrUrl && (
             <>
-              {/* Divider */}
               <div className="h-4 w-px bg-[#1a1a1a] mx-1" />
               <a
                 href={gitHubPrUrl}
@@ -770,9 +785,7 @@ export default function PreviewPanel({
                 className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-[10px] font-medium rounded px-2.5 py-1 transition-colors cursor-pointer shrink-0"
                 title="View Pull Request on GitHub"
               >
-                <svg className="h-3 w-3 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
-                </svg>
+                <ExternalLink className="h-3 w-3 text-zinc-400" />
                 <span>GitHub PR</span>
               </a>
             </>
@@ -804,9 +817,9 @@ export default function PreviewPanel({
           <div
             className="w-full h-full transition-all duration-300 ease-out"
             style={{
-              width: viewportWidths[viewport],
+              width: viewportWidths[previewViewport],
               maxWidth: '100%',
-              margin: viewport !== 'desktop' ? '0 auto' : undefined,
+              margin: previewViewport !== 'desktop' ? '0 auto' : undefined,
             }}
           >
             <iframe

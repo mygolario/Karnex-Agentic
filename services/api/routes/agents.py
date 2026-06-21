@@ -369,6 +369,8 @@ class BuilderRequest(BaseModel):
     use_selected_model_all_steps: Optional[bool] = Field(False, description="Use selected model for all subagents")
     skip_github_push: Optional[bool] = Field(False, description="Developer: skip GitHub push")
     estimated_cost_usd: Optional[List[float]] = Field(None, description="Client cost estimate [low, high]")
+    forge_project_id: Optional[str] = Field(None, description="Forge project ID for session tracking.")
+    forge_session_id: Optional[str] = Field(None, description="Active forge session ID.")
 
 
 # Async wrapper helper to execute Research Agent in background
@@ -697,6 +699,8 @@ async def trigger_builder(
         use_selected_model_all_steps=bool(payload.use_selected_model_all_steps),
         skip_github_push=bool(payload.skip_github_push),
         estimated_cost_usd=payload.estimated_cost_usd,
+        forge_project_id=payload.forge_project_id,
+        forge_session_id=payload.forge_session_id,
     )
 
     # Queue task in FastAPI background tasks
@@ -925,3 +929,60 @@ async def trigger_momentum_score(
         return run_momentum_score(MomentumScoreInput(founder_id=founder_id))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/forge/projects/{project_id}/versions", status_code=status.HTTP_200_OK)
+async def get_project_versions(
+    project_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    founder_id = current_user.get("sub")
+    if not founder_id:
+        raise HTTPException(status_code=400, detail="Missing user identity.")
+    supabase = get_supabase_admin()
+    try:
+        # First verify the project belongs to the founder
+        proj = supabase.table("forge_projects").select("id").eq("id", project_id).eq("founder_id", founder_id).maybe_single().execute()
+        if not proj.data:
+            raise HTTPException(status_code=404, detail="Project not found or access denied.")
+        
+        res = supabase.table("forge_versions").select("id, version_number, diff_summary, commit_sha, created_at").eq("project_id", project_id).order("version_number", desc=True).execute()
+        return res.data or []
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/forge/projects/{project_id}/restore/{version_number}", status_code=status.HTTP_200_OK)
+async def restore_project_version(
+    project_id: str,
+    version_number: int,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    founder_id = current_user.get("sub")
+    if not founder_id:
+        raise HTTPException(status_code=400, detail="Missing user identity.")
+    supabase = get_supabase_admin()
+    try:
+        # Verify ownership
+        proj = supabase.table("forge_projects").select("id").eq("id", project_id).eq("founder_id", founder_id).maybe_single().execute()
+        if not proj.data:
+            raise HTTPException(status_code=404, detail="Project not found or access denied.")
+        
+        # Get the version snapshot
+        ver = supabase.table("forge_versions").select("snapshot").eq("project_id", project_id).eq("version_number", version_number).maybe_single().execute()
+        if not ver.data:
+            raise HTTPException(status_code=404, detail="Version not found.")
+            
+        # Update current project version in forge_projects
+        supabase.table("forge_projects").update({
+            "current_version": version_number
+        }).eq("id", project_id).execute()
+        
+        return {"status": "success", "message": f"Restored project {project_id} to version {version_number}", "snapshot": ver.data["snapshot"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

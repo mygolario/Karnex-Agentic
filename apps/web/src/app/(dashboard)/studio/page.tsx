@@ -1,8 +1,5 @@
-'use client'
-
-import React from 'react'
-import ForgePage from '../forge/page'
+import { redirect } from 'next/navigation'
 
 export default function StudioPage() {
-  return <ForgePage />
+  redirect('/forge')
 }

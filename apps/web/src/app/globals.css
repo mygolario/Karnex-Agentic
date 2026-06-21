@@ -641,3 +641,90 @@ html.studio-fullscreen .pl-64,
 .checklist-check-done {
   animation: checkPop 0.35s ease-out forwards;
 }
+
+/* ──────────── Forge Mission Control CSS Rebuild ──────────── */
+
+.forge-mission-control {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #020204;
+}
+
+.forge-panel-resizer {
+  width: 4px;
+  background-color: rgba(255, 255, 255, 0.02);
+  cursor: col-resize;
+  transition: background-color 0.2s ease;
+  z-index: 10;
+}
+
+.forge-panel-resizer:hover, 
+.forge-panel-resizer:active {
+  background-color: rgba(99, 102, 241, 0.4);
+}
+
+.forge-context-collapsed {
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.forge-stage-active {
+  animation: stagePulse 2s infinite ease-in-out;
+}
+
+@keyframes stagePulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; filter: brightness(1.2); }
+}
+
+.forge-stage-complete {
+  animation: checkPop 0.35s ease-out forwards;
+}
+
+.forge-stage-error {
+  animation: stageErrorShake 0.4s ease-in-out;
+}
+
+@keyframes stageErrorShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.forge-viewport-toggle {
+  display: inline-flex;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 2px;
+}
+
+.forge-deploy-pulse {
+  animation: deployGlowPulse 2.5s infinite ease-in-out;
+}
+
+@keyframes deployGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.15), 0 0 2px rgba(99, 102, 241, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4), 0 0 4px rgba(99, 102, 241, 0.5);
+  }
+}
+
+.forge-element-highlight {
+  outline: 2px dashed rgba(99, 102, 241, 0.6) !important;
+  outline-offset: -2px;
+  cursor: pointer !important;
+}
+
+.forge-element-selected {
+  outline: 2px solid rgba(139, 92, 246, 0.95) !important;
+  outline-offset: -2px;
+}
+
+.forge-prompt-glow:focus-within {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.08), 0 0 2px rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}

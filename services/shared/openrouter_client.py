@@ -11,7 +11,8 @@ from shared.config import settings
 
 StepRole = Literal[
     "classifier", "fast", "pro", "supervisor",
-    "intent", "visual", "scaffold", "complex_logic", "debug", "deploy"
+    "intent", "visual", "scaffold", "complex_logic", "debug", "deploy",
+    "asset_generation", "copy_generation", "quality_check", "mirror_check"
 ]
 
 _DEFAULT_HEADERS = {
@@ -126,10 +127,11 @@ def model_from_catalog_entry(
         mapped_role = step_role
         if step_role in ("intent", "supervisor"):
             mapped_role = "supervisor"
-        elif step_role in ("visual", "complex_logic", "debug", "pro"):
+        elif step_role in ("visual", "complex_logic", "debug", "pro", "asset_generation", "copy_generation", "quality_check", "mirror_check"):
             mapped_role = "pro"
         elif step_role in ("scaffold", "deploy", "fast"):
             mapped_role = "fast"
+
         max_tokens = int(step_caps.get(mapped_role, global_max))
     else:
         max_tokens = global_max
@@ -165,18 +167,19 @@ def resolve_step_model(
         for prefer in ("claude-sonnet-4.6-thinking", "gemini-3.1-pro-high"):
             if prefer in by_id:
                 return by_id[prefer]
-    elif step_role == "visual":
+    elif step_role in ("visual", "asset_generation", "copy_generation"):
         for prefer in ("gemini-3.1-pro-high", "claude-sonnet-4.6-thinking"):
             if prefer in by_id:
                 return by_id[prefer]
-    elif step_role == "complex_logic":
+    elif step_role in ("complex_logic", "mirror_check"):
         for prefer in ("claude-opus-4.6-thinking", "claude-sonnet-4.6-thinking", "gemini-3.1-pro-high"):
             if prefer in by_id:
                 return by_id[prefer]
-    elif step_role == "debug":
+    elif step_role in ("debug", "quality_check"):
         for prefer in ("claude-sonnet-4.6-thinking", "gemini-3.1-pro-high"):
             if prefer in by_id:
                 return by_id[prefer]
+
     elif step_role == "scaffold":
         for prefer in ("karnex-forge-fast-high", "gemini-3.5-flash-high"):
             if prefer in by_id:

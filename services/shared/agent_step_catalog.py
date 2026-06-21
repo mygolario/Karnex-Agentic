@@ -34,12 +34,16 @@ AGENT_STEP_LABELS: Dict[str, List[str]] = {
         "Enriching one-click configs",
     ],
     "builder-v1": [
-        "Analyzing requirements",
-        "Designing database schema",
-        "Scaffolding API routes",
+        "Crystallizing intent",
+        "Blueprinting architecture", 
+        "Pre-generating visual assets",
+        "Scaffolding foundation",
+        "Building data layer",
         "Generating UI components",
-        "Running linter validation",
-        "Pushing to GitHub branch",
+        "Wiring integrations",
+        "Running quality pass",
+        "Testing & self-healing",
+        "Deploying to production",
     ],
     "research-v1": [
         "Generating search queries",
@@ -76,12 +80,20 @@ AGENT_STEP_LABELS: Dict[str, List[str]] = {
 # Maps builder run status strings to step index
 BUILDER_STATUS_TO_STEP: Dict[str, int] = {
     "queued": 0,
+    "crystallizing": 0,
+    "blueprinting": 1,
+    "asset_generating": 2,
+    "scaffolding": 3,
+    "coding": 5,
+    "compiling": 8,
+    "deploying": 9,
+    "success": 9,
+    # Fallback/old status strings
     "decomposing_specifications": 0,
     "spawning_db_designer": 1,
-    "spawning_ui_coder": 3,
-    "running_linter_validation": 4,
-    "committing_to_github": 5,
-    "success": 6,
+    "spawning_ui_coder": 5,
+    "running_linter_validation": 7,
+    "committing_to_github": 9,
 }
 
 RESEARCH_STATUS_TO_STEP: Dict[str, int] = {
