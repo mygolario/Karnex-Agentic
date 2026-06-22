@@ -178,6 +178,7 @@ async def _generate_file_code_llm(
         "You are a Senior React and Tailwind Developer. Generate the complete source code for the requested file.\n"
         "Ensure all Tailwind CSS classes are consistent with the visual brand tokens and style specs.\n"
         "If styling is set to tailwind, use Tailwind classes. If vanilla-css, write inline standard React style properties or custom CSS files.\n"
+        "CRITICAL: Avoid syntax/quoting errors in inline style objects (e.g. background/backgroundImage CSS rules). Never use nested unescaped single/double quotes like style={{ background: 'url('/img.jpg')' }}. Use outer double quotes and inner single quotes (e.g., \"url('/img.jpg')\") or template literals.\n"
         "Inject real marketing copywriting from the copywriting/content map instead of Lorem Ipsum.\n"
         "Use Lucide icons correctly: import them from 'lucide-react' and render them as actual JSX tags, e.g. <ArrowRight className=\"w-4 h-4\" />. Do NOT render them as literal text/strings.\n"
         "Write full, clean, production-ready code. No partial snippets or placeholders."
