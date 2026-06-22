@@ -76,13 +76,31 @@ async def run_research(input_data: ResearchInput, run_id: str, supabase: Any = N
             )
         )
 
+        # Query active MVP context from founder_memory if available
+        mvp_details = ""
+        try:
+            db_client = supabase or get_supabase_admin()
+            res = db_client.table("founder_memory").select("value").eq("founder_id", founder_id).eq("namespace", "mvp_context").eq("key", "active_mvp").maybe_single().execute()
+            if res.data and "value" in res.data:
+                val = res.data["value"]
+                mvp_details = (
+                    f"\n--- Linked MVP Context ---\n"
+                    f"Product Summary: {val.get('summary', '')}\n"
+                    f"Key Features: {', '.join(val.get('features', []))}\n"
+                    f"Tech Stack: {val.get('tech_stack', {})}\n"
+                    f"---------------------------\n"
+                )
+        except Exception as err:
+            logger.warning(f"Could not load mvp_context for research: {err}")
+
         # 6. Formulate user prompt and trigger agent execution loop
         initial_message = (
             f"Research Question: {input_data.research_question}\n"
             f"Scope: {input_data.scope}\n"
             f"Depth: {input_data.depth}\n"
             f"Preferred Sources: {input_data.preferred_sources or 'Any'}\n"
-            f"Constraints: {input_data.constraints or 'None'}\n\n"
+            f"Constraints: {input_data.constraints or 'None'}\n"
+            f"{mvp_details}\n"
             "Please perform the required research and compile the detailed brief."
         )
 

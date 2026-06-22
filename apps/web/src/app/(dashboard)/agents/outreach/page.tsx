@@ -122,7 +122,7 @@ function OutreachContent() {
     }
   }, [searchParams, refetchGmail])
 
-  // Load startup ID and latest campaign (preserves UI on page reload)
+  // Load startup ID, latest campaign, and active MVP context
   useEffect(() => {
     const loadStartupAndCampaign = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -142,7 +142,26 @@ function OutreachContent() {
         console.warn('Startup context not resolved yet. Relying on layout auto-provisioning.')
       }
 
-      // 2. Fetch Latest Campaign
+      // 2. Fetch Active MVP Context
+      const { data: mvpMem } = await supabase
+        .from('founder_memory')
+        .select('value')
+        .eq('founder_id', session.user.id)
+        .eq('namespace', 'mvp_context')
+        .eq('key', 'active_mvp')
+        .maybeSingle()
+
+      if (mvpMem && mvpMem.value) {
+        const val = mvpMem.value as any
+        setAudience(val.summary || 'SaaS solo founders')
+        setReferenceContent(
+          `Product Summary: ${val.summary || ''}\n` +
+          `Key Features: ${val.features ? val.features.join(', ') : ''}\n` +
+          `Tech Stack: ${val.tech_stack ? JSON.stringify(val.tech_stack) : ''}`
+        )
+      }
+
+      // 3. Fetch Latest Campaign
       const { data: campaignData } = await supabase
         .from('outreach_campaigns')
         .select('*')

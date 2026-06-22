@@ -46,6 +46,7 @@ from agents.sprint_planner import (
     run_sprint_planner,
 )
 from agents.war_room import WarRoomInput, WarRoomOutput, run_war_room
+from agents.mvp_scanner import MvpScannerInput, MvpScannerOutput
 from agents.war_room.schemas import FounderCapacity
 from agents.weekly_debrief import (
     WeeklyDebriefInput,
@@ -505,6 +506,69 @@ async def run_builder_async_wrapper(run_id: str, input_data: BuilderInput):
             )
         except Exception as db_err:
             logger.error(f"Failed to log builder failure: {db_err}")
+
+
+# Async wrapper helper to execute MVP Scanner Agent in background
+async def run_scanner_async_wrapper(run_id: str, input_data: MvpScannerInput):
+    try:
+        supabase = get_supabase_admin()
+        supabase.table("agent_runs").update({
+            "status": "running"
+        }).eq("id", run_id).execute()
+
+        from agents.mvp_scanner.agent import run_scanner
+        result = await asyncio.wait_for(run_scanner(input_data, run_id, supabase=supabase), timeout=600.0)
+
+        supabase.table("agent_runs").update({
+            "status": "success",
+            "completed_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", run_id).execute()
+
+        out_dump = result.model_dump()
+        await notify_task_complete(
+            input_data.task_id,
+            run_id,
+            "success",
+            agent_output=out_dump,
+        )
+
+    except asyncio.TimeoutError:
+        logger.error(f"Scanner Agent run {run_id} timed out after 10 minutes.")
+        try:
+            supabase = get_supabase_admin()
+            supabase.table("agent_runs").update({
+                "status": "error",
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "error_message": "Execution timed out after 10 minutes.",
+                "error_type": "timeout"
+            }).eq("id", run_id).execute()
+            await notify_task_complete(
+                input_data.task_id,
+                run_id,
+                "error",
+                error_message="Execution timed out after 10 minutes.",
+            )
+        except Exception as db_err:
+            logger.error(f"Failed to log scanner timeout: {db_err}")
+
+    except Exception as e:
+        logger.exception(f"Async Scanner Agent execution failed for run {run_id}")
+        try:
+            supabase = get_supabase_admin()
+            supabase.table("agent_runs").update({
+                "status": "error",
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "error_message": str(e),
+                "error_type": "agent_failure"
+            }).eq("id", run_id).execute()
+            await notify_task_complete(
+                input_data.task_id,
+                run_id,
+                "error",
+                error_message=str(e),
+            )
+        except Exception as db_err:
+            logger.error(f"Failed to log scanner failure: {db_err}")
 
 
 async def run_outreach_async_wrapper(run_id: str, input_data: OutreachInput):
@@ -985,4 +1049,63 @@ async def restore_project_version(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class ScannerRequest(BaseModel):
+    url: str = Field(..., description="The public website URL of the MVP to scan.")
+    github_repo: Optional[str] = Field(None, description="Optional GitHub repository URL of the MVP.")
+    mvp_source_platform: Optional[str] = Field("custom", description="lovable | v0 | base44 | custom")
+    forge_project_id: Optional[str] = Field(None, description="Forge project ID.")
+    startup_id: Optional[str] = Field(None, description="Startup ID.")
+    task_id: Optional[str] = Field(None, description="Task ID.")
+
+
+@router.post(
+    "/scanner",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Trigger the MVP Scanner Agent (Async)"
+)
+async def trigger_scanner(
+    payload: ScannerRequest,
+    background_tasks: BackgroundTasks,
+    current_user: Dict[str, Any] = Depends(check_premium_subscription)
+):
+    founder_id = current_user.get("sub")
+    if not founder_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User identity (sub claim) is missing from the authentication token."
+        )
+
+    run_id = str(uuid.uuid4())
+    try:
+        supabase = get_supabase_admin()
+        supabase.table("agent_runs").insert({
+            "id": run_id,
+            "founder_id": founder_id,
+            "agent_id": "mvp-scanner-v1",
+            "agent_version": "v1.0.0",
+            "status": "queued",
+            "input": payload.model_dump(),
+            "triggered_by": "user",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "llm_model": "google/gemini-2.5-pro",
+        }).execute()
+    except Exception as e:
+        logger.warning(f"Could not log async scanner run start: {e}")
+
+    agent_input = MvpScannerInput(
+        founder_id=founder_id,
+        url=payload.url,
+        github_repo=payload.github_repo,
+        mvp_source_platform=payload.mvp_source_platform,
+        forge_project_id=payload.forge_project_id,
+        startup_id=payload.startup_id,
+        task_id=payload.task_id,
+        pre_populated=bool(payload.task_id),
+    )
+
+    background_tasks.add_task(run_scanner_async_wrapper, run_id, agent_input)
+
+    return {"run_id": run_id, "status": "queued"}
 

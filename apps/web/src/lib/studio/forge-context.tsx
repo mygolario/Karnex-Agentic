@@ -21,7 +21,7 @@ interface KarnexContext {
 
 interface ForgeContextValue {
   karnexContext: KarnexContext
-  triggerBuild: (prompt: string) => Promise<void>
+  triggerBuild: (prompt: string, githubRepo?: string, platform?: string) => Promise<void>
   fetchRunOutput: (runId: string) => Promise<void>
   loadHistory: () => Promise<void>
   refreshKarnexContext: () => Promise<void>
@@ -131,7 +131,7 @@ export function ForgeContextProvider({ children }: { children: React.ReactNode }
         .from('agent_runs')
         .select('id, input, created_at, status, logs, error_message')
         .eq('founder_id', session.user.id)
-        .eq('agent_id', 'builder-v1')
+        .eq('agent_id', 'mvp-scanner-v1')
         .order('created_at', { ascending: false })
 
       if (runs) {
@@ -207,7 +207,7 @@ export function ForgeContextProvider({ children }: { children: React.ReactNode }
   }, [supabase, store, fetchRunOutput])
 
   /* ── Trigger Build ── */
-  const triggerBuild = useCallback(async (promptText: string) => {
+  const triggerBuild = useCallback(async (promptText: string, githubRepo?: string, platform?: string) => {
     if (!promptText.trim()) return
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('karnex-workspace-new')
@@ -247,27 +247,17 @@ export function ForgeContextProvider({ children }: { children: React.ReactNode }
         return
       }
 
-      const response = await fetch(getAgentApiUrl('v1/agents/builder'), {
+      const response = await fetch(getAgentApiUrl('v1/agents/scanner'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          task_type: 'custom',
-          specification: promptText,
-          tech_stack: {
-            framework: store.framework,
-            styling: store.styling,
-            database: store.database,
-          },
-          mode: store.forgeMode,
-          autonomy: store.autonomy,
-          model_id: store.selectedModelId || null,
-          auto_model: store.autoModel,
-          max_mode: store.maxMode,
+          url: promptText,
+          github_repo: githubRepo || null,
+          mvp_source_platform: platform || 'custom',
           forge_project_id: store.project?.id || null,
-          forge_session_id: store.currentRunId || null,
         }),
       })
 

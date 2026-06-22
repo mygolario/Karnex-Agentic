@@ -64,3 +64,6 @@ supabase/.temp/
 
 # Karnex Sandbox
 sandbox/
+
+# Karnex Forge Backup
+.karnex-forge-backup/
