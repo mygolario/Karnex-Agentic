@@ -11,7 +11,7 @@ class KarnexMemoryBackend(FilesystemBackend):
     """Custom FilesystemBackend that synchronizes writes and edits back to Supabase founder_memory table."""
 
     def __init__(self, root_dir: str | Path | None = None, founder_id: str | None = None) -> None:
-        super().__init__(root_dir=root_dir)
+        super().__init__(root_dir=root_dir, virtual_mode=True)
         self.founder_id = founder_id
 
     def write(self, file_path: str, content: str) -> WriteResult:

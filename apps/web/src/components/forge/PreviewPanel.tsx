@@ -486,6 +486,17 @@ export default function PreviewPanel() {
         }
 
         const file = findFile(resolved);
+        if (file && (file.path.endsWith('.json') || resolved.endsWith('.json') || importPath.endsWith('.json'))) {
+          try {
+            const parsed = JSON.parse(file.content);
+            moduleCache[resolved] = { exports: parsed };
+            return parsed;
+          } catch (err) {
+            console.error('JSON parse error in ' + file.path + ':', err);
+            return {};
+          }
+        }
+
         if (!file) {
           console.warn('Module not found:', importPath, 'resolved as:', resolved);
           return new Proxy({}, {
