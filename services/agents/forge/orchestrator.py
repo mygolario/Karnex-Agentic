@@ -169,7 +169,7 @@ class ForgeOrchestrator:
             "cost_usd": self.cost_usd,
         }
         if files_generated is not None:
-            update["files_generated"] = files_generated
+            update["files_generated"] = len(files_generated)
         if qa_score is not None:
             update["qa_score"] = qa_score
         if test_report is not None:

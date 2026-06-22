@@ -1,24 +1,24 @@
-"""Core implementation of the Outreach agent."""
-
 import time
+import shutil
+import logging
+from pathlib import Path
 from typing import Any, Optional
-
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import Tool
 from langchain_openai import ChatOpenAI
 
 from agents.outreach.prompts import OUTREACH_SYSTEM_PROMPT
 from agents.outreach.schemas import OutreachInput, OutreachLLMOutput, OutreachOutput
 from agents.pain_transformer.tools import karnex_memory_write, web_search
-from shared.agent_run_logging import (
-    advance_step,
-    complete_agent_run,
-    fail_agent_run,
-    start_agent_run,
-)
+from shared.agent_run_logging import complete_agent_run, fail_agent_run, advance_step, start_agent_run
 from shared.agent_step_catalog import get_step_labels
 from shared.config import settings
 from shared.logger import logger
 from shared.supabase_client import get_supabase_admin
+
+# Deep Agents integration imports
+from deepagents import create_deep_agent
+from shared.deepagents_integration.middleware import KarnexLoggingMiddleware
+from shared.deepagents_integration.backend import KarnexMemoryBackend
 
 AGENT_ID = "outreach-v1"
 
@@ -34,7 +34,6 @@ def save_campaign_to_db(
     try:
         supabase = get_supabase_admin()
 
-        # 1. Map messages and ab_variants into message_templates list
         message_templates = []
         for msg in output.campaign.messages:
             message_templates.append(msg.model_dump())
@@ -42,7 +41,6 @@ def save_campaign_to_db(
             for msg in output.campaign.ab_variants:
                 message_templates.append(msg.model_dump())
 
-        # 2. Insert campaign
         campaign_payload = {
             "startup_id": startup_id,
             "founder_id": founder_id,
@@ -61,7 +59,6 @@ def save_campaign_to_db(
 
         campaign_id = campaign_res.data[0]["id"]
 
-        # 3. Insert contacts
         contacts_payloads = []
         for c in input_data.contacts:
             contacts_payloads.append({
@@ -96,9 +93,9 @@ async def run_outreach(
     run_id: Optional[str] = None,
     supabase: Any = None,
 ) -> OutreachOutput:
-    """Executes the Outreach agent pipeline.
+    """Executes the Outreach agent pipeline using LangChain Deep Agents.
 
-    Takes contact details, campaign goal, target audience context and invokes Gemini 2.5 Pro
+    Takes contact details, campaign goal, target audience context and invokes Gemini Pro
     to write personalized outreach sequences, including subject lines, follow-ups, and A/B test variations.
     Saves the drafts directly to the PostgreSQL database in Supabase and returns the output.
     """
@@ -108,76 +105,85 @@ async def run_outreach(
 
     steps = get_step_labels(AGENT_ID)
     start_time = time.time()
+
     if not run_id:
         run_id = start_agent_run(AGENT_ID, founder_id, input_data.model_dump(), llm_model=settings.GEMINI_MODEL)
     elif supabase is None:
         supabase = get_supabase_admin()
 
-    try:
-        advance_step(run_id, 0, steps[0], tool_name="web_search")
-        grounding_context = ""
-        if input_data.contacts:
-            sample_contact = input_data.contacts[0]
-            query = f"{sample_contact.company or ''} {sample_contact.title or ''} company profile".strip()
-            if query:
-                grounding_context = web_search(query)
+    # 1. Setup local temporary sandbox directory
+    sandbox_dir = Path("c:/Karnex-Agentic/sandbox") / f"outreach_{run_id}"
+    sandbox_dir.mkdir(parents=True, exist_ok=True)
 
-        advance_step(run_id, 1, steps[1], tool_name="llm_compose")
+    try:
+        # 2. Initialize LLM (Gemini Pro via OpenRouter)
+        logger.info("Initializing OpenRouter LLM model client...")
         llm = ChatOpenAI(
             model=settings.GEMINI_MODEL,
             openai_api_key=settings.OPENROUTER_API_KEY,
             openai_api_base=settings.OPENROUTER_BASE_URL,
             max_tokens=settings.OPENROUTER_MAX_TOKENS_OUTREACH,
-            default_headers={
-                "HTTP-Referer": "https://karnex.ai",
-                "X-Title": "Karnex"
-            },
-            temperature=0.7
+            default_headers={"HTTP-Referer": "https://karnex.ai", "X-Title": "Karnex"},
+            temperature=0.7,
         )
-        structured_llm = llm.with_structured_output(OutreachLLMOutput)
 
-        # Step 3: Setup prompt templates
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", OUTREACH_SYSTEM_PROMPT),
-            ("user", (
-                "Here is the context for the outreach campaign:\n"
-                "Campaign Goal: {campaign_goal}\n"
-                "Target Audience: {target_audience}\n"
-                "Tone Preferred: {tone}\n"
-                "Sequence Length: {sequence_length}\n"
-                "Reference Content: {reference_content}\n\n"
-                "Here is the contact list size: {contact_count} contacts.\n"
-                "Sample Contact 1 details: {first_name} {last_name} working as {title} at {company}.\n\n"
-                "Grounding web search results for the target context:\n"
-                "{grounding_context}\n\n"
-                "Please compose the email outreach campaign template sequence (Variant A), A/B variants for Step 1 (Variant B), "
-                "and schedule recommendation in JSON format matching the schema."
-            ))
-        ])
+        # 3. Construct integration backend and middleware
+        backend = KarnexMemoryBackend(root_dir=sandbox_dir, founder_id=founder_id)
+        logging_middleware = KarnexLoggingMiddleware(run_id=run_id, founder_id=founder_id)
 
-        # Step 4: Execute chain
+        # 4. Wrap web search function as a LangChain tool
+        search_tool = Tool(
+            name="web_search",
+            func=web_search,
+            description="Searches DuckDuckGo to retrieve real-time facts about companies, industry context, or targets."
+        )
+
+        # 5. Create deep agent compiled graph with structured output format
+        logger.info("Compiling LangChain Deep Agents Outreach graph...")
+        agent = create_deep_agent(
+            model=llm,
+            backend=backend,
+            middleware=[logging_middleware],
+            tools=[search_tool],
+            response_format=OutreachLLMOutput,
+            system_prompt=(
+                "You are an outreach and lead generation specialist. Your goal is to review a campaign goal, "
+                "audience, and contact list details, and produce a high-performing outreach sequence.\n"
+                "You must perform web searches to research target companies or audience context, "
+                "then write personalized email templates matching the structured schema."
+            )
+        )
+
+        # 6. Formulate user prompt and trigger agent execution loop
         sample_contact = input_data.contacts[0] if input_data.contacts else None
-        chain = prompt | structured_llm
-        raw_output: OutreachLLMOutput = chain.invoke({
-            "campaign_goal": input_data.campaign_goal,
-            "target_audience": input_data.target_audience,
-            "tone": input_data.tone or "direct",
-            "sequence_length": input_data.sequence_length or 3,
-            "reference_content": input_data.reference_content or "No reference content provided",
-            "contact_count": len(input_data.contacts),
-            "first_name": sample_contact.first_name if sample_contact else "N/A",
-            "last_name": sample_contact.last_name if sample_contact else "N/A",
-            "title": sample_contact.title if sample_contact else "N/A",
-            "company": sample_contact.company if sample_contact else "N/A",
-            "grounding_context": grounding_context or "No search context necessary"
-        })
+        initial_message = (
+            f"Campaign Goal: {input_data.campaign_goal}\n"
+            f"Target Audience: {input_data.target_audience}\n"
+            f"Tone Preferred: {input_data.tone or 'direct'}\n"
+            f"Sequence Length: {input_data.sequence_length or 3}\n"
+            f"Reference Content: {input_data.reference_content or 'No reference content provided'}\n\n"
+            f"Contact Count: {len(input_data.contacts)} contacts.\n"
+            f"Sample Contact Details: {sample_contact.first_name if sample_contact else 'N/A'} "
+            f"{sample_contact.last_name if sample_contact else 'N/A'} working as "
+            f"{sample_contact.title if sample_contact else 'N/A'} at {sample_contact.company if sample_contact else 'N/A'}.\n\n"
+            "Please perform any necessary research and output the campaign sequences."
+        )
+
+        state = {"messages": [("user", initial_message)]}
+        logger.info("Invoking Deep Agent outreach loop...")
+        final_state = await agent.ainvoke(state)
+
+        # 7. Extract structured response
+        raw = final_state.get("structured_response")
+        if not raw or not isinstance(raw, OutreachLLMOutput):
+            raise ValueError("Agent execution completed but did not produce a structured OutreachLLMOutput.")
 
         output = OutreachOutput(
-            campaign=raw_output.campaign,
-            requires_approval=raw_output.requires_approval,
+            campaign=raw.campaign,
+            requires_approval=raw.requires_approval,
             context_summary=(
-                f"I drafted outreach \"{raw_output.campaign.name}\" with "
-                f"{len(raw_output.campaign.messages)} messages — awaiting your approval."
+                f"I drafted outreach \"{raw.campaign.name}\" with "
+                f"{len(raw.campaign.messages)} messages — awaiting your approval."
             ),
             step_labels=steps,
             confidence="medium",
@@ -185,10 +191,12 @@ async def run_outreach(
             pre_populated=bool(getattr(input_data, "pre_populated", False)),
         )
 
+        # 8. Save campaign and contacts to database
         advance_step(run_id, 2, steps[2], tool_name="save_campaign")
         campaign_id = save_campaign_to_db(founder_id, startup_id, run_id, input_data, output)
 
-        # Step 6: Save output to Karnex Memory
+        # 9. Save output to Karnex Memory
+        logger.info("Persisting campaign output to founder memory...")
         karnex_memory_write(
             founder_id=founder_id,
             namespace="outreach",
@@ -197,13 +205,17 @@ async def run_outreach(
             tags=["campaign", "outreach", "executor", "email"]
         )
 
-        complete_agent_run(
-            run_id, founder_id, output, "outreach_campaign",
-            duration_ms=int((time.time() - start_time) * 1000),
-        )
+        # 10. Clean up temporary directories
+        shutil.rmtree(sandbox_dir, ignore_errors=True)
+
+        # 11. Complete agent run
+        duration_ms = int((time.time() - start_time) * 1000)
+        complete_agent_run(run_id, founder_id, output, "outreach_campaign", duration_ms=duration_ms)
         return output
 
     except Exception as e:
-        logger.exception("Error executing Outreach agent")
-        fail_agent_run(run_id, str(e), duration_ms=int((time.time() - start_time) * 1000))
+        logger.exception("Deep Agents Outreach pipeline failed")
+        duration_ms = int((time.time() - start_time) * 1000)
+        fail_agent_run(run_id, str(e), duration_ms=duration_ms)
+        shutil.rmtree(sandbox_dir, ignore_errors=True)
         raise
