@@ -33,120 +33,111 @@ export default function ContextPanel() {
   }
 
   return (
-    <div className="forge-glass-card overflow-hidden">
+    <div className="flex flex-col bg-zinc-950/20">
       {/* Header */}
-      <button
-        onClick={() => setShowContextPanel(!showContextPanel)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
-      >
+      <div className="px-4 py-3.5 flex items-center justify-between border-b border-zinc-900/50 bg-zinc-950/40">
         <div className="flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-          <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-medium">
-            Karnex Context
+          <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold font-mono">
+            Project Context
           </span>
         </div>
-        {showContextPanel ? (
-          <ChevronDown className="h-3.5 w-3.5 text-zinc-600" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-zinc-600" />
-        )}
-      </button>
+      </div>
 
-      {/* Collapsible content */}
-      <div className={`forge-context-collapsed ${showContextPanel ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden transition-all duration-300 ease-out`}>
-        <div className="px-4 pb-4 space-y-3">
+      {/* Content panel */}
+      <div className="p-4 space-y-4">
 
-          {/* ICP Snapshot */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Target className="h-3 w-3 text-purple-400" />
-              <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">ICP</span>
-            </div>
-            {hasICP ? (
-              <div className="bg-white/[0.02] rounded-lg p-2.5 border border-white/[0.04] space-y-1">
-                <p className="text-[11px] text-zinc-300 font-medium">{karnexContext.icp!.targetAudience}</p>
-                <div className="flex flex-wrap gap-1">
-                  {karnexContext.icp!.painPoints.slice(0, 3).map((p, i) => (
-                    <span key={i} className="text-[9px] bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded">
-                      {p}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-[10px] text-zinc-600 italic">No ICP data found in Vault</p>
-            )}
+        {/* ICP Snapshot */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-zinc-500 font-mono text-[9px] uppercase tracking-wider font-bold">
+            <Target className="h-3 w-3 text-purple-400" />
+            Target Audience (ICP)
           </div>
-
-          {/* Roadmap Phase */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Map className="h-3 w-3 text-blue-400" />
-              <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Roadmap</span>
-            </div>
-            <p className="text-[11px] text-zinc-300">
-              {karnexContext.roadmapPhase || <span className="text-zinc-600 italic">No roadmap set</span>}
-            </p>
-          </div>
-
-          {/* Momentum Score */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <TrendingUp className="h-3 w-3 text-emerald-400" />
-              <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Momentum</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${karnexContext.momentumScore || 0}%` }}
-                />
-              </div>
-              <span className={`text-[11px] font-mono font-medium ${getMomentumColor(karnexContext.momentumScore)}`}>
-                {karnexContext.momentumScore != null ? `${karnexContext.momentumScore}%` : '—'}
-              </span>
-            </div>
-          </div>
-
-          {/* Recent Decisions */}
-          {karnexContext.recentDecisions.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <Lightbulb className="h-3 w-3 text-amber-400" />
-                <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Recent Decisions</span>
-              </div>
-              <div className="space-y-1">
-                {karnexContext.recentDecisions.slice(0, 3).map((d, i) => (
-                  <p key={i} className="text-[10px] text-zinc-400 flex items-start gap-1.5">
-                    <span className="text-zinc-700 mt-0.5 shrink-0">—</span>
-                    <span className="line-clamp-1">{d}</span>
-                  </p>
+          {hasICP ? (
+            <div className="bg-[#0b0b0d] rounded-lg p-3 border border-zinc-900/80 space-y-2">
+              <p className="text-[11.5px] text-zinc-300 font-medium leading-relaxed">{karnexContext.icp!.targetAudience}</p>
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {karnexContext.icp!.painPoints.slice(0, 3).map((p, i) => (
+                  <span key={i} className="text-[9px] bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded border border-purple-500/10 font-mono font-medium">
+                    {p}
+                  </span>
                 ))}
               </div>
             </div>
+          ) : (
+            <p className="text-[11px] text-zinc-650 italic pl-1">No ICP context established.</p>
           )}
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={() => refreshKarnexContext()}
-              className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-medium text-zinc-400 hover:text-zinc-200 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] rounded-lg py-1.5 transition-colors"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Update
-            </button>
-            {hasICP && (
-              <button
-                onClick={handleBuildFromICP}
-                className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-medium text-indigo-300 hover:text-indigo-200 bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/20 rounded-lg py-1.5 transition-colors"
-              >
-                <Sparkles className="h-3 w-3" />
-                Build from ICP
-              </button>
-            )}
+        {/* Roadmap Phase */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-zinc-500 font-mono text-[9px] uppercase tracking-wider font-bold">
+            <Map className="h-3 w-3 text-blue-400" />
+            Roadmap Stage
           </div>
+          <p className="text-[11.5px] text-zinc-300 font-medium bg-[#0b0b0d] rounded-lg p-3 border border-zinc-900/80 select-text leading-relaxed">
+            {karnexContext.roadmapPhase || <span className="text-zinc-600 italic">No roadmap phase assigned</span>}
+          </p>
+        </div>
+
+        {/* Momentum Score */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-zinc-500 font-mono text-[9px] uppercase tracking-wider font-bold">
+            <TrendingUp className="h-3 w-3 text-emerald-400" />
+            Momentum index
+          </div>
+          <div className="bg-[#0b0b0d] rounded-lg p-3 border border-zinc-900/80 flex items-center justify-between gap-4">
+            <div className="flex-1 h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500"
+                style={{ width: `${karnexContext.momentumScore || 0}%` }}
+              />
+            </div>
+            <span className={`text-[11px] font-mono font-bold ${getMomentumColor(karnexContext.momentumScore)}`}>
+              {karnexContext.momentumScore != null ? `${karnexContext.momentumScore}%` : '—'}
+            </span>
+          </div>
+        </div>
+
+        {/* Recent Decisions */}
+        {karnexContext.recentDecisions.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-zinc-500 font-mono text-[9px] uppercase tracking-wider font-bold">
+              <Lightbulb className="h-3 w-3 text-amber-400" />
+              Strategic Decisions
+            </div>
+            <div className="space-y-1.5 bg-[#0b0b0d] rounded-lg p-3 border border-zinc-900/80">
+              {karnexContext.recentDecisions.slice(0, 3).map((d, i) => (
+                <p key={i} className="text-[10.5px] text-zinc-400 flex items-start gap-2 leading-relaxed">
+                  <span className="text-zinc-700 mt-1.5 shrink-0 h-1 w-1 rounded-full bg-zinc-650" />
+                  <span>{d}</span>
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2 border-t border-zinc-900/40">
+          <button
+            onClick={() => refreshKarnexContext()}
+            className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-medium text-zinc-400 hover:text-zinc-200 bg-[#0e0e11] hover:bg-zinc-900 border border-zinc-900 rounded-lg py-2 transition-colors cursor-pointer"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Sync
+          </button>
+          {hasICP && (
+            <button
+              onClick={handleBuildFromICP}
+              className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-medium text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/20 hover:border-indigo-500/35 rounded-lg py-2 transition-colors cursor-pointer"
+            >
+              <Sparkles className="h-3 w-3" />
+              Build ICP
+            </button>
+          )}
         </div>
       </div>
     </div>
   )
 }
+

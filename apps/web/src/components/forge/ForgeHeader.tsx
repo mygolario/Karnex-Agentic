@@ -6,7 +6,7 @@ import { useForgeStore } from '@/lib/studio/forge-store'
 import {
   ChevronLeft, Clock, Plus, Code2, Rocket,
   Monitor, Smartphone, Tablet, Loader2, Check,
-  Copy, ExternalLink, Zap, Globe,
+  Copy, ExternalLink, Zap, Globe, PanelLeftClose, PanelLeft,
 } from 'lucide-react'
 
 const GithubIcon = ({ className }: { className?: string }) => (
@@ -32,6 +32,8 @@ export default function ForgeHeader() {
   const loading = useForgeStore((s) => s.loading)
   const builderOutput = useForgeStore((s) => s.builderOutput)
   const currentRunStatus = useForgeStore((s) => s.currentRunStatus)
+  const showContextPanel = useForgeStore((s) => s.showContextPanel)
+  const setShowContextPanel = useForgeStore((s) => s.setShowContextPanel)
 
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(projectName)
@@ -89,20 +91,30 @@ export default function ForgeHeader() {
       : 'idle'
 
   return (
-    <div className="h-12 flex items-center justify-between px-5 bg-[#0a0a0e]/90 backdrop-blur-sm border-b border-[#141417] shrink-0 relative z-20">
+    <div className="h-14 flex items-center justify-between px-5 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900 shrink-0 relative z-20">
       {/* Left — Brand + Project */}
       <div className="flex items-center gap-2 min-w-0">
         <Link
           href="/home"
-          className="flex items-center justify-center p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] transition-colors shrink-0 mr-1"
+          className="flex items-center justify-center p-1.5 rounded-md text-zinc-550 hover:text-zinc-300 hover:bg-white/[0.04] transition-colors shrink-0 mr-1"
           title="Back to Dashboard"
         >
           <ChevronLeft className="h-4 w-4" />
         </Link>
-        <span className="font-display text-[15px] font-semibold text-white tracking-[-0.01em] shrink-0">
+        
+        {/* Collapsible Sidebar Toggle Button */}
+        <button
+          onClick={() => setShowContextPanel(!showContextPanel)}
+          className="p-1.5 rounded-md text-zinc-550 hover:text-zinc-300 hover:bg-white/[0.04] transition-colors shrink-0 cursor-pointer mr-2"
+          title={showContextPanel ? "Hide left panel" : "Show left panel"}
+        >
+          {showContextPanel ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+        </button>
+
+        <span className="font-display text-[14px] font-bold text-white tracking-tight shrink-0">
           Forge
         </span>
-        <span className="text-[#262626] text-[14px] shrink-0">/</span>
+        <span className="text-zinc-800 text-[14px] shrink-0 font-light">/</span>
         {editing ? (
           <input
             ref={inputRef}
@@ -113,12 +125,12 @@ export default function ForgeHeader() {
               if (e.key === 'Enter') handleNameSave()
               if (e.key === 'Escape') { setEditing(false); setEditName(projectName) }
             }}
-            className="text-[13px] text-zinc-200 bg-transparent border border-indigo-500/30 rounded px-1.5 py-0.5 outline-none max-w-[180px]"
+            className="text-[12.5px] text-zinc-200 bg-[#0c0c0f] border border-zinc-800 rounded px-2 py-0.5 outline-none max-w-[180px] font-medium"
           />
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="text-[13px] text-zinc-400 hover:text-zinc-200 truncate max-w-[180px] transition-colors cursor-pointer"
+            className="text-[12.5px] text-zinc-400 hover:text-zinc-200 truncate max-w-[180px] transition-colors cursor-pointer font-medium"
             title="Click to rename"
           >
             {projectName || 'Untitled project'}
@@ -126,20 +138,21 @@ export default function ForgeHeader() {
         )}
       </div>
 
-      {/* Center — Tabs */}
+      {/* Center — Tabs Switcher */}
       <div className="absolute left-[calc(50%-32px)] -translate-x-1/2 flex items-center">
-        <div className="flex items-center gap-1 relative">
+        <div className="flex items-center gap-0.5 bg-[#030303] border border-zinc-900 rounded-lg p-0.5 relative shadow-inner">
           {tabs.map((tab) => {
             const Icon = tab.icon
+            const isTabActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
                 ref={(el) => { tabRefs.current[tab.id] = el }}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors relative z-10 ${
-                  activeTab === tab.id
-                    ? 'text-white'
-                    : 'text-zinc-500 hover:text-zinc-300'
+                className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium rounded-md transition-all relative z-10 cursor-pointer ${
+                  isTabActive
+                    ? 'text-white bg-zinc-900 border border-zinc-800/80 shadow-md font-semibold'
+                    : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -147,32 +160,26 @@ export default function ForgeHeader() {
               </button>
             )
           })}
-          {/* Sliding indicator */}
-          <div
-            ref={indicatorRef}
-            className="absolute bottom-0 h-[2px] bg-[#6366f1] rounded-full forge-tab-indicator"
-            style={{ left: 0, width: 0 }}
-          />
         </div>
       </div>
 
       {/* Right — Actions */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Connection indicators */}
-        <div className="hidden lg:flex items-center gap-1.5 mr-2">
-          <div className="flex items-center gap-1 text-[10px]" title="GitHub">
-            <GithubIcon className="h-3 w-3 text-zinc-600" />
-            <span className={`h-[5px] w-[5px] rounded-full ${deploymentUrl ? 'bg-emerald-500' : 'bg-zinc-700'}`} />
+        <div className="hidden lg:flex items-center gap-2.5 mr-3 border-r border-zinc-900 pr-3.5 py-1">
+          <div className="flex items-center gap-1 text-[10px]" title="GitHub connected">
+            <GithubIcon className="h-3.5 w-3.5 text-zinc-500" />
+            <span className={`h-1.5 w-1.5 rounded-full ${deploymentUrl ? 'bg-emerald-500' : 'bg-zinc-850'}`} />
           </div>
-          <div className="flex items-center gap-1 text-[10px]" title="OpenRouter">
-            <Globe className="h-3 w-3 text-zinc-600" />
-            <span className="h-[5px] w-[5px] rounded-full bg-emerald-500" />
+          <div className="flex items-center gap-1 text-[10px]" title="OpenRouter available">
+            <Globe className="h-3.5 w-3.5 text-zinc-500" />
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           </div>
         </div>
 
         <button
           onClick={() => setShowVersions(!showVersions)}
-          className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors"
+          className={`p-1.5 rounded-md transition-colors cursor-pointer ${showVersions ? 'text-indigo-400 bg-indigo-500/10' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]'}`}
           title="Version history"
         >
           <Clock className="h-4 w-4" />
@@ -186,7 +193,7 @@ export default function ForgeHeader() {
                 sessionStorage.setItem('karnex-workspace-new', 'true')
               }
             }}
-            className="flex items-center gap-1.5 border border-zinc-800 text-[12px] font-medium rounded-md px-3 py-1.5 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 transition-all"
+            className="flex items-center gap-1.5 border border-zinc-800 text-[11.5px] font-medium rounded-lg px-3 py-1.5 bg-[#0e0e11] hover:bg-zinc-900 text-zinc-300 hover:text-white transition-all cursor-pointer shadow-sm"
             title="Start a new project"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -194,25 +201,25 @@ export default function ForgeHeader() {
           </button>
         )}
 
-        {/* Deploy Button — ALWAYS VISIBLE */}
+        {/* Deploy Button */}
         <div className="relative">
           {deployStatus === 'building' ? (
             <button
               disabled
-              className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[12px] font-medium rounded-md px-3 py-1.5 cursor-wait"
+              className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[11.5px] font-medium rounded-lg px-3 py-1.5 cursor-wait"
             >
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Building...
             </button>
           ) : deployStatus === 'deployed' ? (
             <div className="flex items-center gap-1">
-              <div className="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[12px] font-medium rounded-md px-3 py-1.5">
+              <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11.5px] font-medium rounded-lg px-3 py-1.5">
                 <Check className="h-3.5 w-3.5" />
                 Live
               </div>
               <button
                 onClick={handleCopyUrl}
-                className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors"
+                className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors cursor-pointer"
                 title={copied ? 'Copied!' : 'Copy deploy URL'}
               >
                 {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -221,7 +228,7 @@ export default function ForgeHeader() {
                 href={deploymentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors"
+                className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors cursor-pointer"
                 title="Open in new tab"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -230,7 +237,7 @@ export default function ForgeHeader() {
           ) : (
             <button
               onClick={() => setActiveTab('deploy')}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-[12px] font-medium rounded-md px-4 py-1.5 transition-all forge-deploy-pulse shadow-lg shadow-indigo-500/20"
+              className="flex items-center gap-1.5 bg-white hover:bg-zinc-200 text-black text-[11.5px] font-semibold rounded-lg px-4 py-1.5 transition-all shadow-md cursor-pointer"
             >
               <Rocket className="h-3.5 w-3.5" />
               Deploy

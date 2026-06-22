@@ -190,89 +190,104 @@ export default function CodePanel({
   }
 
   return (
-    <div className="flex h-full bg-[#0a0a0e]/60 backdrop-blur-md rounded-lg overflow-hidden border border-[#141417]/80 shadow-[0_0_20px_rgba(99,102,241,0.03)] hover:shadow-[0_0_30px_rgba(99,102,241,0.07)] transition-all duration-300">
+    <div className="flex h-full bg-[#050507] overflow-hidden border border-zinc-900/60 rounded-xl shadow-2xl relative">
       {/* File Tree Explorer (left) */}
-      <div className="w-[180px] bg-[#09090b] border-r border-[#141417] flex flex-col shrink-0">
+      <div className="w-[190px] bg-[#09090b] border-r border-zinc-900/60 flex flex-col shrink-0">
         {/* Search */}
-        <div className="p-2 border-b border-[#141417] relative">
+        <div className="p-2.5 border-b border-zinc-900/60 relative bg-zinc-950/40">
           <input
             type="text"
             placeholder="Search files..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#050507] text-[11px] text-zinc-300 placeholder-zinc-700 rounded-md border border-zinc-900 focus:border-indigo-500/30 p-1.5 pl-6 focus:outline-none transition-colors"
+            className="w-full bg-[#030303] text-[11px] text-zinc-300 placeholder-zinc-700 rounded-md border border-zinc-900 focus:border-zinc-800 p-1.5 pl-7 focus:outline-none transition-all font-mono"
           />
-          <Search className="h-3 w-3 text-zinc-700 absolute left-3.5 top-[15px]" />
+          <Search className="h-3 w-3 text-zinc-750 absolute left-4 top-[17px]" />
         </div>
 
         {/* File List */}
-        <div className="flex-1 overflow-y-auto forge-scroll py-1">
-          {filteredFiles.map((file) => (
-            <button
-              key={file.originalIdx}
-              onClick={() => setSelectedFileIdx(file.originalIdx)}
-              className={`w-full text-left flex items-center gap-2 px-3 py-1.5 transition-colors ${
-                selectedFileIdx === file.originalIdx
-                  ? 'bg-white/[0.04] border-l-2 border-l-[#6366f1]'
-                  : 'border-l-2 border-l-transparent hover:bg-white/[0.02]'
-              }`}
-            >
-              <FileIcon language={file.language} />
-              <span className={`text-[11px] font-mono truncate ${
-                selectedFileIdx === file.originalIdx ? 'text-zinc-200' : 'text-zinc-400'
-              }`}>
-                {getBasename(file.path)}
-              </span>
-            </button>
-          ))}
+        <div className="flex-1 overflow-y-auto forge-scroll py-1.5 space-y-0.5">
+          {filteredFiles.map((file) => {
+            const isFileSelected = selectedFileIdx === file.originalIdx
+            return (
+              <button
+                key={file.originalIdx}
+                onClick={() => setSelectedFileIdx(file.originalIdx)}
+                className={`w-full text-left flex items-center gap-2 px-3 py-2 transition-all cursor-pointer ${
+                  isFileSelected
+                    ? 'bg-zinc-900/60 border-l-2 border-indigo-500 font-semibold shadow-sm'
+                    : 'border-l-2 border-transparent hover:bg-zinc-900/20'
+                }`}
+              >
+                <FileIcon language={file.language} />
+                <span className={`text-[11px] font-mono truncate ${
+                  isFileSelected ? 'text-white font-medium' : 'text-zinc-500 hover:text-zinc-350'
+                }`}>
+                  {getBasename(file.path)}
+                </span>
+              </button>
+            )
+          })}
           {filteredFiles.length === 0 && (
-            <span className="text-[10px] text-zinc-700 px-3 py-2 block italic text-center">No matches</span>
+            <span className="text-[10px] text-zinc-700 px-3 py-4 block italic text-center font-mono">No files match</span>
           )}
         </div>
       </div>
 
       {/* Main Code Editor (right) */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 h-9 border-b border-[#141417] bg-[#0c0c0f] shrink-0">
-          <span className="text-[11px] text-zinc-500 font-mono truncate mr-2" title={activeFile?.path}>
-            {activeFile?.path}
-          </span>
-          <div className="flex items-center gap-2">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#030303]">
+        {/* Editor Toolbar Header */}
+        <div className="flex items-center justify-between px-4 h-11 border-b border-zinc-900/60 bg-[#0a0a0c]/80 backdrop-blur-sm shrink-0">
+          <div className="text-[10.5px] font-mono truncate mr-3 flex items-center max-w-[60%]" title={activeFile?.path}>
+            {activeFile?.path ? (
+              activeFile.path.split('/').map((part, index, arr) => (
+                <React.Fragment key={index}>
+                  <span className={index === arr.length - 1 ? 'text-zinc-200 font-medium' : 'text-zinc-600'}>
+                    {part}
+                  </span>
+                  {index < arr.length - 1 && <span className="text-zinc-800 mx-1 select-none">/</span>}
+                </React.Fragment>
+              ))
+            ) : (
+              <span className="text-zinc-600">Untitled file</span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2 shrink-0">
             {/* Diff Comparison Button */}
             {originalContents[activeFile?.path] !== editContent && (
               <button
                 onClick={() => setDiffMode(!diffMode)}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border transition-colors ${
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer font-mono ${
                   diffMode
-                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-300'
+                    ? 'bg-amber-500/15 border-amber-500/25 text-amber-400 font-bold'
+                    : 'bg-[#0e0e11] border-zinc-900 text-zinc-400 hover:text-zinc-250 hover:bg-zinc-900'
                 }`}
                 title="View original VS edits"
               >
                 <RefreshCw className={`h-2.5 w-2.5 ${diffMode ? 'animate-spin' : ''}`} />
-                {diffMode ? 'Original' : 'Edits'}
+                {diffMode ? 'Original' : 'Compare'}
               </button>
             )}
 
             {/* Read/Write Toggle */}
             <button
               onClick={() => { setEditable(!editable); setDiffMode(false) }}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer font-mono ${
                 editable
-                  ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300'
-                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-300'
+                  ? 'bg-indigo-500/10 border-indigo-500/25 text-indigo-300'
+                  : 'bg-[#0e0e11] border-zinc-900 text-zinc-450 hover:text-zinc-250 hover:bg-zinc-900'
               }`}
             >
               {editable ? <Eye className="h-2.5 w-2.5" /> : <Edit2 className="h-2.5 w-2.5" />}
-              {editable ? 'Read-only' : 'Edit'}
+              {editable ? 'Lock code' : 'Edit file'}
             </button>
 
             {/* Reset to Original */}
             {editable && originalContents[activeFile?.path] !== editContent && (
               <button
                 onClick={handleReset}
-                className="px-2 py-1 rounded text-[10px] font-medium border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-rose-400 transition-colors"
+                className="px-2 py-1 rounded-md text-[10px] font-semibold border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-rose-450 transition-all cursor-pointer font-mono"
               >
                 Reset
               </button>
@@ -281,8 +296,8 @@ export default function CodePanel({
             {/* Copy Button */}
             <button
               onClick={handleCopy}
-              className="p-1 rounded text-zinc-650 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors"
-              title="Copy code"
+              className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-350 hover:bg-zinc-900 transition-all cursor-pointer"
+              title="Copy file contents"
             >
               {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
@@ -290,12 +305,12 @@ export default function CodePanel({
         </div>
 
         {/* Editor Area */}
-        <div className="flex-1 overflow-auto forge-scroll min-h-0 bg-[#050508]/40">
+        <div className="flex-1 overflow-auto forge-scroll min-h-0 bg-[#030305]">
           <div className="flex min-h-full">
             {/* Line numbers */}
-            <div className="shrink-0 w-11 bg-[#09090b]/30 border-r border-[#141417] select-none pt-4 pb-4">
+            <div className="shrink-0 w-11 bg-zinc-950/20 border-r border-zinc-900/50 select-none pt-4 pb-4">
               {lines.map((_, i) => (
-                <div key={i} className="text-[11px] font-mono text-zinc-700 text-right pr-3 leading-[1.65]">
+                <div key={i} className="text-[10px] font-mono text-zinc-700 text-right pr-3.5 leading-[1.65]">
                   {i + 1}
                 </div>
               ))}
@@ -307,11 +322,11 @@ export default function CodePanel({
                 <textarea
                   value={editContent}
                   onChange={(e) => handleContentChange(e.target.value)}
-                  className="absolute inset-0 w-full h-full p-4 font-mono text-[11px] leading-[1.65] bg-transparent text-zinc-350 focus:outline-none resize-none overflow-auto forge-scroll"
+                  className="absolute inset-0 w-full h-full p-4 font-mono text-[11px] leading-[1.65] bg-transparent text-zinc-300 focus:outline-none resize-none overflow-auto forge-scroll select-text"
                   spellCheck={false}
                 />
               ) : (
-                <pre className="p-4 font-mono text-[11px] leading-[1.65] text-zinc-300 overflow-x-auto">
+                <pre className="p-4 font-mono text-[11px] leading-[1.65] text-zinc-350 overflow-x-auto select-text">
                   <code dangerouslySetInnerHTML={{ __html: highlightedCode }} />
                 </pre>
               )}
@@ -322,3 +337,4 @@ export default function CodePanel({
     </div>
   )
 }
+

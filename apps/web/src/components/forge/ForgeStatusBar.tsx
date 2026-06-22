@@ -100,37 +100,37 @@ export default function ForgeStatusBar() {
   if (!loading && currentRunStatus !== 'success' && currentRunStatus !== 'error') {
     // Minimal status bar when idle
     return (
-      <div className="flex flex-col h-full">
-        <div className="px-3 py-3 border-b border-[#141417]">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Build Pipeline</span>
+      <div className="flex flex-col h-full bg-[#050507]">
+        <div className="px-4 py-3 border-b border-zinc-900/50 bg-zinc-950/40">
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold font-mono">Build Pipeline</span>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-          <div className="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center mb-2">
-            <Zap className="h-4 w-4 text-zinc-600" />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="h-9 w-9 rounded-xl border border-zinc-900 bg-zinc-950/80 flex items-center justify-center mb-3 text-zinc-550 shadow-md">
+            <Zap className="h-4 w-4" />
           </div>
-          <p className="text-[11px] text-zinc-600">Ready to build</p>
-          <p className="text-[10px] text-zinc-700 mt-1">Describe your idea to begin</p>
+          <p className="text-[11.5px] font-medium text-zinc-400">Pipeline Standby</p>
+          <p className="text-[10px] text-zinc-650 mt-1 max-w-[150px] leading-relaxed">Enter a prompt in the orchestrator to launch a build run.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden bg-[#050507]">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-[#141417] shrink-0">
-        <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-semibold">Build Pipeline</span>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-900/50 bg-zinc-950/40 shrink-0">
+        <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-bold font-mono">Build Pipeline</span>
         {eta != null && (
-          <div className="flex items-center gap-1 text-[10px] text-zinc-500">
-            <Clock className="h-3 w-3" />
+          <div className="flex items-center gap-1.5 text-[9.5px] text-zinc-550 font-mono font-medium">
+            <Clock className="h-3 w-3 text-zinc-600" />
             <span>~{eta}s remaining</span>
           </div>
         )}
       </div>
 
       {/* Progress bar */}
-      <div className="px-3 pt-2 shrink-0">
-        <div className="h-1 bg-zinc-800/60 rounded-full overflow-hidden">
+      <div className="px-4 pt-3.5 shrink-0">
+        <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-500 rounded-full transition-all duration-700 ease-out"
             style={{ width: `${Math.min(100, ((activeStage + (loading ? 0.5 : 1)) / 6) * 100)}%` }}
@@ -139,23 +139,23 @@ export default function ForgeStatusBar() {
       </div>
 
       {/* 6-Stage vertical pipeline */}
-      <div className="flex-1 overflow-y-auto forge-scroll px-3 py-3">
+      <div className="flex-1 overflow-y-auto forge-scroll px-4 py-4">
         <div className="relative">
           {/* Vertical connecting line */}
-          <div className="absolute left-[11px] top-3 bottom-3 w-px bg-zinc-800">
+          <div className="absolute left-[11px] top-3.5 bottom-3.5 w-px bg-zinc-900">
             <div
-              className="w-full bg-gradient-to-b from-indigo-500 to-violet-500 transition-all duration-700"
+              className="w-full bg-indigo-500 transition-all duration-700"
               style={{ height: `${Math.min(100, (activeStage / 5) * 100)}%` }}
             />
           </div>
 
-          <div className="space-y-4 relative">
+          <div className="space-y-5 relative">
             {STAGES.map((stage, idx) => {
               const status = getStageStatus(idx, activeStage, currentRunStatus)
               return (
                 <div
                   key={idx}
-                  className={`flex items-start gap-3 ${
+                  className={`flex items-start gap-3.5 ${
                     status === 'active' ? 'forge-stage-active' :
                     status === 'complete' ? 'forge-stage-complete' :
                     status === 'error' ? 'forge-stage-error' : ''
@@ -163,42 +163,48 @@ export default function ForgeStatusBar() {
                 >
                   {/* Stage indicator */}
                   <div
-                    className={`relative z-10 h-[22px] w-[22px] rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                      status === 'complete' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
-                      status === 'active' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40' :
-                      status === 'error' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40' :
-                      'bg-zinc-900 text-zinc-600 border border-zinc-800'
+                    className={`relative z-10 h-6 w-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                      status === 'complete' ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/25' :
+                      status === 'active' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/25' :
+                      status === 'error' ? 'bg-rose-500/10 text-rose-450 border border-rose-500/25' :
+                      'bg-[#0b0b0d] text-zinc-600 border border-zinc-900'
                     }`}
                   >
-                    {status === 'complete' && <CheckCircle2 className="h-3 w-3" />}
-                    {status === 'active' && <Loader2 className="h-3 w-3 animate-spin" />}
-                    {status === 'error' && <XCircle className="h-3 w-3" />}
-                    {status === 'pending' && <span className="text-[8px] font-mono">{idx + 1}</span>}
+                    {status === 'complete' && <CheckCircle2 className="h-3.5 w-3.5" />}
+                    {status === 'active' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {status === 'error' && <XCircle className="h-3.5 w-3.5" />}
+                    {status === 'pending' && <div className="opacity-60 scale-75">{stage.icon}</div>}
                   </div>
 
                   {/* Stage info */}
-                  <div className="flex-1 min-w-0 pt-[2px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px]">{stage.emoji}</span>
-                      <span className={`text-[11px] font-medium transition-colors ${
+                  <div className="flex-1 min-w-0 pt-[2px] space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[11.5px] font-semibold transition-colors ${
                         status === 'active' ? 'text-white' :
-                        status === 'complete' ? 'text-zinc-300' :
-                        status === 'error' ? 'text-rose-300' :
-                        'text-zinc-500'
+                        status === 'complete' ? 'text-zinc-350' :
+                        status === 'error' ? 'text-rose-350' :
+                        'text-zinc-650'
                       }`}>
                         {stage.label}
                       </span>
+
+                      {/* Duration for completed stages */}
+                      {status === 'complete' && buildDuration != null && (
+                        <span className="text-[9px] text-zinc-600 font-mono">
+                          ~{Math.round(buildDuration / 6)}s
+                        </span>
+                      )}
                     </div>
 
                     {/* Substages for code generation */}
                     {status === 'active' && stage.substages && (
-                      <div className="mt-1.5 space-y-1 ml-1">
+                      <div className="mt-2 space-y-1.5 pl-1.5 border-l border-zinc-900">
                         {stage.substages.map((sub, si) => (
-                          <div key={si} className="flex items-center gap-1.5">
-                            <span className={`h-[4px] w-[4px] rounded-full ${
-                              si === 0 ? 'bg-indigo-400 animate-pulse' : 'bg-zinc-700'
+                          <div key={si} className="flex items-center gap-2">
+                            <span className={`h-1 w-1 rounded-full ${
+                              si === 0 ? 'bg-indigo-400 animate-pulse' : 'bg-zinc-800'
                             }`} />
-                            <span className={`text-[9px] ${
+                            <span className={`text-[9.5px] font-mono ${
                               si === 0 ? 'text-indigo-300' : 'text-zinc-600'
                             }`}>
                               {sub}
@@ -206,13 +212,6 @@ export default function ForgeStatusBar() {
                           </div>
                         ))}
                       </div>
-                    )}
-
-                    {/* Duration for completed stages */}
-                    {status === 'complete' && buildDuration != null && (
-                      <span className="text-[9px] text-zinc-600 font-mono">
-                        ~{Math.round(buildDuration / 6)}s
-                      </span>
                     )}
                   </div>
                 </div>
@@ -222,12 +221,12 @@ export default function ForgeStatusBar() {
         </div>
       </div>
 
-      {/* Real-time activity feed */}
+      {/* Real-time activity feed logs panel */}
       {latestActivity && loading && (
-        <div className="border-t border-[#141417] px-3 py-2 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="h-[5px] w-[5px] rounded-full bg-indigo-500 animate-pulse shrink-0" />
-            <p className="text-[10px] text-zinc-400 truncate">
+        <div className="border-t border-zinc-900 bg-zinc-950/60 p-3.5 shrink-0">
+          <div className="flex items-start gap-2.5 ci-cd-terminal p-2.5 select-text text-[9.5px] text-zinc-400 leading-normal max-h-16 overflow-hidden">
+            <span className="text-zinc-600 select-none shrink-0">$</span>
+            <p className="font-mono flex-1 line-clamp-2">
               {latestActivity.content}
             </p>
           </div>

@@ -28,11 +28,11 @@ export default function KarnexButtons() {
   const buttons: KarnexButtonDef[] = [
     {
       id: 'icp-build',
-      icon: <Target className="h-3.5 w-3.5" />,
+      icon: <Target className="h-3.5 w-3.5 font-bold" />,
       label: 'Build from ICP',
       tooltip: hasICP ? 'Auto-fill prompt from your ICP data' : 'No ICP data found in Vault',
       disabled: !hasICP,
-      accent: 'text-purple-400 border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10',
+      accent: 'text-purple-300 border-purple-900/80 bg-purple-950/20 hover:bg-purple-950/40 hover:border-purple-800',
       onClick: () => {
         if (!karnexContext.icp) return
         const prompt = `Build a web application for: ${karnexContext.icp.targetAudience}. ` +
@@ -47,7 +47,7 @@ export default function KarnexButtons() {
       label: 'Align with Roadmap',
       tooltip: karnexContext.roadmapPhase ? 'Show current sprint tasks as suggestions' : 'No roadmap set',
       disabled: !karnexContext.roadmapPhase,
-      accent: 'text-blue-400 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10',
+      accent: 'text-blue-300 border-blue-900/80 bg-blue-950/20 hover:bg-blue-950/40 hover:border-blue-800',
       onClick: () => {
         if (!karnexContext.roadmapPhase) return
         setDraft(`Based on my current roadmap phase: "${karnexContext.roadmapPhase}", suggest and build the next feature I should implement.`)
@@ -59,7 +59,7 @@ export default function KarnexButtons() {
       label: 'Mirror Agent Check',
       tooltip: hasOutput ? 'Run mirror analysis on current build' : 'Build something first',
       disabled: !hasOutput,
-      accent: 'text-amber-400 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10',
+      accent: 'text-amber-300 border-amber-900/80 bg-amber-950/20 hover:bg-amber-950/40 hover:border-amber-800',
       onClick: () => {
         triggerBuild('Challenge this implementation: identify potential issues, missing edge cases, security vulnerabilities, and UX improvements. Be brutally honest.')
       },
@@ -70,7 +70,7 @@ export default function KarnexButtons() {
       label: 'Export to Vault',
       tooltip: hasOutput ? 'Save output to Vault namespace' : 'Build something first',
       disabled: !hasOutput,
-      accent: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10',
+      accent: 'text-emerald-300 border-emerald-900/80 bg-emerald-950/20 hover:bg-emerald-950/40 hover:border-emerald-850',
       onClick: () => {
         // Placeholder — will connect to vault API
         console.log('Exporting to Vault...')
@@ -82,20 +82,22 @@ export default function KarnexButtons() {
       label: 'Fundraising Export',
       tooltip: 'Coming soon — generate fundraising package',
       disabled: true,
-      accent: 'text-zinc-500 border-zinc-700/30 bg-zinc-800/20',
+      accent: 'text-zinc-650 border-zinc-900 bg-zinc-950/30',
       onClick: () => {},
     },
   ]
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1.5 overflow-x-auto forge-scroll">
+    <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto forge-scroll bg-zinc-950/10">
       {buttons.map((btn) => (
         <button
           key={btn.id}
           onClick={btn.onClick}
           disabled={btn.disabled}
           title={btn.tooltip}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium border transition-all whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed ${btn.accent || 'text-zinc-400 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10.5px] font-semibold font-mono border transition-all whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+            btn.accent || 'text-zinc-400 border-zinc-900 bg-[#0e0e11] hover:bg-zinc-900 hover:text-white'
+          }`}
         >
           {btn.icon}
           {btn.label}

@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useMemo } from 'react'
+import { Folder, Key, Link2 } from 'lucide-react'
+
+
 
 interface SchemaVisualizerProps {
   files: Array<{ path: string; content: string; language: string }>
@@ -137,10 +140,9 @@ export default function SchemaVisualizer({ files }: SchemaVisualizerProps) {
                 key={tIdx} 
                 className="rounded-xl border border-zinc-900 bg-zinc-950/70 p-4 space-y-3 shadow-xl hover:border-zinc-800 transition-all group"
               >
-                {/* Table Title */}
-                <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-600 font-mono">📂</span>
+                    <Folder className="h-3.5 w-3.5 text-zinc-650 shrink-0" />
                     <span className="text-xs font-bold font-mono text-zinc-200 group-hover:text-indigo-400 transition-colors">
                       {table.name}
                     </span>
@@ -159,11 +161,11 @@ export default function SchemaVisualizer({ files }: SchemaVisualizerProps) {
                     >
                       <div className="flex items-center gap-1.5 truncate">
                         {field.isPrimaryKey ? (
-                          <span className="text-amber-500 font-bold text-[9px]" title="Primary Key">🔑</span>
+                          <Key className="h-3 w-3 text-amber-500 shrink-0" />
                         ) : field.isForeignKey ? (
-                          <span className="text-indigo-400 text-[9px]" title="Foreign Key">🔗</span>
+                          <Link2 className="h-3 w-3 text-indigo-400 shrink-0" />
                         ) : (
-                          <span className="text-zinc-700 text-[8px]">•</span>
+                          <span className="text-zinc-700 text-[8px] pl-1 select-none">•</span>
                         )}
                         <span className={`text-zinc-300 truncate ${field.isPrimaryKey ? 'font-bold text-zinc-200' : ''}`}>
                           {field.name}
