@@ -105,8 +105,8 @@ async def compress_conversation_history(
     )
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("user", user_prompt),
+        ("system", "{system_prompt}"),
+        ("user", "{user_prompt}"),
     ])
 
     chain = prompt | llm.with_structured_output(ConversationSummary)

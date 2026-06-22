@@ -73,8 +73,8 @@ async def run_mirror_check(
         )
 
         prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            ("user", user_prompt),
+            ("system", "{system_prompt}"),
+            ("user", "{user_prompt}"),
         ])
 
         chain = prompt | llm.with_structured_output(MirrorCheckResponse)

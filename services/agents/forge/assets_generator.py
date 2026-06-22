@@ -156,10 +156,12 @@ async def _generate_brand_tokens(
         f"Target ICP: {icp_context or 'General SaaS audience'}\n"
     )
 
-    prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("user", user_prompt)])
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "{system_prompt}"),
+        ("user", "{user_prompt}")
+    ])
     chain = prompt | llm.with_structured_output(BrandTokens)
     _input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
-
     return await asyncio.to_thread(lambda: invoke_structured_with_retry(chain, _input))
 
 
@@ -194,10 +196,12 @@ async def _generate_layout_blueprint(
         f"Business Type: {brand_tokens.business_type}\n"
     )
 
-    prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("user", user_prompt)])
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "{system_prompt}"),
+        ("user", "{user_prompt}")
+    ])
     chain = prompt | llm.with_structured_output(LayoutBlueprint)
     _input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
-
     return await asyncio.to_thread(lambda: invoke_structured_with_retry(chain, _input))
 
 
@@ -231,10 +235,12 @@ async def _generate_component_styles(
         f"Pages: {', '.join(layout_blueprint.pages)}\n"
     )
 
-    prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("user", user_prompt)])
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "{system_prompt}"),
+        ("user", "{user_prompt}")
+    ])
     chain = prompt | llm.with_structured_output(ComponentStyles)
     _input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
-
     return await asyncio.to_thread(lambda: invoke_structured_with_retry(chain, _input))
 
 
@@ -276,10 +282,12 @@ async def _generate_copy_map(
         f"ICP Context: {icp_context or 'General startup audience'}\n"
     )
 
-    prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("user", user_prompt)])
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "{system_prompt}"),
+        ("user", "{user_prompt}")
+    ])
     chain = prompt | llm.with_structured_output(CopyMap)
     _input = {"system_prompt": system_prompt, "user_prompt": user_prompt}
-
     return await asyncio.to_thread(lambda: invoke_structured_with_retry(chain, _input))
 
 

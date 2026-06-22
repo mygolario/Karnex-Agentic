@@ -47,7 +47,7 @@ async def run_ask_mode(
             "system",
             "You are the Karnex Forge Agent in Ask mode. Answer clearly for founders and developers. "
             "Do not generate full file contents. Use Karnex context when relevant. Be concise and actionable.\n\n"
-            f"Previous run context:\n{prev_run_context}",
+            "Previous run context:\n{prev_run_context}",
         ),
         ("user", "{question}\n\nKarnex context:\n{ctx}"),
     ])
@@ -56,6 +56,7 @@ async def run_ask_mode(
         lambda: chain.invoke({
             "question": input_data.specification,
             "ctx": context_block,
+            "prev_run_context": prev_run_context,
         })
     )
     reply = res.content if hasattr(res, "content") else str(res)
